@@ -8,6 +8,13 @@ from zizkadb.demo_run import run_support_order_delay_demo
 
 
 async def main() -> None:
+    # Ensure stdout/stderr use UTF-8 on Windows consoles to prevent encoding crashes
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
     await run_support_order_delay_demo()
 
 

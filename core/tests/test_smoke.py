@@ -93,3 +93,55 @@ async def test_dev_token_and_log_event():
             headers={"Authorization": f"Bearer {dev_key}"},
         )
         assert bad_why.status_code == 404
+
+
+def test_causal_chain_model_and_print(capsys):
+    """Test the causal chain print and representation functions."""
+    from datetime import datetime
+    from zizkadb.models import Event, CausalChain
+
+    events = [
+        Event(
+            event_id="evt_1",
+            agent="test-agent",
+            timestamp=datetime(2026, 6, 25, 12, 0, 0),
+            event="user_message",
+            data={"text": "hello"},
+        ),
+        Event(
+            event_id="evt_2",
+            agent="test-agent",
+            timestamp=datetime(2026, 6, 25, 12, 0, 5),
+            event="llm_response",
+            data={"text": "world"},
+            parent_id="evt_1",
+        ),
+    ]
+    chain = CausalChain(event_id="evt_2", chain_length=2, chain=events)
+    assert repr(chain) == "CausalChain(length=2)"
+
+    chain.print()
+    captured = capsys.readouterr()
+    assert "user_message" in captured.out
+    assert "llm_response" in captured.out
+    assert "└── llm_response" in captured.out
+
+
+def test_safe_print_handles_encoding_error(capsys, monkeypatch):
+    """Test that _safe_print handles UnicodeEncodeError gracefully by falling back."""
+    import builtins
+    from zizkadb.models import _safe_print
+
+    original_print = builtins.print
+
+    def mock_print(text, *args, **kwargs):
+        if "├──" in str(text):
+            raise UnicodeEncodeError("charmap", str(text), 0, 3, "character maps to <undefined>")
+        original_print(text, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "print", mock_print)
+
+    # Calling _safe_print should not raise an error, but fallback to direct write or ASCII
+    _safe_print("test ├── connector")
+    captured = capsys.readouterr()
+    assert "test" in captured.out

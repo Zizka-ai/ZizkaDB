@@ -1,10 +1,17 @@
-from dataclasses import dataclass, field
+"""
+ZizkaDB Python SDK dataclasses and model definitions.
+"""
+
+import sys
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
 
 @dataclass
 class Event:
+    """Represents a logged agent event in ZizkaDB."""
+
     event_id: str
     agent: str
     timestamp: datetime
@@ -17,6 +24,7 @@ class Event:
 
     @classmethod
     def from_dict(cls, d: dict) -> "Event":
+        """Create an Event instance from a dictionary payload."""
         return cls(
             event_id=d["event_id"],
             agent=d["agent"],
@@ -30,6 +38,7 @@ class Event:
         )
 
     def __repr__(self) -> str:
+        """Return a string representation of the Event."""
         return (
             f"Event(id={self.event_id[:8]}... "
             f"agent={self.agent!r} "
@@ -40,6 +49,8 @@ class Event:
 
 @dataclass
 class LogResult:
+    """Represents the response metadata returned when an event is successfully logged."""
+
     event_id: str
     timestamp: datetime
     sequence_no: int
@@ -47,6 +58,7 @@ class LogResult:
 
     @classmethod
     def from_dict(cls, d: dict) -> "LogResult":
+        """Create a LogResult instance from a dictionary payload."""
         return cls(
             event_id=d["event_id"],
             timestamp=datetime.fromisoformat(d["timestamp"]),
@@ -57,6 +69,8 @@ class LogResult:
 
 @dataclass
 class CausalChain:
+    """Represents a sequence of causally linked events leading up to a specific event."""
+
     event_id: str
     chain_length: int
     chain: list[Event]
@@ -64,7 +78,7 @@ class CausalChain:
     def print(self) -> None:
         """Pretty-print the causal chain as a tree."""
         if not self.chain:
-            print("(empty chain)")
+            _safe_print("(empty chain)")
             return
 
         for i, event in enumerate(self.chain):
@@ -75,18 +89,21 @@ class CausalChain:
                 connector = "└── "
             else:
                 connector = "├── "
-            print(
+            _safe_print(
                 f"{indent}{connector}"
                 f"{event.event}: {_truncate(str(event.data), 60)}"
                 f"  [{event.timestamp.strftime('%H:%M:%S')}]"
             )
 
     def __repr__(self) -> str:
+        """Return a string representation of the CausalChain."""
         return f"CausalChain(length={self.chain_length})"
 
 
 @dataclass
 class AgentState:
+    """Represents the reconstructed state of an agent at a specific timestamp."""
+
     agent: str
     at: datetime
     event_count: int
@@ -94,6 +111,7 @@ class AgentState:
 
     @classmethod
     def from_dict(cls, d: dict) -> "AgentState":
+        """Create an AgentState instance from a dictionary payload."""
         return cls(
             agent=d["agent"],
             at=datetime.fromisoformat(d["at"]),
@@ -104,6 +122,8 @@ class AgentState:
 
 @dataclass
 class AgentInfo:
+    """Represents summary information about a registered agent."""
+
     agent: str
     first_seen: datetime
     last_seen: datetime
@@ -111,6 +131,7 @@ class AgentInfo:
 
     @classmethod
     def from_dict(cls, d: dict) -> "AgentInfo":
+        """Create an AgentInfo instance from a dictionary payload."""
         return cls(
             agent=d["agent"],
             first_seen=datetime.fromisoformat(d["first_seen"]),
@@ -120,4 +141,23 @@ class AgentInfo:
 
 
 def _truncate(s: str, n: int) -> str:
+    """Truncate a string to a maximum length of n, appending ellipses if truncated."""
     return s if len(s) <= n else s[:n] + "..."
+
+
+def _safe_print(text: str) -> None:
+    """
+    Print text to stdout while preventing UnicodeEncodeError on consoles (e.g. Windows cmd/PowerShell)
+    that do not support UTF-8 characters natively. Falls back to writing UTF-8 encoded bytes directly
+    with character replacements, and finally to plain ASCII replacement.
+    """
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        try:
+            sys.stdout.buffer.write((text + "\n").encode("utf-8", errors="replace"))
+            sys.stdout.flush()
+        except OSError:
+            # Absolute fallback to ASCII
+            print(text.encode("ascii", errors="replace").decode("ascii"))
+
