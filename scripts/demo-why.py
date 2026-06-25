@@ -11,7 +11,15 @@ HOST = os.getenv("ZIZKADB_HOST", "http://localhost:8000")
 
 
 async def main() -> None:
-    print(f"→ ZizkaDB @ {HOST}\n")
+    """Log a causal chain and print its execution path trace."""
+    # Ensure stdout/stderr use UTF-8 on Windows consoles to prevent encoding crashes
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
+    print(f"-> ZizkaDB @ {HOST}\n")
 
     async with ZizkaDB(host=HOST) as db:
         user = await db.log(
