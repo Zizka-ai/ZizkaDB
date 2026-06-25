@@ -36,3 +36,6 @@ redis_data/
 
 # Profiling
 *.profraw
+
+# Agents
+.agents/
