@@ -82,6 +82,51 @@ bash scripts/setup-local.sh
 
 Local dev uses `DEV_API_KEY=zizkadb_dev_local` (see `infra/.env`). The Python SDK auto-injects this key against `localhost:8000`.
 
+### Hybrid local/Docker setup (Recommended for development)
+
+For faster iteration, instant hot-reloading, and easier debugging, you can run the FastAPI backend and Next.js frontend code natively on your host machine while running database services (Postgres, Redis, Qdrant) inside Docker.
+
+#### 1. Start database containers only
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres qdrant redis
+```
+*Note: If you have a local PostgreSQL service running natively on your host on port `5432` (causing connection password errors), you can either stop the local service (e.g. `Stop-Service postgresql-x64-18` in PowerShell as Administrator) or change the mapped port to `"5433:5432"` in `infra/docker-compose.yml`.*
+
+#### 2. Run the Backend API (`core/`)
+Create a `core/.env` file:
+```ini
+DATABASE_URL=postgresql://zizkadb:zizkadb@localhost:5432/zizkadb
+REDIS_URL=redis://localhost:6379
+QDRANT_URL=http://localhost:6333
+DEV_API_KEY=zizkadb_dev_local
+ENV=development
+```
+*(Use port `5433` in `DATABASE_URL` if you changed the docker-compose mapping to resolve port conflicts).*
+
+Install dependencies and start the local server:
+```bash
+cd core
+python -m venv .venv
+source .venv/bin/activate  # Or .venv/Scripts/activate on Windows
+uv pip install -r requirements.txt -r requirements-dev.txt -e ../sdk/python
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload --env-file .env
+```
+*(On Windows Git Bash, path slashes must be forward `/` to prevent escaping: `.venv/Scripts/uvicorn` instead of `.venv\Scripts\uvicorn`).*
+
+#### 3. Run the Dashboard (`dashboard/`)
+Create a `dashboard/.env` file:
+```ini
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_DEV_MODE=true
+```
+
+Run the local Next.js server:
+```bash
+cd dashboard
+npm install
+npx next dev -p 3001
+```
+
 ### Verify your environment
 
 ```bash
