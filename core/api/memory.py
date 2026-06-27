@@ -328,8 +328,8 @@ async def forget(
     event_ids = [str(r["event_id"]) for r in rows]
 
     # Delete from Postgres
-    deleted = await pool.fetchval(
-        "DELETE FROM events WHERE event_id = ANY($1::uuid[]) AND tenant_id = $2 RETURNING COUNT(*)",
+    await pool.execute(
+        "DELETE FROM events WHERE event_id = ANY($1::uuid[]) AND tenant_id = $2",
         event_ids, tenant_id,
     )
 
