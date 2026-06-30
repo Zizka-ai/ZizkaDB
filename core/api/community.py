@@ -9,7 +9,6 @@ import logging
 import os
 import re
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
@@ -18,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from api.utils import check_rate, client_ip
 from db.connection import get_pool
+from services.rate_limiter import RateLimiter, InMemoryStorage, SlidingWindowStrategy
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -27,10 +27,17 @@ MAX_UPLOAD_BYTES = 3 * 1024 * 1024
 ALLOWED_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 CATEGORIES = {"question", "experience", "showcase"}
 
-# Simple in-memory rate limit: IP -> list of timestamps
-_rate: dict[str, list[float]] = {}
+
 RATE_WINDOW_SEC = 3600
 RATE_MAX_POSTS = 10
+
+community_limiter = RateLimiter(
+    limit=RATE_MAX_POSTS,
+    window_sec=RATE_WINDOW_SEC,
+    storage=InMemoryStorage(),
+    strategy=SlidingWindowStrategy(),
+    detail="Too many posts. Try again later."
+)
 
 
 class CreatePostBody(BaseModel):
@@ -48,7 +55,6 @@ class CreateReplyBody(BaseModel):
     author_email: str | None = Field(default=None, max_length=255)
     body: str = Field(min_length=2, max_length=8000)
     website: str | None = None
-
 
 
 
@@ -158,8 +164,7 @@ async def create_post(body: CreatePostBody, request: Request):
         raise HTTPException(status_code=400, detail="Invalid submission")
     if body.category not in CATEGORIES:
         raise HTTPException(status_code=400, detail="Invalid category")
-
-    check_rate(_rate, client_ip(request), RATE_WINDOW_SEC, RATE_MAX_POSTS, "Too many posts. Try again later.")
+    await community_limiter.check(client_ip(request))
     pool = get_pool()
     urls = [u for u in body.image_urls if isinstance(u, str) and u.startswith("/v1/community/media/")][:6]
 
@@ -185,8 +190,7 @@ async def create_post(body: CreatePostBody, request: Request):
 async def create_reply(post_id: str, body: CreateReplyBody, request: Request):
     if body.website:
         raise HTTPException(status_code=400, detail="Invalid submission")
-
-    check_rate(_rate, client_ip(request), RATE_WINDOW_SEC, RATE_MAX_POSTS, "Too many posts. Try again later.")
+    await community_limiter.check(client_ip(request))
     pool = get_pool()
     try:
         pid = uuid.UUID(post_id)
@@ -223,7 +227,7 @@ async def create_reply(post_id: str, body: CreateReplyBody, request: Request):
 
 @router.post("/upload")
 async def upload_image(request: Request, file: UploadFile = File(...)):
-    check_rate(_rate, client_ip(request) + ":upload", RATE_WINDOW_SEC, RATE_MAX_POSTS, "Too many uploads. Try again later.")
+    await community_limiter.check(client_ip(request) + ":upload")
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file")

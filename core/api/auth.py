@@ -3,7 +3,7 @@ import time
 import logging
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Depends
 from pydantic import BaseModel, EmailStr
 from services.auth import request_otp, verify_otp, _issue_tokens, email_exists
 from services.api_keys import (
@@ -13,8 +13,8 @@ from services.api_keys import (
     revoke_api_key_record,
 )
 from api.deps import get_tenant, require_dashboard_session
-from fastapi import Depends
 from db.connection import get_pool
+from services.rate_limiter import RateLimiter, InMemoryStorage, SlidingWindowStrategy
 from services.event_write import write_event
 
 router = APIRouter()
@@ -23,21 +23,15 @@ log = logging.getLogger(__name__)
 # Per-email OTP request limits (in-memory; resets after window)
 _OTP_RATE_WINDOW_SEC = 15 * 60   # 15 minutes
 _OTP_RATE_MAX = 10               # max requests per email per window
-_otp_rate: dict[str, list[float]] = {}
 
+otp_limiter = RateLimiter(
+    limit=_OTP_RATE_MAX,
+    window_sec=_OTP_RATE_WINDOW_SEC,
+    storage=InMemoryStorage(),
+    strategy=SlidingWindowStrategy(),
+    detail="Too many code requests. Wait 15 minutes and try again."
+)
 
-def _check_otp_rate_limit(email: str) -> None:
-    key = email.lower().strip()
-    now = time.time()
-    window_start = now - _OTP_RATE_WINDOW_SEC
-    hits = [t for t in _otp_rate.get(key, []) if t > window_start]
-    if len(hits) >= _OTP_RATE_MAX:
-        raise HTTPException(
-            status_code=429,
-            detail="Too many code requests. Wait 15 minutes and try again.",
-        )
-    hits.append(now)
-    _otp_rate[key] = hits
 
 _DEV_TENANT_ID = "00000000-0000-0000-0000-000000000001"
 _DEV_USER_ID   = "00000000-0000-0000-0000-000000000001"
@@ -64,7 +58,7 @@ class CreateAPIKeyBody(BaseModel):
 @router.post("/request-otp")
 async def request_otp_route(body: RequestOTPBody):
     email = body.email.lower().strip()
-    _check_otp_rate_limit(email)
+    await otp_limiter.check(email)
 
     if body.intent == "signup" and await email_exists(email):
         raise HTTPException(
