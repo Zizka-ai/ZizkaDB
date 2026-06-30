@@ -96,7 +96,6 @@ export function OverviewSection({ onNavigate }: { onNavigate: (s: string) => voi
           { label: 'LangChain', pkg: 'zizkadb-langchain' },
           { label: 'CrewAI', pkg: 'zizkadb-crewai' },
         ].map(({ label, pkg }) => (
-          // eslint-disable-next-line @next/next/no-img-element
           <a key={pkg} href={`https://pypi.org/project/${pkg}/`} target="_blank" rel="noreferrer">
             <img
               src={`https://img.shields.io/pypi/v/${pkg}?label=${encodeURIComponent(label)}`}
@@ -105,7 +104,6 @@ export function OverviewSection({ onNavigate }: { onNavigate: (s: string) => voi
             />
           </a>
         ))}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <a href="https://www.npmjs.com/package/zizkadb-sdk" target="_blank" rel="noreferrer">
           <img
             src="https://img.shields.io/npm/v/zizkadb-sdk?label=TypeScript%20SDK"
