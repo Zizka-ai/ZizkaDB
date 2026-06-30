@@ -1,6 +1,6 @@
 """
-Stripe webhooks — sync subscription state to users table for admin visibility.
-Configure STRIPE_WEBHOOK_SECRET and point Stripe to POST /v1/webhooks/stripe
+Stripe webhooks — sync subscription state to users table.
+Point Stripe to POST https://db.zizka.ai/v1/webhooks/stripe (same Stripe account as zizka.ai).
 """
 
 from __future__ import annotations
@@ -11,64 +11,12 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request
 
-from db.connection import get_pool
+from services.billing import update_user_billing, stripe_metadata
 
 router = APIRouter()
 log = logging.getLogger(__name__)
 
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-
-
-async def _update_user_billing(
-    *,
-    user_id: str | None = None,
-    email: str | None = None,
-    stripe_customer_id: str | None = None,
-    stripe_subscription_id: str | None = None,
-    plan: str | None = None,
-    subscription_status: str | None = None,
-    trial_ends_at: datetime | None = None,
-) -> bool:
-    pool = get_pool()
-    if user_id:
-        row = await pool.execute(
-            """
-            UPDATE users SET
-                plan = COALESCE($2, plan),
-                subscription_status = COALESCE($3, subscription_status),
-                trial_ends_at = COALESCE($4, trial_ends_at),
-                stripe_customer_id = COALESCE($5, stripe_customer_id),
-                stripe_subscription_id = COALESCE($6, stripe_subscription_id)
-            WHERE user_id = $1::uuid
-            """,
-            user_id,
-            plan,
-            subscription_status,
-            trial_ends_at,
-            stripe_customer_id,
-            stripe_subscription_id,
-        )
-        return row == "UPDATE 1"
-    if email:
-        row = await pool.execute(
-            """
-            UPDATE users SET
-                plan = COALESCE($2, plan),
-                subscription_status = COALESCE($3, subscription_status),
-                trial_ends_at = COALESCE($4, trial_ends_at),
-                stripe_customer_id = COALESCE($5, stripe_customer_id),
-                stripe_subscription_id = COALESCE($6, stripe_subscription_id)
-            WHERE email = $1
-            """,
-            email.lower().strip(),
-            plan,
-            subscription_status,
-            trial_ends_at,
-            stripe_customer_id,
-            stripe_subscription_id,
-        )
-        return row == "UPDATE 1"
-    return False
 
 
 @router.post("/stripe")
@@ -98,7 +46,7 @@ async def stripe_webhook(request: Request):
 
     try:
         if etype == "checkout.session.completed":
-            meta = getattr(data, "metadata", None) or {}
+            meta = stripe_metadata(getattr(data, "metadata", None))
             user_id = meta.get("user_id")
             plan = meta.get("plan", "pro")
             sub_id = getattr(data, "subscription", None)
@@ -108,9 +56,11 @@ async def stripe_webhook(request: Request):
             if sub_id:
                 sub = stripe.Subscription.retrieve(sub_id)
                 status = sub.status
+                if status not in ("active", "trialing"):
+                    status = "trialing"
                 if sub.trial_end:
                     trial_end = datetime.fromtimestamp(sub.trial_end, tz=timezone.utc)
-            await _update_user_billing(
+            await update_user_billing(
                 user_id=user_id,
                 plan=plan,
                 subscription_status=status,
@@ -121,12 +71,12 @@ async def stripe_webhook(request: Request):
 
         elif etype in ("customer.subscription.updated", "customer.subscription.created"):
             sub = data
-            meta = getattr(sub, "metadata", None) or {}
+            meta = stripe_metadata(getattr(sub, "metadata", None))
             user_id = meta.get("user_id")
             trial_end = None
             if getattr(sub, "trial_end", None):
                 trial_end = datetime.fromtimestamp(sub.trial_end, tz=timezone.utc)
-            await _update_user_billing(
+            await update_user_billing(
                 user_id=user_id,
                 stripe_subscription_id=getattr(sub, "id", None),
                 stripe_customer_id=str(sub.customer) if getattr(sub, "customer", None) else None,
@@ -137,12 +87,24 @@ async def stripe_webhook(request: Request):
 
         elif etype == "customer.subscription.deleted":
             sub = data
-            meta = getattr(sub, "metadata", None) or {}
+            meta = stripe_metadata(getattr(sub, "metadata", None))
             user_id = meta.get("user_id")
-            await _update_user_billing(
+            await update_user_billing(
                 user_id=user_id,
                 subscription_status="canceled",
             )
+
+        elif etype == "invoice.payment_failed":
+            inv = data
+            sub_id = getattr(inv, "subscription", None)
+            if sub_id:
+                sub = stripe.Subscription.retrieve(sub_id)
+                meta = stripe_metadata(getattr(sub, "metadata", None))
+                await update_user_billing(
+                    user_id=meta.get("user_id"),
+                    stripe_subscription_id=sub.id,
+                    subscription_status=sub.status,
+                )
 
     except Exception as e:
         log.error("Stripe webhook handler error: %s", e)

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { requestOtp, verifyOtp } from '@/lib/api';
+import { requestOtp, verifyOtp, postAuthRedirect } from '@/lib/api';
 import { getToken, setToken } from '@/lib/auth';
 import { BrandLogo } from '@/components/BrandLogo';
 
@@ -96,7 +96,7 @@ function LoginForm() {
     try {
       const data = await verifyOtp(email, otp);
       setToken(data.access_token);
-      router.replace(safeNext);
+      router.replace(postAuthRedirect(data));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Invalid or expired code.');
     } finally {

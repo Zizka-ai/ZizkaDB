@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   getApiKeys,
   createApiKey,
@@ -10,9 +11,13 @@ import {
   getEmbeddingSettings,
   updateEmbeddingSettings,
   sendTestEvent,
+  getAccountOptions,
+  grantRetentionTrial,
+  deleteManagedAccount,
+  type AccountOptions,
 } from '@/lib/api';
-import { requireAuth } from '@/lib/auth';
-import { Key, Trash2, Plus, Copy, Check } from 'lucide-react';
+import { requireAuth, clearToken } from '@/lib/auth';
+import { Key, Trash2, Plus, Copy, Check, AlertTriangle, X } from 'lucide-react';
 
 interface ApiKey {
   key_id: string;
@@ -46,6 +51,13 @@ export default function SettingsPage() {
   const [tenantKeyCreating, setTenantKeyCreating] = useState(false);
   const [tenantNewKey, setTenantNewKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const router = useRouter();
+  const [accountOpts, setAccountOpts] = useState<AccountOptions | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [accountBusy, setAccountBusy] = useState(false);
+  const [accountMsg, setAccountMsg] = useState('');
+  const [accountErr, setAccountErr] = useState('');
 
   useEffect(() => {
     let token: string;
@@ -71,6 +83,9 @@ export default function SettingsPage() {
       )
       .catch(() => setEmbErr('Could not load embedding settings'))
       .finally(() => setEmbLoading(false));
+    getAccountOptions(token)
+      .then(setAccountOpts)
+      .catch(() => {});
   }, []);
 
   async function handleRevoke(key: ApiKey) {
@@ -424,6 +439,167 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      {accountOpts?.managed_cloud && (
+        <div
+          className='rounded-xl p-5 mt-6'
+          style={{ background: '#111', border: '1px solid #7f1d1d55' }}
+        >
+          <div className='flex items-start gap-3 mb-3'>
+            <AlertTriangle size={18} style={{ color: '#f87171', marginTop: 2 }} />
+            <div>
+              <h2 className='text-sm font-medium text-white mb-1'>Delete account</h2>
+              <p className='text-xs' style={{ color: '#e5e5e5', lineHeight: 1.6 }}>
+                Managed cloud only. This permanently removes your account, agents, events, and API
+                keys. Self-hosted / open-source users manage data on their own infrastructure.
+              </p>
+            </div>
+          </div>
+          {accountMsg && (
+            <p className='text-xs mb-3' style={{ color: '#22c55e' }}>
+              {accountMsg}
+            </p>
+          )}
+          {accountErr && (
+            <p className='text-xs mb-3' style={{ color: '#f87171' }}>
+              {accountErr}
+            </p>
+          )}
+          <button
+            type='button'
+            onClick={() => {
+              setDeleteOpen(true);
+              setDeleteConfirm('');
+              setAccountErr('');
+              setAccountMsg('');
+            }}
+            className='px-4 py-2 rounded-lg text-sm font-medium text-white'
+            style={{ background: '#7f1d1d', border: '1px solid #991b1b' }}
+          >
+            Delete account…
+          </button>
+        </div>
+      )}
+
+      {deleteOpen && accountOpts?.managed_cloud && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            padding: 16,
+          }}
+          onClick={() => !accountBusy && setDeleteOpen(false)}
+        >
+          <div
+            className='rounded-xl p-6'
+            style={{
+              background: '#111',
+              border: '1px solid #2a2a2a',
+              maxWidth: 440,
+              width: '100%',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className='flex items-center justify-between mb-4'>
+              <h3 className='text-white font-semibold text-base'>Before you go</h3>
+              <button
+                type='button'
+                onClick={() => !accountBusy && setDeleteOpen(false)}
+                style={{ color: '#888' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {accountOpts.retention_trial_available && (
+              <div
+                className='rounded-lg p-4 mb-4'
+                style={{ background: '#0d2010', border: '1px solid #22c55e40' }}
+              >
+                <p className='text-sm text-white font-medium mb-1'>
+                  Get {accountOpts.retention_trial_days ?? 30} more days free
+                </p>
+                <p className='text-xs mb-3' style={{ color: '#e5e5e5', lineHeight: 1.6 }}>
+                  Stay on ZizkaDB cloud with one extra month on your trial — no charge today.
+                  One-time offer when deleting your account.
+                </p>
+                <button
+                  type='button'
+                  disabled={accountBusy}
+                  onClick={async () => {
+                    setAccountBusy(true);
+                    setAccountErr('');
+                    try {
+                      const token = requireAuth();
+                      const res = await grantRetentionTrial(token);
+                      setAccountMsg(res.message);
+                      setAccountOpts((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              retention_trial_available: false,
+                              trial_ends_at: res.trial_ends_at,
+                            }
+                          : prev,
+                      );
+                      setDeleteOpen(false);
+                    } catch (e) {
+                      setAccountErr(e instanceof Error ? e.message : 'Could not extend trial');
+                    } finally {
+                      setAccountBusy(false);
+                    }
+                  }}
+                  className='w-full px-4 py-2 rounded-lg text-sm font-medium text-black disabled:opacity-40'
+                  style={{ background: '#22c55e' }}
+                >
+                  {accountBusy
+                    ? 'Applying…'
+                    : `Keep account — ${accountOpts.retention_trial_days ?? 30}-day extension`}
+                </button>
+              </div>
+            )}
+
+            <p className='text-xs mb-3' style={{ color: '#e5e5e5', lineHeight: 1.6 }}>
+              Or delete permanently. Type <strong style={{ color: '#fff' }}>DELETE</strong> to
+              confirm.
+            </p>
+            <input
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder='DELETE'
+              className='w-full rounded-lg px-3 py-2 text-sm text-white mb-3 outline-none font-mono'
+              style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+            />
+            <button
+              type='button'
+              disabled={accountBusy || deleteConfirm !== 'DELETE'}
+              onClick={async () => {
+                setAccountBusy(true);
+                setAccountErr('');
+                try {
+                  const token = requireAuth();
+                  await deleteManagedAccount(token);
+                  clearToken();
+                  router.replace('/login?deleted=1');
+                } catch (e) {
+                  setAccountErr(e instanceof Error ? e.message : 'Could not delete account');
+                } finally {
+                  setAccountBusy(false);
+                }
+              }}
+              className='w-full px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-40'
+              style={{ background: '#991b1b' }}
+            >
+              {accountBusy ? 'Deleting…' : 'Delete my account permanently'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

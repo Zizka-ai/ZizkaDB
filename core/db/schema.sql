@@ -58,6 +58,7 @@ CREATE TABLE users (
     trial_ends_at           TIMESTAMPTZ,
     stripe_customer_id      VARCHAR(255) UNIQUE,
     stripe_subscription_id  VARCHAR(255) UNIQUE,
+    retention_trial_used    BOOLEAN NOT NULL DEFAULT FALSE,
     created_at              TIMESTAMPTZ DEFAULT NOW(),
     last_login              TIMESTAMPTZ
 );

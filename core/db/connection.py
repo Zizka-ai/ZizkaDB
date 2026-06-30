@@ -49,6 +49,7 @@ async def init_db():
         ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255);
         ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255);
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS retention_trial_used BOOLEAN NOT NULL DEFAULT FALSE;
     """)
     await _pg_pool.execute("""
         UPDATE users

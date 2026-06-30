@@ -72,6 +72,11 @@ async def verify_otp_route(body: VerifyOTPBody, response: Response):
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
 
+    from services.billing import billing_status_payload, fetch_user_billing
+
+    billing_row = await fetch_user_billing(email=email)
+    billing = billing_status_payload(billing_row)
+
     response.set_cookie(
         key="refresh_token",
         value=tokens["refresh_token"],
@@ -82,7 +87,14 @@ async def verify_otp_route(body: VerifyOTPBody, response: Response):
         path="/",
     )
 
-    return {"access_token": tokens["access_token"], "token_type": "bearer"}
+    return {
+        "access_token": tokens["access_token"],
+        "token_type": "bearer",
+        "requires_plan_selection": billing["requires_plan_selection"],
+        "requires_checkout": billing["requires_checkout"],
+        "has_access": billing["has_access"],
+        "plan": billing["plan"],
+    }
 
 
 @router.post("/api-keys")

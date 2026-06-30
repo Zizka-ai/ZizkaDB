@@ -270,5 +270,125 @@ export async function verifyOtp(email: string, otp: string) {
   }
   const data = await res.json();
   if (!data?.access_token) throw new Error('Sign-in succeeded but no session token was returned');
-  return data;
+  return data as {
+    access_token: string;
+    token_type: string;
+    requires_plan_selection?: boolean;
+    requires_checkout?: boolean;
+    has_access?: boolean;
+    plan?: string | null;
+  };
+}
+
+export interface BillingPlan {
+  id: 'pro' | 'team';
+  name: string;
+  price: string;
+  price_sub: string;
+  highlight: boolean;
+  features: string[];
+}
+
+export interface BillingStatus {
+  enforced: boolean;
+  has_access: boolean;
+  requires_plan_selection: boolean;
+  requires_checkout: boolean;
+  subscription_status: string | null;
+  trial_ends_at: string | null;
+  plan: string | null;
+  stripe_publishable_key?: string | null;
+  trial_days?: number | null;
+}
+
+export async function getBillingConfig(): Promise<{
+  enforced: boolean;
+  stripe_publishable_key: string | null;
+  trial_days: number | null;
+  plans: BillingPlan[];
+}> {
+  const res = await fetch(`${API}/v1/billing/config`);
+  if (!res.ok) throw new Error('Could not load billing config');
+  return res.json();
+}
+
+export async function getBillingStatus(token: string): Promise<BillingStatus> {
+  return apiFetch('/v1/billing/status', token);
+}
+
+export async function selectBillingPlan(
+  token: string,
+  plan: 'pro' | 'team',
+): Promise<BillingStatus> {
+  return apiFetch('/v1/billing/select-plan', token, {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  });
+}
+
+export async function createCheckoutSession(
+  token: string,
+  plan: 'pro' | 'team',
+): Promise<{ url: string; session_id: string }> {
+  return apiFetch('/v1/billing/checkout-session', token, {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  });
+}
+
+export async function confirmCheckout(token: string, sessionId: string): Promise<BillingStatus> {
+  return apiFetch('/v1/billing/confirm-checkout', token, {
+    method: 'POST',
+    body: JSON.stringify({ session_id: sessionId }),
+  });
+}
+
+export function postAuthRedirect(data: {
+  requires_plan_selection?: boolean;
+  requires_checkout?: boolean;
+  has_access?: boolean;
+  plan?: string | null;
+}): string {
+  if (data.has_access) return '/dashboard';
+  if (data.requires_plan_selection) return '/signup/plan';
+  if (data.requires_checkout) {
+    const plan = data.plan === 'team' ? 'team' : data.plan === 'pro' ? 'pro' : null;
+    return plan ? `/signup/checkout?plan=${plan}` : '/signup/plan';
+  }
+  return '/dashboard';
+}
+
+export function billingGateRedirect(status: BillingStatus): string | null {
+  if (!status.enforced || status.has_access) return null;
+  if (status.requires_plan_selection) return '/signup/plan';
+  if (status.requires_checkout) {
+    const plan = status.plan === 'team' ? 'team' : status.plan === 'pro' ? 'pro' : null;
+    return plan ? `/signup/checkout?plan=${plan}` : '/signup/plan';
+  }
+  if (!status.has_access) return '/signup/plan';
+  return null;
+}
+
+export interface AccountOptions {
+  managed_cloud: boolean;
+  retention_trial_available?: boolean;
+  retention_trial_days?: number;
+  trial_ends_at?: string | null;
+  email?: string | null;
+}
+
+export async function getAccountOptions(token: string): Promise<AccountOptions> {
+  return apiFetch('/v1/account/options', token);
+}
+
+export async function grantRetentionTrial(token: string): Promise<{
+  message: string;
+  trial_ends_at: string;
+  retention_trial_available: boolean;
+}> {
+  return apiFetch('/v1/account/retention-trial', token, { method: 'POST' });
+}
+
+export async function deleteManagedAccount(token: string): Promise<{ message: string }> {
+  return apiFetch('/v1/account', token, { method: 'DELETE' });
 }

@@ -286,9 +286,9 @@ export default function LandingPage() {
                   sub: '/ month',
                   features: ['100M events', '90-day retention', '3 projects', 'Email support'],
                   cta: 'Start free trial',
-                  href: '/signup',
+                  href: '/signup?plan=pro',
                   highlight: true,
-                  note: 'No credit card needed',
+                  note: '30-day free trial · card required',
                 },
                 {
                   name: 'Team',
@@ -301,9 +301,9 @@ export default function LandingPage() {
                     'Priority support',
                   ],
                   cta: 'Start free trial',
-                  href: '/signup',
+                  href: '/signup?plan=team',
                   highlight: false,
-                  note: 'No credit card needed',
+                  note: '30-day free trial · card required',
                 },
               ] as const
             ).map((plan) => (

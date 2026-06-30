@@ -181,19 +181,24 @@ async def verify_otp(email: str, otp: str) -> dict:
 
     tenant_id = str(tenant_id)
 
-    # New signups get a 30-day Pro trial (local until Stripe checkout is wired)
-    await pool.execute(
-        """
-        UPDATE users
-        SET plan = COALESCE(plan, 'pro'),
-            subscription_status = COALESCE(subscription_status, 'trialing'),
-            trial_ends_at = COALESCE(trial_ends_at, NOW() + INTERVAL '30 days')
-        WHERE user_id = $1::uuid
-          AND plan IS NULL
-          AND subscription_status IS NULL
-        """,
-        user_id,
-    )
+    from services.billing import billing_enforced, mark_pending_checkout
+
+    if billing_enforced():
+        await mark_pending_checkout(user_id)
+    else:
+        # Self-host / local: 30-day Pro trial without Stripe
+        await pool.execute(
+            """
+            UPDATE users
+            SET plan = COALESCE(plan, 'pro'),
+                subscription_status = COALESCE(subscription_status, 'trialing'),
+                trial_ends_at = COALESCE(trial_ends_at, NOW() + INTERVAL '30 days')
+            WHERE user_id = $1::uuid
+              AND plan IS NULL
+              AND subscription_status IS NULL
+            """,
+            user_id,
+        )
 
     return _issue_tokens(user_id, email, tenant_id)
 
