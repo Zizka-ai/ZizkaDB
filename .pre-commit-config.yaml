@@ -1,0 +1,21 @@
+repos:
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: [check, core, sdk/python, mcp, integrations]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-added-large-files
+  - repo: local
+    hooks:
+      - id: dashboard-lint
+        name: Dashboard lint
+        entry: bash -lc "cd dashboard && npm run lint:ci"
+        language: system
+        pass_filenames: false
+        always_run: true

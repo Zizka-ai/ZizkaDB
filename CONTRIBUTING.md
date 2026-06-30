@@ -88,6 +88,24 @@ bash scripts/smoke-test.sh
 python scripts/demo-why.py
 ```
 
+### Local lint and pre-commit hooks
+
+Install local validation once after cloning:
+
+```bash
+cd core
+pip install -r requirements-dev.txt
+pre-commit install
+```
+
+Then use:
+
+```bash
+pre-commit run --all-files
+```
+
+This installs a local hook that runs Python and dashboard lint checks before commits.
+
 ### API unit & integration tests
 
 ```bash
