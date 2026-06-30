@@ -1,0 +1,13 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+if [ -x .venv/bin/pre-commit ]; then
+  .venv/bin/pre-commit run --hook-stage pre-commit
+elif command -v pre-commit >/dev/null 2>&1; then
+  pre-commit run --hook-stage pre-commit
+else
+  echo "pre-commit not installed; skipping Python pre-commit hooks."
+fi
+
+cd dashboard
+npx lint-staged

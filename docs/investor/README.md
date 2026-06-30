@@ -1,9 +1,9 @@
 # Investor deck — ZizkaDB
 
-| File | Purpose |
-|------|---------|
+| File                    | Purpose                                        |
+| ----------------------- | ---------------------------------------------- |
 | `ZIZKADB_PITCH_DECK.md` | 15 slides — paste into Google Slides / Keynote |
-| `pitch-deck.html` | Browser presentation → Print to PDF |
+| `pitch-deck.html`       | Browser presentation → Print to PDF            |
 
 ## Quick start
 
@@ -15,8 +15,8 @@ Arrow keys or Space = next slide. Print → Save as PDF to email investors.
 
 ## Before you send
 
-1. Replace `[bracketed]` placeholders (traction, team, dates).  
-2. Add founder photo on team slide.  
+1. Replace `[bracketed]` placeholders (traction, team, dates).
+2. Add founder photo on team slide.
 3. Confirm SAFE terms with a lawyer (uncapped, discount %, etc.).
 
 ## Cover email (template)

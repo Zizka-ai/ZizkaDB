@@ -52,10 +52,10 @@ Deletes agent + all events + all its keys. Cannot be undone.
 
 ## Key format
 
-| Prefix | Status |
-|--------|--------|
-| `zizkadb_live_...` | Current managed-cloud keys |
-| `agdb_live_...` | Legacy keys from AgentDB era — still work |
+| Prefix             | Status                                    |
+| ------------------ | ----------------------------------------- |
+| `zizkadb_live_...` | Current managed-cloud keys                |
+| `agdb_live_...`    | Legacy keys from AgentDB era — still work |
 
 Keys are SHA-256 hashed server-side. Full key shown **once** at creation.
 
@@ -63,21 +63,21 @@ Keys are SHA-256 hashed server-side. Full key shown **once** at creation.
 
 ## Environment variables
 
-| Variable | Purpose |
-|----------|---------|
-| `ZIZKADB_API_KEY` | Preferred |
+| Variable          | Purpose                   |
+| ----------------- | ------------------------- |
+| `ZIZKADB_API_KEY` | Preferred                 |
 | `AGENTDB_API_KEY` | Legacy alias (same value) |
-| `ZIZKADB_HOST` | Self-hosted API URL |
-| `AGENTDB_HOST` | Legacy alias for host |
+| `ZIZKADB_HOST`    | Self-hosted API URL       |
+| `AGENTDB_HOST`    | Legacy alias for host     |
 
 ### Common mistakes
 
-| Mistake | Result |
-|---------|--------|
-| `API=...` instead of `AGENTDB_API_KEY=` | Key ignored |
-| Space or line break in key | 401 Invalid API key |
-| Key for `agent-A`, code logs `agent-B` | 403 Agent mismatch |
-| Only `pm2 restart` after `.env` change | Stale baked env — run `npm run build` for Next.js apps |
+| Mistake                                 | Result                                                 |
+| --------------------------------------- | ------------------------------------------------------ |
+| `API=...` instead of `AGENTDB_API_KEY=` | Key ignored                                            |
+| Space or line break in key              | 401 Invalid API key                                    |
+| Key for `agent-A`, code logs `agent-B`  | 403 Agent mismatch                                     |
+| Only `pm2 restart` after `.env` change  | Stale baked env — run `npm run build` for Next.js apps |
 
 ---
 

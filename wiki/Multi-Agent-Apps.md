@@ -47,12 +47,12 @@ Agents are auto-created on first event.
 
 ## When to use which
 
-| Pattern | Key type |
-|---------|----------|
-| One Cursor MCP agent | Per-agent key |
-| One support bot | Per-agent key |
-| SaaS with per-user memory | **Tenant-wide key** |
-| Microservices (one service = one agent) | Per-agent key each |
+| Pattern                                 | Key type            |
+| --------------------------------------- | ------------------- |
+| One Cursor MCP agent                    | Per-agent key       |
+| One support bot                         | Per-agent key       |
+| SaaS with per-user memory               | **Tenant-wide key** |
+| Microservices (one service = one agent) | Per-agent key each  |
 
 ---
 

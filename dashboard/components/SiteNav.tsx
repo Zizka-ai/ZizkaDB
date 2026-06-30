@@ -1,22 +1,22 @@
-import Link from 'next/link'
-import type { CSSProperties } from 'react'
-import { BrandLogo } from './BrandLogo'
-import { brandCtaStyle } from './brand'
+import Link from 'next/link';
+import type { CSSProperties } from 'react';
+import { BrandLogo } from './BrandLogo';
+import { brandCtaStyle } from './brand';
 
-export type SiteNavActive = 'docs' | 'community' | 'trust' | 'explorer' | 'home'
+export type SiteNavActive = 'docs' | 'community' | 'trust' | 'explorer' | 'home';
 
 type SiteNavProps = {
-  active?: SiteNavActive
+  active?: SiteNavActive;
   /** e.g. "Docs" shows as "ZizkaDB / Docs" */
-  suffix?: string
-}
+  suffix?: string;
+};
 
 const linkStyle = (on: boolean): CSSProperties => ({
   fontSize: 14,
   color: on ? '#000' : '#000',
   fontWeight: on ? 600 : 400,
   textDecoration: 'none',
-})
+});
 
 export function SiteNav({ active, suffix }: SiteNavProps) {
   return (
@@ -37,29 +37,54 @@ export function SiteNav({ active, suffix }: SiteNavProps) {
     >
       <BrandLogo suffix={suffix} />
 
-      <div className="site-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-        <Link href="/docs" style={linkStyle(active === 'docs')}>Docs</Link>
-        <Link href="/community" style={linkStyle(active === 'community')}>Community</Link>
-        <a href="/swagger" style={linkStyle(active === 'explorer')}>API Explorer</a>
-        <Link href="/login" style={{
-          fontSize: 14, fontWeight: 500, color: '#000', textDecoration: 'none',
-          padding: '7px 16px', border: '1px solid #ddd', borderRadius: 8,
-        }}>
+      <div className='site-nav-links' style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+        <Link href='/docs' style={linkStyle(active === 'docs')}>
+          Docs
+        </Link>
+        <Link href='/community' style={linkStyle(active === 'community')}>
+          Community
+        </Link>
+        <a href='/swagger' style={linkStyle(active === 'explorer')}>
+          API Explorer
+        </a>
+        <Link
+          href='/login'
+          style={{
+            fontSize: 14,
+            fontWeight: 500,
+            color: '#000',
+            textDecoration: 'none',
+            padding: '7px 16px',
+            border: '1px solid #ddd',
+            borderRadius: 8,
+          }}
+        >
           Sign in
         </Link>
-        <Link href="/signup" style={brandCtaStyle}>Start free →</Link>
+        <Link href='/signup' style={brandCtaStyle}>
+          Start free →
+        </Link>
       </div>
 
-      <div className="site-nav-cta" style={{ display: 'none', alignItems: 'center', gap: 8 }}>
-        <Link href="/login" style={{
-          fontSize: 13, fontWeight: 500, color: '#111', textDecoration: 'none',
-          padding: '6px 12px', border: '1px solid #ddd', borderRadius: 8,
-        }}>
+      <div className='site-nav-cta' style={{ display: 'none', alignItems: 'center', gap: 8 }}>
+        <Link
+          href='/login'
+          style={{
+            fontSize: 13,
+            fontWeight: 500,
+            color: '#111',
+            textDecoration: 'none',
+            padding: '6px 12px',
+            border: '1px solid #ddd',
+            borderRadius: 8,
+          }}
+        >
           Sign in
         </Link>
-        <Link href="/signup" style={{ ...brandCtaStyle, fontSize: 13, padding: '6px 14px' }}>Start free →</Link>
+        <Link href='/signup' style={{ ...brandCtaStyle, fontSize: 13, padding: '6px 14px' }}>
+          Start free →
+        </Link>
       </div>
-
     </nav>
-  )
+  );
 }

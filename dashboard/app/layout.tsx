@@ -1,7 +1,7 @@
-import type { Metadata } from 'next'
-import './globals.css'
+import type { Metadata } from 'next';
+import './globals.css';
 
-const TAGLINE = 'Operational Database For AI Agents. Open source. Self-host free or managed cloud.'
+const TAGLINE = 'Operational Database For AI Agents. Open source. Self-host free or managed cloud.';
 
 export const metadata: Metadata = {
   title: {
@@ -32,12 +32,12 @@ export const metadata: Metadata = {
     description: TAGLINE,
     images: ['/opengraph-image'],
   },
-}
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang='en'>
       <body>{children}</body>
     </html>
-  )
+  );
 }

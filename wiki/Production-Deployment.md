@@ -8,10 +8,10 @@ How the managed cloud instance is deployed on EC2 **without losing user data**.
 
 The `-v` flag deletes the Postgres volume — all signups, tenants, API keys, and events are gone permanently unless you restore from backup.
 
-| Task | Command |
-|------|---------|
-| **Production deploy** | `bash infra/deploy-production.sh` |
-| **Backup only** | `bash infra/backup-postgres.sh` |
+| Task                    | Command                                        |
+| ----------------------- | ---------------------------------------------- |
+| **Production deploy**   | `bash infra/deploy-production.sh`              |
+| **Backup only**         | `bash infra/backup-postgres.sh`                |
 | **Local fresh install** | `bash scripts/reset-local-db.sh` (laptop only) |
 
 ## Safe production deploy (EC2)
@@ -96,12 +96,12 @@ Dashboard runs on port **3001** behind nginx at `db.zizka.ai`.
 
 ## Common deploy mistakes
 
-| Mistake | What happens | Fix |
-|---------|--------------|-----|
+| Mistake                         | What happens          | Fix                                        |
+| ------------------------------- | --------------------- | ------------------------------------------ |
 | `docker compose down -v` on EC2 | **All users deleted** | Restore backup; use `deploy-production.sh` |
-| `npm run build` from repo root | Build fails | `cd dashboard` first |
-| API not restarted after pull | New routes missing | `docker compose restart api` |
-| Schema fix + volume wipe | Data loss | Use migrations + backup, not `-v` |
+| `npm run build` from repo root  | Build fails           | `cd dashboard` first                       |
+| API not restarted after pull    | New routes missing    | `docker compose restart api`               |
+| Schema fix + volume wipe        | Data loss             | Use migrations + backup, not `-v`          |
 
 ## Environment (production)
 

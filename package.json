@@ -1,0 +1,22 @@
+{
+  "name": "zizkadb-root",
+  "private": true,
+  "scripts": {
+    "prepare": "husky install",
+    "dashboard:install": "cd dashboard && npm install",
+    "dashboard:lint": "cd dashboard && npm run lint:ci"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^14.0.0"
+  },
+  "lint-staged": {
+    "dashboard/**/*.{js,jsx,ts,tsx}": [
+      "cd dashboard && npx prettier --write",
+      "cd dashboard && npx eslint --fix --max-warnings=0"
+    ],
+    "dashboard/**/*.{json,md,yml,yaml,css,scss}": [
+      "cd dashboard && npx prettier --write"
+    ]
+  }
+}

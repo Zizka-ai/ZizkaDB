@@ -1,15 +1,12 @@
-import type { Config } from 'tailwindcss'
+import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  content: [
-    './app/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-  ],
+  content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
         brand: {
-          50:  '#f0fdf4',
+          50: '#f0fdf4',
           100: '#dcfce7',
           500: '#22c55e',
           600: '#16a34a',
@@ -23,6 +20,6 @@ const config: Config = {
     },
   },
   plugins: [],
-}
+};
 
-export default config
+export default config;

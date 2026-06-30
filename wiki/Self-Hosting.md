@@ -18,14 +18,14 @@ docker compose -f infra/docker-compose.yml -f infra/docker-compose.dashboard.yml
 
 ## Services
 
-| Service | Default URL |
-|---------|-------------|
-| API | http://localhost:8000 |
-| Swagger | http://localhost:8000/swagger |
-| Dashboard | http://localhost:3001 |
-| Postgres | internal |
-| Redis | internal |
-| Qdrant | internal |
+| Service   | Default URL                   |
+| --------- | ----------------------------- |
+| API       | http://localhost:8000         |
+| Swagger   | http://localhost:8000/swagger |
+| Dashboard | http://localhost:3001         |
+| Postgres  | internal                      |
+| Redis     | internal                      |
+| Qdrant    | internal                      |
 
 ## Dashboard login (local)
 

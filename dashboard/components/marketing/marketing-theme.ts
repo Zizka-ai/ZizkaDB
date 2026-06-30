@@ -1,4 +1,4 @@
-import { BRAND, BRAND_DARK, BRAND_LIGHT, BRAND_PALE } from '@/components/brand'
+import { BRAND, BRAND_DARK, BRAND_LIGHT, BRAND_PALE } from '@/components/brand';
 
 /** Marketing palette: orange brand + blue/teal/violet accents */
 export const M = {
@@ -21,17 +21,19 @@ export const M = {
   line: '#e2e8f0',
   wash: '#f8fafc',
   heroBg: 'linear-gradient(145deg, #0c1222 0%, #111827 42%, #1e1b4b 100%)',
-  heroGlowOrange: 'radial-gradient(ellipse 80% 60% at 20% 20%, rgba(249,115,22,0.22) 0%, transparent 55%)',
-  heroGlowBlue: 'radial-gradient(ellipse 70% 50% at 85% 30%, rgba(59,130,246,0.2) 0%, transparent 55%)',
+  heroGlowOrange:
+    'radial-gradient(ellipse 80% 60% at 20% 20%, rgba(249,115,22,0.22) 0%, transparent 55%)',
+  heroGlowBlue:
+    'radial-gradient(ellipse 70% 50% at 85% 30%, rgba(59,130,246,0.2) 0%, transparent 55%)',
   heroBorder: 'rgba(255,255,255,0.08)',
   previewBg: '#0b1120',
   previewBorder: '#1e293b',
   previewSurface: '#111827',
   success: '#16a34a',
   warn: '#eab308',
-} as const
+} as const;
 
-export const container = (max = 960) => ({ maxWidth: max, margin: '0 auto' } as const)
+export const container = (max = 960) => ({ maxWidth: max, margin: '0 auto' }) as const;
 
 export const h2 = {
   fontSize: 32,
@@ -41,7 +43,7 @@ export const h2 = {
   margin: '0 0 12px',
   textAlign: 'center' as const,
   lineHeight: 1.25,
-}
+};
 
 export const sectionTitle = {
   fontSize: 13,
@@ -51,14 +53,14 @@ export const sectionTitle = {
   textAlign: 'center' as const,
   margin: '0 0 8px',
   textTransform: 'uppercase' as const,
-}
+};
 
 export const card = {
   background: '#fff',
   borderRadius: 16,
   border: `1px solid ${M.line}`,
   boxShadow: '0 4px 24px rgba(15,23,42,0.05)',
-} as const
+} as const;
 
 export const lead = {
   fontSize: 17,
@@ -67,7 +69,7 @@ export const lead = {
   textAlign: 'center' as const,
   maxWidth: 580,
   margin: '0 auto 40px',
-}
+};
 
 export const primaryBtn = {
   display: 'inline-flex' as const,
@@ -83,7 +85,7 @@ export const primaryBtn = {
   border: 'none',
   cursor: 'pointer',
   boxShadow: '0 4px 24px rgba(249,115,22,0.4)',
-}
+};
 
 export const blueBtn = {
   display: 'inline-flex' as const,
@@ -98,7 +100,7 @@ export const blueBtn = {
   fontSize: 15,
   border: 'none',
   boxShadow: '0 4px 20px rgba(37,99,235,0.35)',
-}
+};
 
 export const violetBtn = {
   display: 'inline-flex' as const,
@@ -113,7 +115,7 @@ export const violetBtn = {
   fontSize: 15,
   border: 'none',
   boxShadow: '0 4px 20px rgba(124,58,237,0.35)',
-}
+};
 
 export const ghostBtn = {
   display: 'inline-flex' as const,
@@ -127,7 +129,7 @@ export const ghostBtn = {
   fontWeight: 600,
   fontSize: 15,
   border: '1px solid rgba(255,255,255,0.18)',
-}
+};
 
 export const outlineBtn = {
   display: 'inline-flex' as const,
@@ -141,4 +143,4 @@ export const outlineBtn = {
   fontWeight: 600,
   fontSize: 14,
   border: `1px solid ${M.line}`,
-}
+};

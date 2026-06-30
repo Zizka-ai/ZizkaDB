@@ -34,7 +34,7 @@ class TestOTPRateLimiting:
                 response = client.post("/v1/auth/request-otp", json={"email": "user@example.com"})
                 assert response.status_code == 200
                 assert response.json() == {"message": "Code sent"}
-            
+
             assert mock_request_otp.call_count == _OTP_RATE_MAX
 
     @patch("api.auth.request_otp", new_callable=AsyncMock)
@@ -71,7 +71,7 @@ class TestOTPRateLimiting:
     @patch("api.auth.request_otp", new_callable=AsyncMock)
     def test_otp_requests_window_expiry(self, mock_request_otp):
         start_time = 1000000.0
-        
+
         # We use a mutable container to simulate advancing time
         current_time = [start_time]
         def get_time():

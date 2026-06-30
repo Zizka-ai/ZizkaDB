@@ -4,11 +4,11 @@ ZizkaDB is an operational database for AI agents. It stores event history, API k
 
 ## Supported versions
 
-| Version | Supported |
-|---------|-----------|
-| `main` branch (latest) | Yes |
-| Latest [GitHub release](https://github.com/Zizka-ai/ZizkaDB/releases) | Yes |
-| Older releases | Best effort — upgrade recommended |
+| Version                                                               | Supported                         |
+| --------------------------------------------------------------------- | --------------------------------- |
+| `main` branch (latest)                                                | Yes                               |
+| Latest [GitHub release](https://github.com/Zizka-ai/ZizkaDB/releases) | Yes                               |
+| Older releases                                                        | Best effort — upgrade recommended |
 
 Managed cloud at **db.zizka.ai** runs the latest stable deployment from this repository.
 

@@ -4,13 +4,13 @@
 
 No successful authenticated request reached the API.
 
-| Check | Action |
-|-------|--------|
-| Wrong env var name | Use `ZIZKADB_API_KEY` or `AGENTDB_API_KEY`, not `API=` |
-| Space in key | Re-paste as one continuous line |
-| Wrong URL | Must be `https://db.zizka.ai/v1/events` not `/v1_` |
-| Placeholder in curl | Use real key, not `YOUR_KEY` |
-| Revoked key | Create new key on agent page |
+| Check               | Action                                                 |
+| ------------------- | ------------------------------------------------------ |
+| Wrong env var name  | Use `ZIZKADB_API_KEY` or `AGENTDB_API_KEY`, not `API=` |
+| Space in key        | Re-paste as one continuous line                        |
+| Wrong URL           | Must be `https://db.zizka.ai/v1/events` not `/v1_`     |
+| Placeholder in curl | Use real key, not `YOUR_KEY`                           |
+| Revoked key         | Create new key on agent page                           |
 
 Test from server:
 
@@ -51,12 +51,12 @@ SDK raises `AgentScopeError` (Python/TypeScript).
 
 ## Dashboard empty but curl works
 
-| Cause | Fix |
-|-------|-----|
-| Viewing wrong agent | Open the agent name your code uses |
-| Settings test event | Goes to `dashboard-connection-test`, not your agent |
-| Different tenant | SDK key and dashboard login must be same account |
-| Self-host dev login vs email login | Use same auth path |
+| Cause                              | Fix                                                 |
+| ---------------------------------- | --------------------------------------------------- |
+| Viewing wrong agent                | Open the agent name your code uses                  |
+| Settings test event                | Goes to `dashboard-connection-test`, not your agent |
+| Different tenant                   | SDK key and dashboard login must be same account    |
+| Self-host dev login vs email login | Use same auth path                                  |
 
 Use **Test agent** on the agent page.
 

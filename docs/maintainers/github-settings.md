@@ -30,11 +30,11 @@ Do this **before** merging the first CI PR if merges are blocked.
 
 ### 2. Repository settings
 
-| Setting | Value |
-|---------|-------|
-| Default branch | `main` |
-| Merge button | **Squash merge only** |
-| Auto-delete head branches | **On** |
+| Setting                        | Value                        |
+| ------------------------------ | ---------------------------- |
+| Default branch                 | `main`                       |
+| Merge button                   | **Squash merge only**        |
+| Auto-delete head branches      | **On**                       |
 | Actions → Workflow permissions | **Read repository contents** |
 
 Path: https://github.com/Zizka-ai/ZizkaDB/settings
@@ -43,17 +43,17 @@ Path: https://github.com/Zizka-ai/ZizkaDB/settings
 
 Create a new ruleset (or let `github-setup.sh` create **main-protection**):
 
-| Rule | Setting |
-|------|---------|
-| Target | Default branch (`main`) |
-| Pull request | Required, **1** approval |
-| Dismiss stale approvals | On |
-| Require code owner review | **Off** (early stage) |
-| Required status checks | `python`, `typescript-sdk`, `dashboard` |
-| Require branches up to date | On |
-| Block force pushes | On |
-| Block deletions | On |
-| Require conversation resolution | On |
+| Rule                            | Setting                                 |
+| ------------------------------- | --------------------------------------- |
+| Target                          | Default branch (`main`)                 |
+| Pull request                    | Required, **1** approval                |
+| Dismiss stale approvals         | On                                      |
+| Require code owner review       | **Off** (early stage)                   |
+| Required status checks          | `python`, `typescript-sdk`, `dashboard` |
+| Require branches up to date     | On                                      |
+| Block force pushes              | On                                      |
+| Block deletions                 | On                                      |
+| Require conversation resolution | On                                      |
 
 **Do NOT enable (Phase 2+):**
 
@@ -98,10 +98,10 @@ No signed commits, no Code Scanning merge gate.
 
 ## Troubleshooting
 
-| Symptom | Fix |
-|---------|-----|
-| `GH013: Cannot update protected ref` | Disable ruleset 18095491 |
-| `Waiting for Code Scanning results` | Remove code scanning from ruleset |
-| `gpg: signing failed` | Remove required signed commits from ruleset |
-| PR blocked but CI green | Status check names in ruleset don't match Checks tab |
-| Skipped CI jobs block merge | Don't use path filters on required jobs until optional checks exist |
+| Symptom                              | Fix                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| `GH013: Cannot update protected ref` | Disable ruleset 18095491                                            |
+| `Waiting for Code Scanning results`  | Remove code scanning from ruleset                                   |
+| `gpg: signing failed`                | Remove required signed commits from ruleset                         |
+| PR blocked but CI green              | Status check names in ruleset don't match Checks tab                |
+| Skipped CI jobs block merge          | Don't use path filters on required jobs until optional checks exist |

@@ -2,14 +2,14 @@
 
 ## Stack
 
-| Layer | Technology |
-|-------|------------|
-| API | Python, FastAPI |
-| Database | PostgreSQL + pgvector |
-| Vector search | Qdrant (HNSW) |
-| Cache | Redis |
-| Dashboard | Next.js 14 |
-| Auth | Passwordless OTP + API keys (SHA-256 hash) |
+| Layer         | Technology                                 |
+| ------------- | ------------------------------------------ |
+| API           | Python, FastAPI                            |
+| Database      | PostgreSQL + pgvector                      |
+| Vector search | Qdrant (HNSW)                              |
+| Cache         | Redis                                      |
+| Dashboard     | Next.js 14                                 |
+| Auth          | Passwordless OTP + API keys (SHA-256 hash) |
 
 ## Data model
 
@@ -34,10 +34,10 @@ tenants
 
 ### API key scoping
 
-| `agent_id` on key | Behavior |
-|-------------------|----------|
+| `agent_id` on key   | Behavior                      |
+| ------------------- | ----------------------------- |
 | Set (e.g. `my-bot`) | Key only works for that agent |
-| NULL (tenant-wide) | Key works for any agent name |
+| NULL (tenant-wide)  | Key works for any agent name  |
 
 ## Request flow (log event)
 

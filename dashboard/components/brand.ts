@@ -1,10 +1,10 @@
 /** Brand colors + logo path */
-export const LOGO_SRC = '/zizka-logo.png'
-export const BRAND = '#f97316'
-export const BRAND_DARK = '#ea580c'
-export const BRAND_LIGHT = '#fdba74'
-export const BRAND_PALE = '#fed7aa'
-export const BRAND_MUTED = '#9a3412'
+export const LOGO_SRC = '/zizka-logo.png';
+export const BRAND = '#f97316';
+export const BRAND_DARK = '#ea580c';
+export const BRAND_LIGHT = '#fdba74';
+export const BRAND_PALE = '#fed7aa';
+export const BRAND_MUTED = '#9a3412';
 
 export const brandLogoStyle = {
   width: 28,
@@ -14,7 +14,7 @@ export const brandLogoStyle = {
   display: 'flex' as const,
   alignItems: 'center' as const,
   justifyContent: 'center' as const,
-}
+};
 
 export const brandCtaStyle = {
   fontSize: 14,
@@ -25,4 +25,4 @@ export const brandCtaStyle = {
   background: `linear-gradient(135deg, ${BRAND} 0%, ${BRAND_DARK} 100%)`,
   borderRadius: 8,
   boxShadow: '0 2px 12px rgba(249,115,22,0.35)',
-}
+};

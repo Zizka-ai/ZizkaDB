@@ -8,6 +8,30 @@ cd "$ROOT"
 echo "→ ZizkaDB local setup"
 echo ""
 
+echo "→ Installing local dev tooling"
+if [ ! -d .venv ]; then
+  python3 -m venv .venv
+  echo "✓ Created .venv"
+fi
+.venv/bin/python -m pip install -q --upgrade pip
+.venv/bin/python -m pip install -q -r requirements-dev.txt
+if .venv/bin/python -m pre_commit --version >/dev/null 2>&1; then
+  .venv/bin/python -m pre_commit install --hook-type pre-commit || true
+  echo "✓ pre-commit hooks enabled"
+else
+  echo "WARNING: pre-commit is not installed in .venv. Install it with: .venv/bin/python -m pip install -r requirements-dev.txt"
+fi
+
+if command -v npm >/dev/null 2>&1; then
+  npm install
+  npm run prepare
+  echo "✓ Node hooks enabled via Husky"
+else
+  echo "WARNING: npm not found; install Node and re-run npm install in the repo root"
+fi
+
+echo ""
+
 if ! command -v docker >/dev/null 2>&1; then
   echo "ERROR: Docker is required. Install from https://docs.docker.com/get-docker/" >&2
   exit 1

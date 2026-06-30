@@ -4,9 +4,9 @@ TypeScript SDK for [ZizkaDB](https://db.zizka.ai) — causal lineage, time trave
 
 ## Setup (managed cloud)
 
-1. [Sign up](https://db.zizka.ai/signup) at db.zizka.ai  
-2. **Dashboard → Create agent** (e.g. `my-bot`) — you get an API key for that agent  
-3. Use the **same agent name** in every `db.log()` call  
+1. [Sign up](https://db.zizka.ai/signup) at db.zizka.ai
+2. **Dashboard → Create agent** (e.g. `my-bot`) — you get an API key for that agent
+3. Use the **same agent name** in every `db.log()` call
 4. Set `ZIZKADB_API_KEY` (or pass the key to the constructor)
 
 > **Important:** The `agent` in `db.log({ agent: '...' })` must match the agent you created in the dashboard. A mismatch returns **403 AgentScopeError**.
@@ -20,18 +20,18 @@ npm install zizkadb-sdk
 ## Quickstart
 
 ```typescript
-import { ZizkaDB } from 'zizkadb-sdk'
+import { ZizkaDB } from 'zizkadb-sdk';
 
-const db = new ZizkaDB({ apiKey: 'zizkadb_live_xxxx' })
+const db = new ZizkaDB({ apiKey: 'zizkadb_live_xxxx' });
 
 const result = await db.log({
   agent: 'my-bot', // must match dashboard agent name
   event: 'tool_call',
   data: { tool: 'search' },
-})
+});
 
-const chain = await db.why(result.eventId)
-chain.print()
+const chain = await db.why(result.eventId);
+chain.print();
 ```
 
 ## Multi-agent apps (one key, many agent names)
@@ -40,19 +40,19 @@ If your app logs to **different agent ids** per user (e.g. `conv-alice`, `conv-b
 
 ## Errors
 
-| Error | Meaning |
-|-------|---------|
-| `AuthError` | Invalid or revoked API key |
+| Error             | Meaning                                      |
+| ----------------- | -------------------------------------------- |
+| `AuthError`       | Invalid or revoked API key                   |
 | `AgentScopeError` | Key is for agent A but you logged to agent B |
 
 ## Environment variables
 
-| Variable | Purpose |
-|----------|---------|
-| `ZIZKADB_API_KEY` | Your cloud API key (preferred) |
-| `AGENTDB_API_KEY` | Legacy alias for `ZIZKADB_API_KEY` |
-| `ZIZKADB_HOST` | Self-hosted API URL |
-| `ZIZKADB_TELEMETRY` | Set `false` to opt out |
+| Variable            | Purpose                            |
+| ------------------- | ---------------------------------- |
+| `ZIZKADB_API_KEY`   | Your cloud API key (preferred)     |
+| `AGENTDB_API_KEY`   | Legacy alias for `ZIZKADB_API_KEY` |
+| `ZIZKADB_HOST`      | Self-hosted API URL                |
+| `ZIZKADB_TELEMETRY` | Set `false` to opt out             |
 
 ## Links
 

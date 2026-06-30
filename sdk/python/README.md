@@ -4,9 +4,9 @@ Python SDK for [ZizkaDB](https://db.zizka.ai) — the operational database for A
 
 ## Setup (managed cloud)
 
-1. [Sign up](https://db.zizka.ai/signup) at db.zizka.ai  
-2. **Dashboard → Create agent** (e.g. `my-bot`) — you get an API key for that agent  
-3. Use the **same agent name** in every `db.log()` call  
+1. [Sign up](https://db.zizka.ai/signup) at db.zizka.ai
+2. **Dashboard → Create agent** (e.g. `my-bot`) — you get an API key for that agent
+3. Use the **same agent name** in every `db.log()` call
 4. Set `ZIZKADB_API_KEY` (or pass the key to the constructor)
 
 > **Important:** The `agent` in `db.log(agent="...", ...)` must match the agent you created in the dashboard. A mismatch returns **403 AgentScopeError**.
@@ -55,20 +55,20 @@ If your app logs to **different agent ids** per user (e.g. `conv-alice`, `conv-b
 
 ## Errors
 
-| Exception | Meaning |
-|-----------|---------|
-| `AuthError` | Invalid or revoked API key |
+| Exception         | Meaning                                      |
+| ----------------- | -------------------------------------------- |
+| `AuthError`       | Invalid or revoked API key                   |
 | `AgentScopeError` | Key is for agent A but you logged to agent B |
-| `NotFoundError` | Event or agent not found |
+| `NotFoundError`   | Event or agent not found                     |
 
 ## Environment variables
 
-| Variable | Purpose |
-|----------|---------|
-| `ZIZKADB_API_KEY` | Your cloud API key (preferred) |
-| `AGENTDB_API_KEY` | Legacy alias for `ZIZKADB_API_KEY` |
-| `ZIZKADB_HOST` | Self-hosted API URL |
-| `ZIZKADB_TELEMETRY` | Set `false` to opt out |
+| Variable            | Purpose                            |
+| ------------------- | ---------------------------------- |
+| `ZIZKADB_API_KEY`   | Your cloud API key (preferred)     |
+| `AGENTDB_API_KEY`   | Legacy alias for `ZIZKADB_API_KEY` |
+| `ZIZKADB_HOST`      | Self-hosted API URL                |
+| `ZIZKADB_TELEMETRY` | Set `false` to opt out             |
 
 ## Self-host dashboard
 

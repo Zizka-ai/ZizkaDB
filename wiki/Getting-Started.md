@@ -73,11 +73,11 @@ git clone https://github.com/Zizka-ai/ZizkaDB.git && cd ZizkaDB
 bash scripts/setup-local.sh
 ```
 
-| Service | URL |
-|---------|-----|
-| API health | http://localhost:8000/health |
-| Swagger | http://localhost:8000/swagger |
-| Dashboard | http://localhost:3001/login → **Open my dashboard →** |
+| Service    | URL                                                   |
+| ---------- | ----------------------------------------------------- |
+| API health | http://localhost:8000/health                          |
+| Swagger    | http://localhost:8000/swagger                         |
+| Dashboard  | http://localhost:3001/login → **Open my dashboard →** |
 
 Local dev uses auto-injected dev key — no signup required.
 

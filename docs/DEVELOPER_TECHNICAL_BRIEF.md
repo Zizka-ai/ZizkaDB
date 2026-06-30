@@ -1,12 +1,12 @@
 # ZizkaDB — Developer Technical Brief
 
-**Audience:** Marketing / sales talking to software engineers, ML engineers, and agent builders.  
-**Purpose:** Answer technical questions accurately without overstating the product.  
-**Last updated:** May 2026  
-**Product URL:** https://db.zizka.ai  
-**Docs:** https://db.zizka.ai/docs  
-**API explorer:** https://db.zizka.ai/swagger  
-**GitHub:** https://github.com/Zizka-ai/ZizkaDB  
+**Audience:** Marketing / sales talking to software engineers, ML engineers, and agent builders.
+**Purpose:** Answer technical questions accurately without overstating the product.
+**Last updated:** May 2026
+**Product URL:** https://db.zizka.ai
+**Docs:** https://db.zizka.ai/docs
+**API explorer:** https://db.zizka.ai/swagger
+**GitHub:** https://github.com/Zizka-ai/ZizkaDB
 
 ---
 
@@ -18,15 +18,15 @@
 
 ## 2. What ZizkaDB is — and is not
 
-| ZizkaDB **is** | ZizkaDB **is not** |
-|----------------|-------------------|
-| An **event store + memory layer** for agents | A vector DB you query only by embedding similarity |
-| **Framework-agnostic** (Claude, OpenAI, LangChain, custom code) | Locked to one LLM vendor or one orchestration framework |
-| **Causal** (parent → child event links) | A chat transcript dump |
-| **Self-hostable** (Docker, full features, free) | SaaS-only |
-| **Model-agnostic** for logging; embeddings use OpenAI for semantic search | A replacement for your LLM |
+| ZizkaDB **is**                                                            | ZizkaDB **is not**                                      |
+| ------------------------------------------------------------------------- | ------------------------------------------------------- |
+| An **event store + memory layer** for agents                              | A vector DB you query only by embedding similarity      |
+| **Framework-agnostic** (Claude, OpenAI, LangChain, custom code)           | Locked to one LLM vendor or one orchestration framework |
+| **Causal** (parent → child event links)                                   | A chat transcript dump                                  |
+| **Self-hostable** (Docker, full features, free)                           | SaaS-only                                               |
+| **Model-agnostic** for logging; embeddings use OpenAI for semantic search | A replacement for your LLM                              |
 
-**Analogy for developers:** “Think Postgres for agent *decisions*, plus lineage, semantic recall, and drift detection — not another Pinecone index.”
+**Analogy for developers:** “Think Postgres for agent _decisions_, plus lineage, semantic recall, and drift detection — not another Pinecone index.”
 
 ---
 
@@ -35,9 +35,9 @@
 When you ship agents to production, teams hit the same walls:
 
 1. **“Why did it do that?”** — Tool calls and replies are disconnected; you cannot walk backward from a bad output to the input that caused it.
-2. **“What did it know at the time?”** — Chat logs are not reconstructible agent *state* at a timestamp.
+2. **“What did it know at the time?”** — Chat logs are not reconstructible agent _state_ at a timestamp.
 3. **“Is this agent broken or just different?”** — Prompt changes, model upgrades, and tool additions change behavior silently.
-4. **“Our memory is a black box”** — Vendor memory (Claude/OpenAI) does not live in *your* codebase, audit trail, or GDPR erasure story.
+4. **“Our memory is a black box”** — Vendor memory (Claude/OpenAI) does not live in _your_ codebase, audit trail, or GDPR erasure story.
 
 ZizkaDB is built for **production debugging, compliance, and cross-session memory you control**.
 
@@ -62,7 +62,7 @@ Optional: `session_id` (groups a conversation/run), `metadata` (tenant-defined t
 
 ### 4.2 Causal lineage
 
-Pass `parent_id` (Python) / `parentId` (TypeScript) to say *this event happened because of that one*.
+Pass `parent_id` (Python) / `parentId` (TypeScript) to say _this event happened because of that one_.
 
 ```python
 msg  = await db.log(agent="bot", event="user_message", data={...})
@@ -107,9 +107,9 @@ context = await db.context_for(agent="support-bot", task="user asking about bill
 
 After enough sessions (with `session_id` on logs), ZizkaDB compares **recent** behavior vs **historical baseline**:
 
-- Event-type distribution  
-- Parent→child transition patterns  
-- Session length, error rate  
+- Event-type distribution
+- Parent→child transition patterns
+- Session length, error rate
 
 Returns a **drift score** (0 = identical, 1 = totally different) and verdict: `stable`, `minor_drift`, `noticeable_drift`, `significant_drift`.
 
@@ -123,7 +123,7 @@ baseline = await db.baseline(agent="support-bot", recent_window=50)
 
 ### 4.7 Session diff & GDPR forget
 
-- **`memory_diff(session_id)`** — what changed in a session (API: `GET /v1/memory/diff/{session_id}`).  
+- **`memory_diff(session_id)`** — what changed in a session (API: `GET /v1/memory/diff/{session_id}`).
 - **`forget(filter_key, filter_value)`** — delete all events matching metadata (e.g. `user_id`, `email`) for GDPR erasure (API: `DELETE /v1/memory/forget`).
 
 ### 4.8 Audit trail
@@ -134,12 +134,12 @@ Events are **append-only** with per-event checksums. Position as tamper-evident 
 
 ## 5. How developers integrate (four paths — same backend)
 
-| Path | Install | Best for |
-|------|---------|----------|
-| **Python SDK** | `pip install zizkadb-sdk` | FastAPI agents, notebooks, batch jobs |
-| **TypeScript SDK** | `npm install zizkadb-sdk` | Node, Bun, Deno, edge workers |
-| **MCP server** | `uvx zizkadb-mcp` | Claude Desktop, Cursor, Windsurf — **no app code changes** |
-| **REST API** | `curl` / any HTTP client | Go, Rust, Java, Ruby, mobile |
+| Path               | Install                   | Best for                                                   |
+| ------------------ | ------------------------- | ---------------------------------------------------------- |
+| **Python SDK**     | `pip install zizkadb-sdk` | FastAPI agents, notebooks, batch jobs                      |
+| **TypeScript SDK** | `npm install zizkadb-sdk` | Node, Bun, Deno, edge workers                              |
+| **MCP server**     | `uvx zizkadb-mcp`         | Claude Desktop, Cursor, Windsurf — **no app code changes** |
+| **REST API**       | `curl` / any HTTP client  | Go, Rust, Java, Ruby, mobile                               |
 
 **Cloud (managed):**
 
@@ -178,16 +178,16 @@ db = ZizkaDB(host="http://localhost:8000")  # or DEV_API_KEY for local dev
 
 **Self-hosted MCP:** set `ZIZKADB_HOST` to your API URL.
 
-| MCP tool | What it does |
-|----------|----------------|
-| `log_event` | Log action with optional causal parent |
-| `search_memory` | Semantic search over history |
-| `get_context` | Prompt-ready memory block |
-| `why` | Causal chain for an event |
-| `query_events` | List/filter recent events |
-| `time_travel` | State at a timestamp |
-| `memory_diff` | Session summary |
-| `forget` | GDPR delete by filter |
+| MCP tool        | What it does                           |
+| --------------- | -------------------------------------- |
+| `log_event`     | Log action with optional causal parent |
+| `search_memory` | Semantic search over history           |
+| `get_context`   | Prompt-ready memory block              |
+| `why`           | Causal chain for an event              |
+| `query_events`  | List/filter recent events              |
+| `time_travel`   | State at a timestamp                   |
+| `memory_diff`   | Session summary                        |
+| `forget`        | GDPR delete by filter                  |
 
 **MCP license:** MIT (SDK/core stack: AGPL-3.0 — see §12).
 
@@ -200,27 +200,27 @@ Base URL: `https://db.zizka.ai` (self-host: your host, port **8000**).
 **Auth:** `Authorization: Bearer <token>`
 
 - Production API keys: prefix **`zizkadb_live_`**
-- Dashboard login uses JWT (OTP email)  
+- Dashboard login uses JWT (OTP email)
 - Self-host dev: optional `DEV_API_KEY` in `.env` (never in production)
 
-| Area | Method | Path | Purpose |
-|------|--------|------|---------|
-| Events | POST | `/v1/events` | Log event |
-| Events | GET | `/v1/events` | Query events |
-| Events | GET | `/v1/events/{id}/why` | Causal chain |
-| Events | GET | `/v1/events/at` | Time travel |
-| Search | POST | `/v1/search` | Semantic search |
-| Memory | POST | `/v1/memory/context` | Context block |
-| Memory | GET | `/v1/memory/diff/{session_id}` | Session diff |
-| Memory | DELETE | `/v1/memory/forget` | GDPR erase |
-| Agents | GET | `/v1/agents` | List agents |
-| Agents | GET | `/v1/agents/{id}/baseline` | Drift / baseline |
-| Agents | GET | `/v1/agents/{id}/sessions` | Sessions |
-| Auth | POST | `/v1/auth/request-otp` | Email OTP |
-| Auth | POST | `/v1/auth/verify-otp` | Get JWT |
-| Auth | POST | `/v1/auth/api-keys` | Create API key |
-| Health | GET | `/health` | Status check |
-| Stats | GET | `/v1/stats` | Public install counters (homepage) |
+| Area   | Method | Path                           | Purpose                            |
+| ------ | ------ | ------------------------------ | ---------------------------------- |
+| Events | POST   | `/v1/events`                   | Log event                          |
+| Events | GET    | `/v1/events`                   | Query events                       |
+| Events | GET    | `/v1/events/{id}/why`          | Causal chain                       |
+| Events | GET    | `/v1/events/at`                | Time travel                        |
+| Search | POST   | `/v1/search`                   | Semantic search                    |
+| Memory | POST   | `/v1/memory/context`           | Context block                      |
+| Memory | GET    | `/v1/memory/diff/{session_id}` | Session diff                       |
+| Memory | DELETE | `/v1/memory/forget`            | GDPR erase                         |
+| Agents | GET    | `/v1/agents`                   | List agents                        |
+| Agents | GET    | `/v1/agents/{id}/baseline`     | Drift / baseline                   |
+| Agents | GET    | `/v1/agents/{id}/sessions`     | Sessions                           |
+| Auth   | POST   | `/v1/auth/request-otp`         | Email OTP                          |
+| Auth   | POST   | `/v1/auth/verify-otp`          | Get JWT                            |
+| Auth   | POST   | `/v1/auth/api-keys`            | Create API key                     |
+| Health | GET    | `/health`                      | Status check                       |
+| Stats  | GET    | `/v1/stats`                    | Public install counters (homepage) |
 
 Interactive docs: **https://db.zizka.ai/swagger** (FastAPI OpenAPI).
 
@@ -228,18 +228,18 @@ Interactive docs: **https://db.zizka.ai/swagger** (FastAPI OpenAPI).
 
 ## 8. SDK method cheat sheet
 
-| Method | Purpose |
-|--------|---------|
-| `log(...)` | Write event |
-| `why(event_id)` | Causal chain |
-| `search(query, ...)` | Semantic search |
-| `at(agent, timestamp)` | Time travel |
-| `query(agent, ...)` | List events |
-| `context_for(agent, task, max_tokens?)` | Prompt memory |
-| `baseline(agent, recent_window?)` | Drift detection |
-| `memory_diff(session_id)` | Session summary |
-| `forget(filter_key, filter_value)` | GDPR delete |
-| `agents()` | List agents |
+| Method                                  | Purpose         |
+| --------------------------------------- | --------------- |
+| `log(...)`                              | Write event     |
+| `why(event_id)`                         | Causal chain    |
+| `search(query, ...)`                    | Semantic search |
+| `at(agent, timestamp)`                  | Time travel     |
+| `query(agent, ...)`                     | List events     |
+| `context_for(agent, task, max_tokens?)` | Prompt memory   |
+| `baseline(agent, recent_window?)`       | Drift detection |
+| `memory_diff(session_id)`               | Session summary |
+| `forget(filter_key, filter_value)`      | GDPR delete     |
+| `agents()`                              | List agents     |
 
 Python 3.10+, TypeScript works on Node/Deno/Bun/edge.
 
@@ -249,12 +249,12 @@ Python 3.10+, TypeScript works on Node/Deno/Bun/edge.
 
 **Managed production (db.zizka.ai):**
 
-- **Dashboard:** Next.js 14 (PM2 on port 3001 behind nginx)  
-- **API:** FastAPI (Python), Docker, port 8000  
-- **Postgres** + **pgvector** — events, tenants, embeddings  
-- **Qdrant** — vector search  
-- **Redis** — caching/sessions  
-- **Nginx** — TLS, routes `/` → frontend, `/v1/` → API  
+- **Dashboard:** Next.js 14 (PM2 on port 3001 behind nginx)
+- **API:** FastAPI (Python), Docker, port 8000
+- **Postgres** + **pgvector** — events, tenants, embeddings
+- **Qdrant** — vector search
+- **Redis** — caching/sessions
+- **Nginx** — TLS, routes `/` → frontend, `/v1/` → API
 
 **Self-host (Docker Compose):**
 
@@ -274,9 +274,9 @@ Stack: postgres (pgvector), qdrant, redis, api. Dashboard optional (`npm run dev
 
 ## 10. Authentication & onboarding flow
 
-1. Sign up at **https://db.zizka.ai/signup** — email OTP, no password.  
-2. Dashboard → **Settings** → **Create API key** (`zizkadb_live_...`).  
-3. Paste key into SDK, MCP env, or `Authorization: Bearer` header.  
+1. Sign up at **https://db.zizka.ai/signup** — email OTP, no password.
+2. Dashboard → **Settings** → **Create API key** (`zizkadb_live_...`).
+3. Paste key into SDK, MCP env, or `Authorization: Bearer` header.
 4. Start logging from agent code or MCP.
 
 **Multi-tenant:** API keys are scoped to a tenant/project; events are isolated per tenant.
@@ -285,11 +285,11 @@ Stack: postgres (pgvector), qdrant, redis, api. Dashboard optional (`npm run dev
 
 ## 11. Pricing (managed cloud)
 
-| Plan | Price | Highlights |
-|------|-------|------------|
-| **Self-Hosted** | Free forever | Full feature set, your infra, Docker, community support |
-| **Pro** | €39/mo | 100M events, 90-day retention, 3 projects, email support, **1-month free trial**, no credit card to start |
-| **Team** | €99/mo | 1B events, 1-year retention, 10 seats, priority support, 1-month free trial |
+| Plan            | Price        | Highlights                                                                                                |
+| --------------- | ------------ | --------------------------------------------------------------------------------------------------------- |
+| **Self-Hosted** | Free forever | Full feature set, your infra, Docker, community support                                                   |
+| **Pro**         | €39/mo       | 100M events, 90-day retention, 3 projects, email support, **1-month free trial**, no credit card to start |
+| **Team**        | €99/mo       | 1B events, 1-year retention, 10 seats, priority support, 1-month free trial                               |
 
 **Line for developers:** “Free if you self-host; paid if you don’t want to run Postgres/Qdrant yourself.”
 
@@ -297,12 +297,12 @@ Stack: postgres (pgvector), qdrant, redis, api. Dashboard optional (`npm run dev
 
 ## 12. Licensing (do not hand-wave this)
 
-| Component | License |
-|-----------|---------|
-| Core API + self-host stack | **AGPL-3.0** |
-| Python SDK | **AGPL-3.0** |
-| TypeScript SDK | **AGPL-3.0** (per package metadata) |
-| MCP server | **MIT** |
+| Component                  | License                             |
+| -------------------------- | ----------------------------------- |
+| Core API + self-host stack | **AGPL-3.0**                        |
+| Python SDK                 | **AGPL-3.0**                        |
+| TypeScript SDK             | **AGPL-3.0** (per package metadata) |
+| MCP server                 | **MIT**                             |
 
 **What to say:** “Open source, self-hostable. AGPL applies to the core platform and SDKs — if you modify and distribute the server, AGPL obligations apply. MCP is MIT for easy IDE integration. Legal review for commercial embedding is normal.”
 
@@ -314,17 +314,17 @@ Stack: postgres (pgvector), qdrant, redis, api. Dashboard optional (`npm run dev
 
 Use the comparison on the homepage; verify competitors’ docs before live debates.
 
-| Capability | LangSmith | Mem0 | Pinecone | **ZizkaDB** |
-|------------|-----------|------|----------|-------------|
-| Agent event logging | ✓ | ✗ | ✗ | ✓ |
-| Causal lineage | ~ | ✗ | ✗ | ✓ |
-| Time travel (state at T) | ✗ | ✗ | ✗ | ✓ |
-| Semantic search on history | ✗ | ✓ | ✓ | ✓ |
-| Any framework/model | ~ | ✓ | ✓ | ✓ |
-| Behavioral baseline / drift | ✗ | ✗ | ✗ | ✓ |
-| Cross-agent fleet queries | ✗ | ✗ | ✗ | ✓ |
-| Per-event checksum on export | ✗ | ✗ | ✗ | ✓ |
-| Self-host free | ✓ | ✓ | ✗ | ✓ |
+| Capability                   | LangSmith | Mem0 | Pinecone | **ZizkaDB** |
+| ---------------------------- | --------- | ---- | -------- | ----------- |
+| Agent event logging          | ✓         | ✗    | ✗        | ✓           |
+| Causal lineage               | ~         | ✗    | ✗        | ✓           |
+| Time travel (state at T)     | ✗         | ✗    | ✗        | ✓           |
+| Semantic search on history   | ✗         | ✓    | ✓        | ✓           |
+| Any framework/model          | ~         | ✓    | ✓        | ✓           |
+| Behavioral baseline / drift  | ✗         | ✗    | ✗        | ✓           |
+| Cross-agent fleet queries    | ✗         | ✗    | ✗        | ✓           |
+| Per-event checksum on export | ✗         | ✗    | ✗        | ✓           |
+| Self-host free               | ✓         | ✓    | ✗        | ✓           |
 
 **~** = partial (e.g. LangSmith is strongest inside LangChain ecosystem).
 
@@ -334,31 +334,31 @@ Use the comparison on the homepage; verify competitors’ docs before live debat
 
 ## 14. FAQ — hard questions from developers
 
-**Q: How is this different from LangSmith?**  
+**Q: How is this different from LangSmith?**
 A: LangSmith is excellent for LangChain-centric tracing and evals. ZizkaDB is a **standalone operational DB** with causal trees, time travel, cross-agent queries, and behavioral baselines — works with any stack.
 
-**Q: How is this different from Mem0?**  
+**Q: How is this different from Mem0?**
 A: Mem0 focuses on long-term memory retrieval for prompts. ZizkaDB adds **causal lineage, session replay, drift baselines, and audit-oriented event storage**.
 
-**Q: Do we need to replace Pinecone?**  
+**Q: Do we need to replace Pinecone?**
 A: No. Pinecone is for RAG document search. ZizkaDB is for **agent decision history**. Many teams use both.
 
-**Q: Does it wrap our LLM calls?**  
+**Q: Does it wrap our LLM calls?**
 A: No. You add `db.log()` (or MCP `log_event`) where you already handle messages/tools. One line for causal link: `parent_id=...`.
 
-**Q: Latency impact?**  
+**Q: Latency impact?**
 A: Logging is async HTTP; embedding generation is non-blocking on the hot path. Typical integration is fire-and-forget `await db.log(...)`.
 
-**Q: What if OpenAI is down / we don’t use OpenAI?**  
+**Q: What if OpenAI is down / we don’t use OpenAI?**
 A: Logging and causal features work without embeddings. Semantic search and `context_for` need embeddings (today: OpenAI). Other embedding providers = roadmap; say “check with team” unless confirmed shipped.
 
-**Q: PII / GDPR?**  
+**Q: PII / GDPR?**
 A: You control what goes in `data` and `metadata`. `forget()` deletes by metadata filter. Self-host keeps data on your infra.
 
-**Q: Can we use it in regulated environments?**  
+**Q: Can we use it in regulated environments?**
 A: Self-host + your VPC is the usual answer. Managed cloud: discuss DPA, retention, and region with founders — don’t invent certifications.
 
-**Q: PyPI package confusion?**  
+**Q: PyPI package confusion?**
 A: Install **`zizkadb-sdk`** (not the unrelated `agentdb` package on PyPI). Import: `from zizkadb import ZizkaDB`.
 
 ---
@@ -394,11 +394,11 @@ curl -X POST https://db.zizka.ai/v1/events \
 
 ## 16. What marketing should **not** claim (yet)
 
-- “Real-time alerts” everywhere — baseline exists; **alerting product** may be partial/roadmap (homepage mentions “Alerts coming” for session 50 narrative).  
-- “Replaces your observability stack” — it complements APM/logs; different layer.  
-- “Detects hallucinations” — drift is **behavioral statistics**, not truth verification.  
-- “SOC2 / HIPAA certified” — unless explicitly launched.  
-- “Works offline” — needs API reachability (or self-host on localhost).  
+- “Real-time alerts” everywhere — baseline exists; **alerting product** may be partial/roadmap (homepage mentions “Alerts coming” for session 50 narrative).
+- “Replaces your observability stack” — it complements APM/logs; different layer.
+- “Detects hallucinations” — drift is **behavioral statistics**, not truth verification.
+- “SOC2 / HIPAA certified” — unless explicitly launched.
+- “Works offline” — needs API reachability (or self-host on localhost).
 
 When unsure: **“Let me connect you to engineering”** or point to **docs + GitHub**.
 
@@ -406,26 +406,26 @@ When unsure: **“Let me connect you to engineering”** or point to **docs + Gi
 
 ## 17. Elevator pitches by persona
 
-| Persona | Pitch |
-|---------|-------|
-| **Backend engineer** | “One `log()` per decision, `parent_id` for causality, `why()` when prod breaks.” |
-| **AI/ML engineer** | “Semantic search + time travel + drift baselines without locking to LangChain.” |
-| **Platform / infra** | “Self-host Postgres+Qdrant stack, AGPL, Docker in 60 seconds.” |
-| **Cursor/Claude power user** | “Add MCP — your IDE gets memory, search, and why() with no SDK refactor.” |
-| **CTO / head of AI** | “Operational DB for agents: audit trail, GDPR forget, fleet baselines — not another vector index.” |
+| Persona                      | Pitch                                                                                              |
+| ---------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Backend engineer**         | “One `log()` per decision, `parent_id` for causality, `why()` when prod breaks.”                   |
+| **AI/ML engineer**           | “Semantic search + time travel + drift baselines without locking to LangChain.”                    |
+| **Platform / infra**         | “Self-host Postgres+Qdrant stack, AGPL, Docker in 60 seconds.”                                     |
+| **Cursor/Claude power user** | “Add MCP — your IDE gets memory, search, and why() with no SDK refactor.”                          |
+| **CTO / head of AI**         | “Operational DB for agents: audit trail, GDPR forget, fleet baselines — not another vector index.” |
 
 ---
 
 ## 18. Links & contacts
 
-| Resource | URL |
-|----------|-----|
-| Product | https://db.zizka.ai |
-| Sign up | https://db.zizka.ai/signup |
-| Docs | https://db.zizka.ai/docs |
-| API explorer | https://db.zizka.ai/swagger |
-| GitHub | https://github.com/Zizka-ai/ZizkaDB |
-| Company | Zizka AI |
+| Resource     | URL                                 |
+| ------------ | ----------------------------------- |
+| Product      | https://db.zizka.ai                 |
+| Sign up      | https://db.zizka.ai/signup          |
+| Docs         | https://db.zizka.ai/docs            |
+| API explorer | https://db.zizka.ai/swagger         |
+| GitHub       | https://github.com/Zizka-ai/ZizkaDB |
+| Company      | Zizka AI                            |
 
 ---
 
@@ -444,4 +444,4 @@ License:     AGPL (core/SDK) · MIT (MCP)
 
 ---
 
-*Internal doc for Zizka AI marketing. For engineering changes, verify against `main` branch and live docs before external publication.*
+_Internal doc for Zizka AI marketing. For engineering changes, verify against `main` branch and live docs before external publication._

@@ -1,8 +1,8 @@
 # REST API
 
-**Base URL:** `https://db.zizka.ai`  
-**Prefix:** `/v1/...`  
-**Auth:** `Authorization: Bearer <api_key>` or dashboard JWT  
+**Base URL:** `https://db.zizka.ai`
+**Prefix:** `/v1/...`
+**Auth:** `Authorization: Bearer <api_key>` or dashboard JWT
 **Explorer:** [db.zizka.ai/swagger](https://db.zizka.ai/swagger)
 
 ## Log event
@@ -54,25 +54,25 @@ GET /v1/events/{event_id}/why?depth=10
 
 ## Agents
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/v1/agents` | List agents |
-| POST | `/v1/agents` | Create agent + first key |
-| DELETE | `/v1/agents/{id}` | Delete agent + events + keys |
-| POST | `/v1/agents/{id}/test-event` | Dashboard test (JWT) |
-| GET | `/v1/agents/{id}/api-keys` | List keys |
-| POST | `/v1/agents/{id}/api-keys` | Create key |
-| DELETE | `/v1/agents/{id}/api-keys/{key_id}` | Revoke key |
+| Method | Path                                | Description                  |
+| ------ | ----------------------------------- | ---------------------------- |
+| GET    | `/v1/agents`                        | List agents                  |
+| POST   | `/v1/agents`                        | Create agent + first key     |
+| DELETE | `/v1/agents/{id}`                   | Delete agent + events + keys |
+| POST   | `/v1/agents/{id}/test-event`        | Dashboard test (JWT)         |
+| GET    | `/v1/agents/{id}/api-keys`          | List keys                    |
+| POST   | `/v1/agents/{id}/api-keys`          | Create key                   |
+| DELETE | `/v1/agents/{id}/api-keys/{key_id}` | Revoke key                   |
 
 ## Auth / keys
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/v1/auth/request-otp` | Login OTP |
-| POST | `/v1/auth/verify-otp` | Get JWT |
-| POST | `/v1/auth/api-keys` | Tenant-wide key |
-| GET | `/v1/auth/api-keys` | List all keys |
-| DELETE | `/v1/auth/api-keys/{id}` | Revoke key |
+| Method | Path                     | Description     |
+| ------ | ------------------------ | --------------- |
+| POST   | `/v1/auth/request-otp`   | Login OTP       |
+| POST   | `/v1/auth/verify-otp`    | Get JWT         |
+| POST   | `/v1/auth/api-keys`      | Tenant-wide key |
+| GET    | `/v1/auth/api-keys`      | List all keys   |
+| DELETE | `/v1/auth/api-keys/{id}` | Revoke key      |
 
 ## Health
 
@@ -83,9 +83,9 @@ GET /health
 
 ## Common status codes
 
-| Code | Meaning |
-|------|---------|
-| 201 | Event created |
-| 401 | Invalid/revoked API key |
-| 403 | Agent-scoped key used with wrong agent name |
-| 404 | Agent or event not found |
+| Code | Meaning                                     |
+| ---- | ------------------------------------------- |
+| 201  | Event created                               |
+| 401  | Invalid/revoked API key                     |
+| 403  | Agent-scoped key used with wrong agent name |
+| 404  | Agent or event not found                    |

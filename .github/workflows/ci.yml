@@ -22,7 +22,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: '3.12'
           cache: pip
           cache-dependency-path: |
             core/requirements.txt
@@ -54,7 +54,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
           cache: npm
           cache-dependency-path: sdk/typescript/package-lock.json
 
@@ -72,10 +72,12 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
           cache: npm
           cache-dependency-path: dashboard/package-lock.json
 
       - run: npm ci
       - run: npm run lint:ci
+      - run: npm run format:check
+      - run: npm run typecheck
       - run: npm run build

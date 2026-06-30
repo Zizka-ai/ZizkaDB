@@ -6,16 +6,16 @@ This guide explains how to get started, what we expect in pull requests, and the
 
 **Quick links**
 
-| Resource | URL |
-|----------|-----|
-| Repository | https://github.com/Zizka-ai/ZizkaDB |
-| Live demo | https://db.zizka.ai |
-| Docs | https://db.zizka.ai/docs |
-| Architecture / trust | https://db.zizka.ai/trust |
-| Wiki | https://github.com/Zizka-ai/ZizkaDB/wiki |
-| Community board | https://db.zizka.ai/community |
-| Issues | https://github.com/Zizka-ai/ZizkaDB/issues |
-| Security | [SECURITY.md](SECURITY.md) |
+| Resource             | URL                                        |
+| -------------------- | ------------------------------------------ |
+| Repository           | https://github.com/Zizka-ai/ZizkaDB        |
+| Live demo            | https://db.zizka.ai                        |
+| Docs                 | https://db.zizka.ai/docs                   |
+| Architecture / trust | https://db.zizka.ai/trust                  |
+| Wiki                 | https://github.com/Zizka-ai/ZizkaDB/wiki   |
+| Community board      | https://db.zizka.ai/community              |
+| Issues               | https://github.com/Zizka-ai/ZizkaDB/issues |
+| Security             | [SECURITY.md](SECURITY.md)                 |
 
 Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before participating.
 
@@ -25,17 +25,17 @@ Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before participating.
 
 You do **not** need a large PR to help.
 
-| Type | Examples |
-|------|----------|
-| **Report bugs** | Events not appearing, drift score wrong, MCP tool failing — open a [GitHub issue](https://github.com/Zizka-ai/ZizkaDB/issues) with repro steps |
-| **Improve docs** | README, wiki, `dashboard/app/docs`, integration guides |
-| **Fix issues** | Pick an open issue or ask on the [community board](https://db.zizka.ai/community) |
-| **SDKs & MCP** | Python / TypeScript SDK, `zizkadb-mcp` tools |
-| **Integrations** | LangChain, CrewAI, OpenAI Agents, new framework adapters |
-| **Dashboard** | Agent views, drift UI, admin tools |
-| **Core API** | Event pipeline, search, baselines, auth |
-| **Examples** | Minimal demos under `examples/` |
-| **Discuss design** | Open an issue or community post before large architectural changes |
+| Type               | Examples                                                                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Report bugs**    | Events not appearing, drift score wrong, MCP tool failing — open a [GitHub issue](https://github.com/Zizka-ai/ZizkaDB/issues) with repro steps |
+| **Improve docs**   | README, wiki, `dashboard/app/docs`, integration guides                                                                                         |
+| **Fix issues**     | Pick an open issue or ask on the [community board](https://db.zizka.ai/community)                                                              |
+| **SDKs & MCP**     | Python / TypeScript SDK, `zizkadb-mcp` tools                                                                                                   |
+| **Integrations**   | LangChain, CrewAI, OpenAI Agents, new framework adapters                                                                                       |
+| **Dashboard**      | Agent views, drift UI, admin tools                                                                                                             |
+| **Core API**       | Event pipeline, search, baselines, auth                                                                                                        |
+| **Examples**       | Minimal demos under `examples/`                                                                                                                |
+| **Discuss design** | Open an issue or community post before large architectural changes                                                                             |
 
 If you are unsure where to start, say hello on the [community board](https://db.zizka.ai/community) or open a **“Looking for guidance”** issue.
 
@@ -45,10 +45,10 @@ If you are unsure where to start, say hello on the [community board](https://db.
 
 ZizkaDB is open source with a split license:
 
-| Component | License |
-|-----------|---------|
+| Component                                  | License             |
+| ------------------------------------------ | ------------------- |
 | API, dashboard, Python SDK, TypeScript SDK | [AGPL-3.0](LICENSE) |
-| MCP server (`mcp/`) | [MIT](mcp/LICENSE) |
+| MCP server (`mcp/`)                        | [MIT](mcp/LICENSE)  |
 
 By contributing code, you agree that your contributions are licensed under the same license as the files you modify. If you contribute to AGPL-covered code, downstream users who run a modified network-facing version must comply with AGPL obligations (source availability, etc.).
 
@@ -73,11 +73,11 @@ cd ZizkaDB
 bash scripts/setup-local.sh
 ```
 
-| Service | URL |
-|---------|-----|
-| API health | http://localhost:8000/health |
-| Swagger | http://localhost:8000/swagger |
-| Dashboard | http://localhost:3001/login → **Open my dashboard →** |
+| Service    | URL                                                   |
+| ---------- | ----------------------------------------------------- |
+| API health | http://localhost:8000/health                          |
+| Swagger    | http://localhost:8000/swagger                         |
+| Dashboard  | http://localhost:3001/login → **Open my dashboard →** |
 
 Local dev uses `DEV_API_KEY=zizkadb_dev_local` (see `infra/.env`). The Python SDK auto-injects this key against `localhost:8000`.
 
@@ -93,15 +93,24 @@ python scripts/demo-why.py
 Install local validation once after cloning:
 
 ```bash
-cd core
-pip install -r requirements-dev.txt
+cd ZizkaDB
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-dev.txt
 pre-commit install
 ```
 
-Then use:
+Then run:
 
 ```bash
 pre-commit run --all-files
+```
+
+If you do not activate the virtual environment, use:
+
+```bash
+.venv/bin/pre-commit install
+.venv/bin/pre-commit run --all-files
 ```
 
 This installs a local hook that runs Python and dashboard lint checks before commits.
@@ -276,14 +285,14 @@ Rules:
 
 ## Testing expectations
 
-| Change type | Minimum bar |
-|-------------|-------------|
-| Bug fix | Test that reproduces the bug, or smoke test path |
-| API / auth | `pytest` in `core/tests/` |
-| Schema | Manual test: fresh install + migrate existing volume |
-| SDK | Unit test or extend `core/tests/test_smoke.py` |
-| Dashboard | `npm run build` passes; manual check described in PR |
-| Docs only | Link check; no tests required |
+| Change type | Minimum bar                                          |
+| ----------- | ---------------------------------------------------- |
+| Bug fix     | Test that reproduces the bug, or smoke test path     |
+| API / auth  | `pytest` in `core/tests/`                            |
+| Schema      | Manual test: fresh install + migrate existing volume |
+| SDK         | Unit test or extend `core/tests/test_smoke.py`       |
+| Dashboard   | `npm run build` passes; manual check described in PR |
+| Docs only   | Link check; no tests required                        |
 
 ```bash
 bash scripts/smoke-test.sh

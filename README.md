@@ -99,10 +99,10 @@ cp .env.example infra/.env
 docker compose -f infra/docker-compose.yml -f infra/docker-compose.dashboard.yml up -d
 ```
 
-| Service | URL |
-|---------|-----|
-| API | http://localhost:8000/health |
-| Swagger | http://localhost:8000/swagger |
+| Service   | URL                                                   |
+| --------- | ----------------------------------------------------- |
+| API       | http://localhost:8000/health                          |
+| Swagger   | http://localhost:8000/swagger                         |
 | Dashboard | http://localhost:3001/login → **Open my dashboard →** |
 
 ### Run the demo
@@ -191,12 +191,12 @@ Re-record a cinematic terminal GIF: [docs/assets/RECORD_DEMO.md](docs/assets/REC
 
 ## What is ZizkaDB?
 
-| Problem | Primitive |
-|---------|-----------|
-| Why did the agent do that? | `parent_id` → `why(event_id)` |
-| What did it know at 2pm Tuesday? | `at(agent, timestamp)` |
-| Find similar past failures | `search()` / `context_for()` |
-| Is this agent drifting? | Baselines + fleet views |
+| Problem                          | Primitive                     |
+| -------------------------------- | ----------------------------- |
+| Why did the agent do that?       | `parent_id` → `why(event_id)` |
+| What did it know at 2pm Tuesday? | `at(agent, timestamp)`        |
+| Find similar past failures       | `search()` / `context_for()`  |
+| Is this agent drifting?          | Baselines + fleet views       |
 
 **Not** a vector DB alone. **Not** traces alone. **Operational** data for agents in production.
 
@@ -204,15 +204,15 @@ Re-record a cinematic terminal GIF: [docs/assets/RECORD_DEMO.md](docs/assets/REC
 
 ## Integrate
 
-| Path | Getting started |
-|------|-----------------|
-| **Scaffold** | `zizkadb init my-agent -t langchain` |
-| Python | `pip install zizkadb-sdk` |
-| LangChain | `pip install zizkadb-langchain` — [integrations/langchain](integrations/langchain) |
-| CrewAI | `pip install zizkadb-crewai` — [integrations/crewai](integrations/crewai) |
-| TypeScript | `npm install zizkadb-sdk` — [sdk/typescript](sdk/typescript) |
-| MCP | `uvx zizkadb-mcp` — [mcp/README.md](mcp/README.md) |
-| REST | OpenAPI at `/swagger` |
+| Path         | Getting started                                                                    |
+| ------------ | ---------------------------------------------------------------------------------- |
+| **Scaffold** | `zizkadb init my-agent -t langchain`                                               |
+| Python       | `pip install zizkadb-sdk`                                                          |
+| LangChain    | `pip install zizkadb-langchain` — [integrations/langchain](integrations/langchain) |
+| CrewAI       | `pip install zizkadb-crewai` — [integrations/crewai](integrations/crewai)          |
+| TypeScript   | `npm install zizkadb-sdk` — [sdk/typescript](sdk/typescript)                       |
+| MCP          | `uvx zizkadb-mcp` — [mcp/README.md](mcp/README.md)                                 |
+| REST         | OpenAPI at `/swagger`                                                              |
 
 Self-host: `ZizkaDB(host="http://localhost:8000")` or `ZIZKADB_HOST` for MCP.
 

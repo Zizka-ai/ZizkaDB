@@ -1,6 +1,6 @@
 # Python SDK
 
-**Package:** `zizkadb-sdk` on PyPI  
+**Package:** `zizkadb-sdk` on PyPI
 **Import:** `from zizkadb import ZizkaDB`
 
 ```bash
@@ -46,17 +46,17 @@ zizkadb init my-agent --template mcp-cursor
 
 ## Main methods
 
-| Method | Description |
-|--------|-------------|
-| `log(agent, event, data, ...)` | Append event (auto-embeds) |
-| `query(agent, ...)` | List events |
-| `why(event_id)` | Causal chain via `parent_id` |
-| `search(query, agent?)` | Semantic search |
-| `at(agent, timestamp)` | Time-travel state |
-| `context_for(agent, task)` | Prompt-ready memory block |
-| `forget(filter_key, filter_value)` | GDPR delete |
-| `baseline(agent)` | Behavioral drift signal |
-| `agents()` | List agents |
+| Method                             | Description                  |
+| ---------------------------------- | ---------------------------- |
+| `log(agent, event, data, ...)`     | Append event (auto-embeds)   |
+| `query(agent, ...)`                | List events                  |
+| `why(event_id)`                    | Causal chain via `parent_id` |
+| `search(query, agent?)`            | Semantic search              |
+| `at(agent, timestamp)`             | Time-travel state            |
+| `context_for(agent, task)`         | Prompt-ready memory block    |
+| `forget(filter_key, filter_value)` | GDPR delete                  |
+| `baseline(agent)`                  | Behavioral drift signal      |
+| `agents()`                         | List agents                  |
 
 ## Errors
 

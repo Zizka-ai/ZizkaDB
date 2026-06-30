@@ -7,18 +7,20 @@
  *
  * Nginx should proxy to http://127.0.0.1:3001 (see infra/nginx.conf).
  */
-const path = require('path')
+const path = require('path');
 
 module.exports = {
-  apps: [{
-    name: 'zizkadb-dashboard',
-    script: 'npm',
-    args: 'start',
-    cwd: path.join(__dirname),
-    env: {
-      PORT: '3001',
-      HOSTNAME: '0.0.0.0',
-      NODE_ENV: 'production',
+  apps: [
+    {
+      name: 'zizkadb-dashboard',
+      script: 'npm',
+      args: 'start',
+      cwd: path.join(__dirname),
+      env: {
+        PORT: '3001',
+        HOSTNAME: '0.0.0.0',
+        NODE_ENV: 'production',
+      },
     },
-  }],
-}
+  ],
+};

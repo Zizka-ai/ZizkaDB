@@ -1,322 +1,538 @@
-<!DOCTYPE html>
+<!doctype html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
-<head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>ZizkaDB — Developer Technical Brief</title>
-  <style>
-    /* Default styles provided by pandoc.
+  <head>
+    <meta charset="utf-8" />
+    <meta name="generator" content="pandoc" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=yes"
+    />
+    <title>ZizkaDB — Developer Technical Brief</title>
+    <style>
+      /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
     */
-    code{white-space: pre-wrap;}
-    span.smallcaps{font-variant: small-caps;}
-    div.columns{display: flex; gap: min(4vw, 1.5em);}
-    div.column{flex: auto; overflow-x: auto;}
-    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-    /* The extra [class] is a hack that increases specificity enough to
+      code {
+        white-space: pre-wrap;
+      }
+      span.smallcaps {
+        font-variant: small-caps;
+      }
+      div.columns {
+        display: flex;
+        gap: min(4vw, 1.5em);
+      }
+      div.column {
+        flex: auto;
+        overflow-x: auto;
+      }
+      div.hanging-indent {
+        margin-left: 1.5em;
+        text-indent: -1.5em;
+      }
+      /* The extra [class] is a hack that increases specificity enough to
        override a similar rule in reveal.js */
-    ul.task-list[class]{list-style: none;}
-    ul.task-list li input[type="checkbox"] {
-      font-size: inherit;
-      width: 0.8em;
-      margin: 0 0.8em 0.2em -1.6em;
-      vertical-align: middle;
-    }
-    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
-    /* CSS for syntax highlighting */
-    html { -webkit-text-size-adjust: 100%; }
-    pre > code.sourceCode { white-space: pre; position: relative; }
-    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-    pre > code.sourceCode > span:empty { height: 1.2em; }
-    .sourceCode { overflow: visible; }
-    code.sourceCode > span { color: inherit; text-decoration: inherit; }
-    div.sourceCode { margin: 1em 0; }
-    pre.sourceCode { margin: 0; }
-    @media screen {
-    div.sourceCode { overflow: auto; }
-    }
-    @media print {
-    pre > code.sourceCode { white-space: pre-wrap; }
-    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-    }
-    pre.numberSource code
-      { counter-reset: source-line 0; }
-    pre.numberSource code > span
-      { position: relative; left: -4em; counter-increment: source-line; }
-    pre.numberSource code > span > a:first-child::before
-      { content: counter(source-line);
-        position: relative; left: -1em; text-align: right; vertical-align: baseline;
-        border: none; display: inline-block;
-        -webkit-touch-callout: none; -webkit-user-select: none;
-        -khtml-user-select: none; -moz-user-select: none;
-        -ms-user-select: none; user-select: none;
-        padding: 0 4px; width: 4em;
+      ul.task-list[class] {
+        list-style: none;
+      }
+      ul.task-list li input[type='checkbox'] {
+        font-size: inherit;
+        width: 0.8em;
+        margin: 0 0.8em 0.2em -1.6em;
+        vertical-align: middle;
+      }
+      .display.math {
+        display: block;
+        text-align: center;
+        margin: 0.5rem auto;
+      }
+      /* CSS for syntax highlighting */
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      pre > code.sourceCode {
+        white-space: pre;
+        position: relative;
+      }
+      pre > code.sourceCode > span {
+        display: inline-block;
+        line-height: 1.25;
+      }
+      pre > code.sourceCode > span:empty {
+        height: 1.2em;
+      }
+      .sourceCode {
+        overflow: visible;
+      }
+      code.sourceCode > span {
+        color: inherit;
+        text-decoration: inherit;
+      }
+      div.sourceCode {
+        margin: 1em 0;
+      }
+      pre.sourceCode {
+        margin: 0;
+      }
+      @media screen {
+        div.sourceCode {
+          overflow: auto;
+        }
+      }
+      @media print {
+        pre > code.sourceCode {
+          white-space: pre-wrap;
+        }
+        pre > code.sourceCode > span {
+          text-indent: -5em;
+          padding-left: 5em;
+        }
+      }
+      pre.numberSource code {
+        counter-reset: source-line 0;
+      }
+      pre.numberSource code > span {
+        position: relative;
+        left: -4em;
+        counter-increment: source-line;
+      }
+      pre.numberSource code > span > a:first-child::before {
+        content: counter(source-line);
+        position: relative;
+        left: -1em;
+        text-align: right;
+        vertical-align: baseline;
+        border: none;
+        display: inline-block;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        padding: 0 4px;
+        width: 4em;
         color: #aaaaaa;
       }
-    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
-    div.sourceCode
-      {   }
-    @media screen {
-    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-    }
-    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-    code span.at { color: #7d9029; } /* Attribute */
-    code span.bn { color: #40a070; } /* BaseN */
-    code span.bu { color: #008000; } /* BuiltIn */
-    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-    code span.ch { color: #4070a0; } /* Char */
-    code span.cn { color: #880000; } /* Constant */
-    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-    code span.dt { color: #902000; } /* DataType */
-    code span.dv { color: #40a070; } /* DecVal */
-    code span.er { color: #ff0000; font-weight: bold; } /* Error */
-    code span.ex { } /* Extension */
-    code span.fl { color: #40a070; } /* Float */
-    code span.fu { color: #06287e; } /* Function */
-    code span.im { color: #008000; font-weight: bold; } /* Import */
-    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-    code span.op { color: #666666; } /* Operator */
-    code span.ot { color: #007020; } /* Other */
-    code span.pp { color: #bc7a00; } /* Preprocessor */
-    code span.sc { color: #4070a0; } /* SpecialChar */
-    code span.ss { color: #bb6688; } /* SpecialString */
-    code span.st { color: #4070a0; } /* String */
-    code span.va { color: #19177c; } /* Variable */
-    code span.vs { color: #4070a0; } /* VerbatimString */
-    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-  </style>
-  <link rel="stylesheet" href="pdf-style.css" />
-</head>
-<body>
-<header id="title-block-header">
-<h1 class="title">ZizkaDB — Developer Technical Brief</h1>
-</header>
-<h1 id="zizkadb-developer-technical-brief">ZizkaDB — Developer Technical
-Brief</h1>
-<p><strong>Audience:</strong> Marketing / sales talking to software
-engineers, ML engineers, and agent builders.<br />
-<strong>Purpose:</strong> Answer technical questions accurately without
-overstating the product.<br />
-<strong>Last updated:</strong> May 2026<br />
-<strong>Product URL:</strong> https://db.zizka.ai<br />
-<strong>Docs:</strong> https://db.zizka.ai/docs<br />
-<strong>API explorer:</strong> https://db.zizka.ai/api-explorer<br />
-<strong>GitHub:</strong> https://github.com/Zizka-ai/ZizkaDB</p>
-<hr />
-<h2 id="one-sentence-pitch-memorize-this">1. One-sentence pitch
-(memorize this)</h2>
-<p><strong>ZizkaDB is the operational database for AI agents</strong> —
-it logs what agents do, links decisions by cause, searches history by
-meaning, replays past state, and tells you when an agent’s behavior has
-drifted from its own baseline.</p>
-<hr />
-<h2 id="what-zizkadb-is-and-is-not">2. What ZizkaDB is — and is not</h2>
-<table>
-<colgroup>
-<col style="width: 45%" />
-<col style="width: 54%" />
-</colgroup>
-<thead>
-<tr>
-<th>ZizkaDB <strong>is</strong></th>
-<th>ZizkaDB <strong>is not</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>An <strong>event store + memory layer</strong> for agents</td>
-<td>A vector DB you query only by embedding similarity</td>
-</tr>
-<tr>
-<td><strong>Framework-agnostic</strong> (Claude, OpenAI, LangChain,
-custom code)</td>
-<td>Locked to one LLM vendor or one orchestration framework</td>
-</tr>
-<tr>
-<td><strong>Causal</strong> (parent → child event links)</td>
-<td>A chat transcript dump</td>
-</tr>
-<tr>
-<td><strong>Self-hostable</strong> (Docker, full features, free)</td>
-<td>SaaS-only</td>
-</tr>
-<tr>
-<td><strong>Model-agnostic</strong> for logging; embeddings use OpenAI
-for semantic search</td>
-<td>A replacement for your LLM</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Analogy for developers:</strong> “Think Postgres for agent
-<em>decisions</em>, plus lineage, semantic recall, and drift detection —
-not another Pinecone index.”</p>
-<hr />
-<h2 id="the-problem-we-solve">3. The problem we solve</h2>
-<p>When you ship agents to production, teams hit the same walls:</p>
-<ol type="1">
-<li><strong>“Why did it do that?”</strong> — Tool calls and replies are
-disconnected; you cannot walk backward from a bad output to the input
-that caused it.</li>
-<li><strong>“What did it know at the time?”</strong> — Chat logs are not
-reconstructible agent <em>state</em> at a timestamp.</li>
-<li><strong>“Is this agent broken or just different?”</strong> — Prompt
-changes, model upgrades, and tool additions change behavior
-silently.</li>
-<li><strong>“Our memory is a black box”</strong> — Vendor memory
-(Claude/OpenAI) does not live in <em>your</em> codebase, audit trail, or
-GDPR erasure story.</li>
-</ol>
-<p>ZizkaDB is built for <strong>production debugging, compliance, and
-cross-session memory you control</strong>.</p>
-<hr />
-<h2 id="core-capabilities-what-to-say-to-engineers">4. Core capabilities
-(what to say to engineers)</h2>
-<h3 id="event-logging">4.1 Event logging</h3>
-<p>Everything is an <strong>event</strong>: <code>agent</code> name,
-<code>event</code> type string, JSON <code>data</code> payload,
-timestamp.</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> <span class="cf">await</span> db.log(</span>
+      pre.numberSource {
+        margin-left: 3em;
+        border-left: 1px solid #aaaaaa;
+        padding-left: 4px;
+      }
+      div.sourceCode {
+      }
+      @media screen {
+        pre > code.sourceCode > span > a:first-child::before {
+          text-decoration: underline;
+        }
+      }
+      code span.al {
+        color: #ff0000;
+        font-weight: bold;
+      } /* Alert */
+      code span.an {
+        color: #60a0b0;
+        font-weight: bold;
+        font-style: italic;
+      } /* Annotation */
+      code span.at {
+        color: #7d9029;
+      } /* Attribute */
+      code span.bn {
+        color: #40a070;
+      } /* BaseN */
+      code span.bu {
+        color: #008000;
+      } /* BuiltIn */
+      code span.cf {
+        color: #007020;
+        font-weight: bold;
+      } /* ControlFlow */
+      code span.ch {
+        color: #4070a0;
+      } /* Char */
+      code span.cn {
+        color: #880000;
+      } /* Constant */
+      code span.co {
+        color: #60a0b0;
+        font-style: italic;
+      } /* Comment */
+      code span.cv {
+        color: #60a0b0;
+        font-weight: bold;
+        font-style: italic;
+      } /* CommentVar */
+      code span.do {
+        color: #ba2121;
+        font-style: italic;
+      } /* Documentation */
+      code span.dt {
+        color: #902000;
+      } /* DataType */
+      code span.dv {
+        color: #40a070;
+      } /* DecVal */
+      code span.er {
+        color: #ff0000;
+        font-weight: bold;
+      } /* Error */
+      code span.ex {
+      } /* Extension */
+      code span.fl {
+        color: #40a070;
+      } /* Float */
+      code span.fu {
+        color: #06287e;
+      } /* Function */
+      code span.im {
+        color: #008000;
+        font-weight: bold;
+      } /* Import */
+      code span.in {
+        color: #60a0b0;
+        font-weight: bold;
+        font-style: italic;
+      } /* Information */
+      code span.kw {
+        color: #007020;
+        font-weight: bold;
+      } /* Keyword */
+      code span.op {
+        color: #666666;
+      } /* Operator */
+      code span.ot {
+        color: #007020;
+      } /* Other */
+      code span.pp {
+        color: #bc7a00;
+      } /* Preprocessor */
+      code span.sc {
+        color: #4070a0;
+      } /* SpecialChar */
+      code span.ss {
+        color: #bb6688;
+      } /* SpecialString */
+      code span.st {
+        color: #4070a0;
+      } /* String */
+      code span.va {
+        color: #19177c;
+      } /* Variable */
+      code span.vs {
+        color: #4070a0;
+      } /* VerbatimString */
+      code span.wa {
+        color: #60a0b0;
+        font-weight: bold;
+        font-style: italic;
+      } /* Warning */
+    </style>
+    <link rel="stylesheet" href="pdf-style.css" />
+  </head>
+  <body>
+    <header id="title-block-header">
+      <h1 class="title">ZizkaDB — Developer Technical Brief</h1>
+    </header>
+    <h1 id="zizkadb-developer-technical-brief">
+      ZizkaDB — Developer Technical Brief
+    </h1>
+    <p>
+      <strong>Audience:</strong> Marketing / sales talking to software
+      engineers, ML engineers, and agent builders.<br />
+      <strong>Purpose:</strong> Answer technical questions accurately without
+      overstating the product.<br />
+      <strong>Last updated:</strong> May 2026<br />
+      <strong>Product URL:</strong> https://db.zizka.ai<br />
+      <strong>Docs:</strong> https://db.zizka.ai/docs<br />
+      <strong>API explorer:</strong> https://db.zizka.ai/api-explorer<br />
+      <strong>GitHub:</strong> https://github.com/Zizka-ai/ZizkaDB
+    </p>
+    <hr />
+    <h2 id="one-sentence-pitch-memorize-this">
+      1. One-sentence pitch (memorize this)
+    </h2>
+    <p>
+      <strong>ZizkaDB is the operational database for AI agents</strong> — it
+      logs what agents do, links decisions by cause, searches history by
+      meaning, replays past state, and tells you when an agent’s behavior has
+      drifted from its own baseline.
+    </p>
+    <hr />
+    <h2 id="what-zizkadb-is-and-is-not">2. What ZizkaDB is — and is not</h2>
+    <table>
+      <colgroup>
+        <col style="width: 45%" />
+        <col style="width: 54%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>ZizkaDB <strong>is</strong></th>
+          <th>ZizkaDB <strong>is not</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>An <strong>event store + memory layer</strong> for agents</td>
+          <td>A vector DB you query only by embedding similarity</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Framework-agnostic</strong> (Claude, OpenAI, LangChain,
+            custom code)
+          </td>
+          <td>Locked to one LLM vendor or one orchestration framework</td>
+        </tr>
+        <tr>
+          <td><strong>Causal</strong> (parent → child event links)</td>
+          <td>A chat transcript dump</td>
+        </tr>
+        <tr>
+          <td><strong>Self-hostable</strong> (Docker, full features, free)</td>
+          <td>SaaS-only</td>
+        </tr>
+        <tr>
+          <td>
+            <strong>Model-agnostic</strong> for logging; embeddings use OpenAI
+            for semantic search
+          </td>
+          <td>A replacement for your LLM</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Analogy for developers:</strong> “Think Postgres for agent
+      <em>decisions</em>, plus lineage, semantic recall, and drift detection —
+      not another Pinecone index.”
+    </p>
+    <hr />
+    <h2 id="the-problem-we-solve">3. The problem we solve</h2>
+    <p>When you ship agents to production, teams hit the same walls:</p>
+    <ol type="1">
+      <li>
+        <strong>“Why did it do that?”</strong> — Tool calls and replies are
+        disconnected; you cannot walk backward from a bad output to the input
+        that caused it.
+      </li>
+      <li>
+        <strong>“What did it know at the time?”</strong> — Chat logs are not
+        reconstructible agent <em>state</em> at a timestamp.
+      </li>
+      <li>
+        <strong>“Is this agent broken or just different?”</strong> — Prompt
+        changes, model upgrades, and tool additions change behavior silently.
+      </li>
+      <li>
+        <strong>“Our memory is a black box”</strong> — Vendor memory
+        (Claude/OpenAI) does not live in <em>your</em> codebase, audit trail, or
+        GDPR erasure story.
+      </li>
+    </ol>
+    <p>
+      ZizkaDB is built for
+      <strong
+        >production debugging, compliance, and cross-session memory you
+        control</strong
+      >.
+    </p>
+    <hr />
+    <h2 id="core-capabilities-what-to-say-to-engineers">
+      4. Core capabilities (what to say to engineers)
+    </h2>
+    <h3 id="event-logging">4.1 Event logging</h3>
+    <p>
+      Everything is an <strong>event</strong>: <code>agent</code> name,
+      <code>event</code> type string, JSON <code>data</code> payload, timestamp.
+    </p>
+    <div class="sourceCode" id="cb1">
+      <pre
+        class="sourceCode python"
+      ><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> <span class="cf">await</span> db.log(</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    agent<span class="op">=</span><span class="st">&quot;support-bot&quot;</span>,</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    event<span class="op">=</span><span class="st">&quot;tool_call&quot;</span>,</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    data<span class="op">=</span>{<span class="st">&quot;tool&quot;</span>: <span class="st">&quot;get_billing&quot;</span>, <span class="st">&quot;user_id&quot;</span>: <span class="dv">123</span>},</span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># result.event_id — use for causal links and why()</span></span></code></pre></div>
-<p>Optional: <code>session_id</code> (groups a conversation/run),
-<code>metadata</code> (tenant-defined tags).</p>
-<h3 id="causal-lineage">4.2 Causal lineage</h3>
-<p>Pass <code>parent_id</code> (Python) / <code>parentId</code>
-(TypeScript) to say <em>this event happened because of that
-one</em>.</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>msg  <span class="op">=</span> <span class="cf">await</span> db.log(agent<span class="op">=</span><span class="st">&quot;bot&quot;</span>, event<span class="op">=</span><span class="st">&quot;user_message&quot;</span>, data<span class="op">=</span>{...})</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># result.event_id — use for causal links and why()</span></span></code></pre>
+    </div>
+    <p>
+      Optional: <code>session_id</code> (groups a conversation/run),
+      <code>metadata</code> (tenant-defined tags).
+    </p>
+    <h3 id="causal-lineage">4.2 Causal lineage</h3>
+    <p>
+      Pass <code>parent_id</code> (Python) / <code>parentId</code> (TypeScript)
+      to say <em>this event happened because of that one</em>.
+    </p>
+    <div class="sourceCode" id="cb2">
+      <pre
+        class="sourceCode python"
+      ><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>msg  <span class="op">=</span> <span class="cf">await</span> db.log(agent<span class="op">=</span><span class="st">&quot;bot&quot;</span>, event<span class="op">=</span><span class="st">&quot;user_message&quot;</span>, data<span class="op">=</span>{...})</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>tool <span class="op">=</span> <span class="cf">await</span> db.log(agent<span class="op">=</span><span class="st">&quot;bot&quot;</span>, event<span class="op">=</span><span class="st">&quot;tool_call&quot;</span>, data<span class="op">=</span>{...}, parent_id<span class="op">=</span>msg.event_id)</span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>chain <span class="op">=</span> <span class="cf">await</span> db.why(tool.event_id)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>chain.<span class="bu">print</span>()  <span class="co"># walks the tree to the root</span></span></code></pre></div>
-<p><strong>API:</strong> <code>GET /v1/events/{event_id}/why</code></p>
-<h3 id="semantic-search">4.3 Semantic search</h3>
-<p>Events are embedded automatically (<strong>OpenAI
-<code>text-embedding-3-small</code></strong>). Search in natural
-language across an agent’s history.</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> <span class="cf">await</span> db.search(<span class="st">&quot;customer angry about billing&quot;</span>, agent<span class="op">=</span><span class="st">&quot;support-bot&quot;</span>, limit<span class="op">=</span><span class="dv">10</span>)</span></code></pre></div>
-<p><strong>API:</strong> <code>POST /v1/search</code></p>
-<h3 id="time-travel">4.4 Time travel</h3>
-<p>Reconstruct agent state at any past timestamp from logged events.
-Each event has a <strong>SHA-256 checksum</strong> over payload
-content.</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>state <span class="op">=</span> <span class="cf">await</span> db.at(<span class="st">&quot;support-bot&quot;</span>, datetime(<span class="dv">2026</span>, <span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">15</span>, <span class="dv">0</span>))</span></code></pre></div>
-<p><strong>API:</strong> <code>GET /v1/events/at</code></p>
-<h3 id="context-injection-memory-for-prompts">4.5 Context injection
-(memory for prompts)</h3>
-<p>Drop-in style memory for system prompts: recent events + semantically
-relevant past events, trimmed to a token budget.</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>context <span class="op">=</span> <span class="cf">await</span> db.context_for(agent<span class="op">=</span><span class="st">&quot;support-bot&quot;</span>, task<span class="op">=</span><span class="st">&quot;user asking about billing&quot;</span>, max_tokens<span class="op">=</span><span class="dv">2000</span>)</span></code></pre></div>
-<p><strong>API:</strong> <code>POST /v1/memory/context</code></p>
-<h3 id="behavioral-baseline-drift">4.6 Behavioral baseline &amp;
-drift</h3>
-<p>After enough sessions (with <code>session_id</code> on logs), ZizkaDB
-compares <strong>recent</strong> behavior vs <strong>historical
-baseline</strong>:</p>
-<ul>
-<li>Event-type distribution<br />
-</li>
-<li>Parent→child transition patterns<br />
-</li>
-<li>Session length, error rate</li>
-</ul>
-<p>Returns a <strong>drift score</strong> (0 = identical, 1 = totally
-different) and verdict: <code>stable</code>, <code>minor_drift</code>,
-<code>noticeable_drift</code>, <code>significant_drift</code>.</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>baseline <span class="op">=</span> <span class="cf">await</span> db.baseline(agent<span class="op">=</span><span class="st">&quot;support-bot&quot;</span>, recent_window<span class="op">=</span><span class="dv">50</span>)</span></code></pre></div>
-<p><strong>API:</strong>
-<code>GET /v1/agents/{agent_id}/baseline</code></p>
-<p><strong>Honest caveat:</strong> Needs real session volume; early on
-status is <code>warming_up</code> or <code>insufficient_data</code>.
-This is statistical behavior comparison, not “the model hallucinated”
-detection.</p>
-<h3 id="session-diff-gdpr-forget">4.7 Session diff &amp; GDPR
-forget</h3>
-<ul>
-<li><strong><code>memory_diff(session_id)</code></strong> — what changed
-in a session (API: <code>GET /v1/memory/diff/{session_id}</code>).<br />
-</li>
-<li><strong><code>forget(filter_key, filter_value)</code></strong> —
-delete all events matching metadata (e.g. <code>user_id</code>,
-<code>email</code>) for GDPR erasure (API:
-<code>DELETE /v1/memory/forget</code>).</li>
-</ul>
-<h3 id="audit-trail">4.8 Audit trail</h3>
-<p>Events are <strong>append-only</strong> with per-event checksums.
-Position as tamper-evident operational history (export story is on
-roadmap/marketing — verify with engineering before promising signed
-legal exports).</p>
-<hr />
-<h2 id="how-developers-integrate-four-paths-same-backend">5. How
-developers integrate (four paths — same backend)</h2>
-<table>
-<colgroup>
-<col style="width: 24%" />
-<col style="width: 36%" />
-<col style="width: 40%" />
-</colgroup>
-<thead>
-<tr>
-<th>Path</th>
-<th>Install</th>
-<th>Best for</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Python SDK</strong></td>
-<td><code>pip install zizkadb-sdk</code></td>
-<td>FastAPI agents, notebooks, batch jobs</td>
-</tr>
-<tr>
-<td><strong>TypeScript SDK</strong></td>
-<td><code>npm install zizkadb-sdk</code></td>
-<td>Node, Bun, Deno, edge workers</td>
-</tr>
-<tr>
-<td><strong>MCP server</strong></td>
-<td><code>uvx zizkadb-mcp</code></td>
-<td>Claude Desktop, Cursor, Windsurf — <strong>no app code
-changes</strong></td>
-</tr>
-<tr>
-<td><strong>REST API</strong></td>
-<td><code>curl</code> / any HTTP client</td>
-<td>Go, Rust, Java, Ruby, mobile</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Cloud (managed):</strong></p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> zizkadb <span class="im">import</span> ZizkaDB</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>db <span class="op">=</span> ZizkaDB(<span class="st">&quot;zizkadb_live_xxxx&quot;</span>)  <span class="co"># API key from dashboard Settings</span></span></code></pre></div>
-<p><strong>Self-hosted:</strong></p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>db <span class="op">=</span> ZizkaDB(host<span class="op">=</span><span class="st">&quot;http://localhost:8000&quot;</span>)  <span class="co"># or DEV_API_KEY for local dev</span></span></code></pre></div>
-<p><strong>Default cloud host in SDKs:</strong>
-<code>https://db.zizka.ai</code></p>
-<hr />
-<h2 id="mcp-the-zero-code-pitch-for-cursorclaude-users">6. MCP — the
-“zero code” pitch for Cursor/Claude users</h2>
-<p><strong>MCP</strong> = Model Context Protocol. ZizkaDB ships an MCP
-server so the IDE/assistant can call tools directly.</p>
-<p><strong>Config example (Cursor <code>~/.cursor/mcp.json</code> or
-Claude Desktop):</strong></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode json"><code class="sourceCode json"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>chain.<span class="bu">print</span>()  <span class="co"># walks the tree to the root</span></span></code></pre>
+    </div>
+    <p><strong>API:</strong> <code>GET /v1/events/{event_id}/why</code></p>
+    <h3 id="semantic-search">4.3 Semantic search</h3>
+    <p>
+      Events are embedded automatically (<strong
+        >OpenAI <code>text-embedding-3-small</code></strong
+      >). Search in natural language across an agent’s history.
+    </p>
+    <div class="sourceCode" id="cb3">
+      <pre
+        class="sourceCode python"
+      ><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> <span class="cf">await</span> db.search(<span class="st">&quot;customer angry about billing&quot;</span>, agent<span class="op">=</span><span class="st">&quot;support-bot&quot;</span>, limit<span class="op">=</span><span class="dv">10</span>)</span></code></pre>
+    </div>
+    <p><strong>API:</strong> <code>POST /v1/search</code></p>
+    <h3 id="time-travel">4.4 Time travel</h3>
+    <p>
+      Reconstruct agent state at any past timestamp from logged events. Each
+      event has a <strong>SHA-256 checksum</strong> over payload content.
+    </p>
+    <div class="sourceCode" id="cb4">
+      <pre
+        class="sourceCode python"
+      ><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>state <span class="op">=</span> <span class="cf">await</span> db.at(<span class="st">&quot;support-bot&quot;</span>, datetime(<span class="dv">2026</span>, <span class="dv">5</span>, <span class="dv">1</span>, <span class="dv">15</span>, <span class="dv">0</span>))</span></code></pre>
+    </div>
+    <p><strong>API:</strong> <code>GET /v1/events/at</code></p>
+    <h3 id="context-injection-memory-for-prompts">
+      4.5 Context injection (memory for prompts)
+    </h3>
+    <p>
+      Drop-in style memory for system prompts: recent events + semantically
+      relevant past events, trimmed to a token budget.
+    </p>
+    <div class="sourceCode" id="cb5">
+      <pre
+        class="sourceCode python"
+      ><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>context <span class="op">=</span> <span class="cf">await</span> db.context_for(agent<span class="op">=</span><span class="st">&quot;support-bot&quot;</span>, task<span class="op">=</span><span class="st">&quot;user asking about billing&quot;</span>, max_tokens<span class="op">=</span><span class="dv">2000</span>)</span></code></pre>
+    </div>
+    <p><strong>API:</strong> <code>POST /v1/memory/context</code></p>
+    <h3 id="behavioral-baseline-drift">4.6 Behavioral baseline &amp; drift</h3>
+    <p>
+      After enough sessions (with <code>session_id</code> on logs), ZizkaDB
+      compares <strong>recent</strong> behavior vs
+      <strong>historical baseline</strong>:
+    </p>
+    <ul>
+      <li>Event-type distribution<br /></li>
+      <li>Parent→child transition patterns<br /></li>
+      <li>Session length, error rate</li>
+    </ul>
+    <p>
+      Returns a <strong>drift score</strong> (0 = identical, 1 = totally
+      different) and verdict: <code>stable</code>, <code>minor_drift</code>,
+      <code>noticeable_drift</code>, <code>significant_drift</code>.
+    </p>
+    <div class="sourceCode" id="cb6">
+      <pre
+        class="sourceCode python"
+      ><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>baseline <span class="op">=</span> <span class="cf">await</span> db.baseline(agent<span class="op">=</span><span class="st">&quot;support-bot&quot;</span>, recent_window<span class="op">=</span><span class="dv">50</span>)</span></code></pre>
+    </div>
+    <p><strong>API:</strong> <code>GET /v1/agents/{agent_id}/baseline</code></p>
+    <p>
+      <strong>Honest caveat:</strong> Needs real session volume; early on status
+      is <code>warming_up</code> or <code>insufficient_data</code>. This is
+      statistical behavior comparison, not “the model hallucinated” detection.
+    </p>
+    <h3 id="session-diff-gdpr-forget">4.7 Session diff &amp; GDPR forget</h3>
+    <ul>
+      <li>
+        <strong><code>memory_diff(session_id)</code></strong> — what changed in
+        a session (API: <code>GET /v1/memory/diff/{session_id}</code>).<br />
+      </li>
+      <li>
+        <strong><code>forget(filter_key, filter_value)</code></strong> — delete
+        all events matching metadata (e.g. <code>user_id</code>,
+        <code>email</code>) for GDPR erasure (API:
+        <code>DELETE /v1/memory/forget</code>).
+      </li>
+    </ul>
+    <h3 id="audit-trail">4.8 Audit trail</h3>
+    <p>
+      Events are <strong>append-only</strong> with per-event checksums. Position
+      as tamper-evident operational history (export story is on
+      roadmap/marketing — verify with engineering before promising signed legal
+      exports).
+    </p>
+    <hr />
+    <h2 id="how-developers-integrate-four-paths-same-backend">
+      5. How developers integrate (four paths — same backend)
+    </h2>
+    <table>
+      <colgroup>
+        <col style="width: 24%" />
+        <col style="width: 36%" />
+        <col style="width: 40%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Path</th>
+          <th>Install</th>
+          <th>Best for</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Python SDK</strong></td>
+          <td><code>pip install zizkadb-sdk</code></td>
+          <td>FastAPI agents, notebooks, batch jobs</td>
+        </tr>
+        <tr>
+          <td><strong>TypeScript SDK</strong></td>
+          <td><code>npm install zizkadb-sdk</code></td>
+          <td>Node, Bun, Deno, edge workers</td>
+        </tr>
+        <tr>
+          <td><strong>MCP server</strong></td>
+          <td><code>uvx zizkadb-mcp</code></td>
+          <td>
+            Claude Desktop, Cursor, Windsurf —
+            <strong>no app code changes</strong>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>REST API</strong></td>
+          <td><code>curl</code> / any HTTP client</td>
+          <td>Go, Rust, Java, Ruby, mobile</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><strong>Cloud (managed):</strong></p>
+    <div class="sourceCode" id="cb7">
+      <pre
+        class="sourceCode python"
+      ><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> zizkadb <span class="im">import</span> ZizkaDB</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>db <span class="op">=</span> ZizkaDB(<span class="st">&quot;zizkadb_live_xxxx&quot;</span>)  <span class="co"># API key from dashboard Settings</span></span></code></pre>
+    </div>
+    <p><strong>Self-hosted:</strong></p>
+    <div class="sourceCode" id="cb8">
+      <pre
+        class="sourceCode python"
+      ><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>db <span class="op">=</span> ZizkaDB(host<span class="op">=</span><span class="st">&quot;http://localhost:8000&quot;</span>)  <span class="co"># or DEV_API_KEY for local dev</span></span></code></pre>
+    </div>
+    <p>
+      <strong>Default cloud host in SDKs:</strong>
+      <code>https://db.zizka.ai</code>
+    </p>
+    <hr />
+    <h2 id="mcp-the-zero-code-pitch-for-cursorclaude-users">
+      6. MCP — the “zero code” pitch for Cursor/Claude users
+    </h2>
+    <p>
+      <strong>MCP</strong> = Model Context Protocol. ZizkaDB ships an MCP server
+      so the IDE/assistant can call tools directly.
+    </p>
+    <p>
+      <strong
+        >Config example (Cursor <code>~/.cursor/mcp.json</code> or Claude
+        Desktop):</strong
+      >
+    </p>
+    <div class="sourceCode" id="cb9">
+      <pre
+        class="sourceCode json"
+      ><code class="sourceCode json"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;mcpServers&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;zizkadb&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;command&quot;</span><span class="fu">:</span> <span class="st">&quot;uvx&quot;</span><span class="fu">,</span></span>
@@ -324,489 +540,559 @@ class="sourceCode json"><code class="sourceCode json"><span id="cb9-1"><a href="
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;env&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">&quot;ZIZKADB_API_KEY&quot;</span><span class="fu">:</span> <span class="st">&quot;zizkadb_live_xxxx&quot;</span> <span class="fu">}</span></span>
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
 <span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
-<p><strong>Self-hosted MCP:</strong> set <code>ZIZKADB_HOST</code> to
-your API URL.</p>
-<table>
-<thead>
-<tr>
-<th>MCP tool</th>
-<th>What it does</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>log_event</code></td>
-<td>Log action with optional causal parent</td>
-</tr>
-<tr>
-<td><code>search_memory</code></td>
-<td>Semantic search over history</td>
-</tr>
-<tr>
-<td><code>get_context</code></td>
-<td>Prompt-ready memory block</td>
-</tr>
-<tr>
-<td><code>why</code></td>
-<td>Causal chain for an event</td>
-</tr>
-<tr>
-<td><code>query_events</code></td>
-<td>List/filter recent events</td>
-</tr>
-<tr>
-<td><code>time_travel</code></td>
-<td>State at a timestamp</td>
-</tr>
-<tr>
-<td><code>memory_diff</code></td>
-<td>Session summary</td>
-</tr>
-<tr>
-<td><code>forget</code></td>
-<td>GDPR delete by filter</td>
-</tr>
-</tbody>
-</table>
-<p><strong>MCP license:</strong> MIT (SDK/core stack: AGPL-3.0 — see
-§12).</p>
-<hr />
-<h2 id="rest-api-map-for-show-me-the-http-questions">7. REST API map
-(for “show me the HTTP” questions)</h2>
-<p>Base URL: <code>https://db.zizka.ai</code> (self-host: your host,
-port <strong>8000</strong>).</p>
-<p><strong>Auth:</strong>
-<code>Authorization: Bearer &lt;token&gt;</code></p>
-<ul>
-<li>Production API keys: prefix <strong><code>zizkadb_live_</code></strong>
-<br />
-</li>
-<li>Dashboard login uses JWT (OTP email)<br />
-</li>
-<li>Self-host dev: optional <code>DEV_API_KEY</code> in
-<code>.env</code> (never in production)</li>
-</ul>
-<table>
-<thead>
-<tr>
-<th>Area</th>
-<th>Method</th>
-<th>Path</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Events</td>
-<td>POST</td>
-<td><code>/v1/events</code></td>
-<td>Log event</td>
-</tr>
-<tr>
-<td>Events</td>
-<td>GET</td>
-<td><code>/v1/events</code></td>
-<td>Query events</td>
-</tr>
-<tr>
-<td>Events</td>
-<td>GET</td>
-<td><code>/v1/events/{id}/why</code></td>
-<td>Causal chain</td>
-</tr>
-<tr>
-<td>Events</td>
-<td>GET</td>
-<td><code>/v1/events/at</code></td>
-<td>Time travel</td>
-</tr>
-<tr>
-<td>Search</td>
-<td>POST</td>
-<td><code>/v1/search</code></td>
-<td>Semantic search</td>
-</tr>
-<tr>
-<td>Memory</td>
-<td>POST</td>
-<td><code>/v1/memory/context</code></td>
-<td>Context block</td>
-</tr>
-<tr>
-<td>Memory</td>
-<td>GET</td>
-<td><code>/v1/memory/diff/{session_id}</code></td>
-<td>Session diff</td>
-</tr>
-<tr>
-<td>Memory</td>
-<td>DELETE</td>
-<td><code>/v1/memory/forget</code></td>
-<td>GDPR erase</td>
-</tr>
-<tr>
-<td>Agents</td>
-<td>GET</td>
-<td><code>/v1/agents</code></td>
-<td>List agents</td>
-</tr>
-<tr>
-<td>Agents</td>
-<td>GET</td>
-<td><code>/v1/agents/{id}/baseline</code></td>
-<td>Drift / baseline</td>
-</tr>
-<tr>
-<td>Agents</td>
-<td>GET</td>
-<td><code>/v1/agents/{id}/sessions</code></td>
-<td>Sessions</td>
-</tr>
-<tr>
-<td>Auth</td>
-<td>POST</td>
-<td><code>/v1/auth/request-otp</code></td>
-<td>Email OTP</td>
-</tr>
-<tr>
-<td>Auth</td>
-<td>POST</td>
-<td><code>/v1/auth/verify-otp</code></td>
-<td>Get JWT</td>
-</tr>
-<tr>
-<td>Auth</td>
-<td>POST</td>
-<td><code>/v1/auth/api-keys</code></td>
-<td>Create API key</td>
-</tr>
-<tr>
-<td>Health</td>
-<td>GET</td>
-<td><code>/health</code></td>
-<td>Status check</td>
-</tr>
-<tr>
-<td>Stats</td>
-<td>GET</td>
-<td><code>/v1/stats</code></td>
-<td>Public install counters (homepage)</td>
-</tr>
-</tbody>
-</table>
-<p>Interactive docs: <strong>https://db.zizka.ai/api-explorer</strong>
-(FastAPI OpenAPI).</p>
-<hr />
-<h2 id="sdk-method-cheat-sheet">8. SDK method cheat sheet</h2>
-<table>
-<thead>
-<tr>
-<th>Method</th>
-<th>Purpose</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>log(...)</code></td>
-<td>Write event</td>
-</tr>
-<tr>
-<td><code>why(event_id)</code></td>
-<td>Causal chain</td>
-</tr>
-<tr>
-<td><code>search(query, ...)</code></td>
-<td>Semantic search</td>
-</tr>
-<tr>
-<td><code>at(agent, timestamp)</code></td>
-<td>Time travel</td>
-</tr>
-<tr>
-<td><code>query(agent, ...)</code></td>
-<td>List events</td>
-</tr>
-<tr>
-<td><code>context_for(agent, task, max_tokens?)</code></td>
-<td>Prompt memory</td>
-</tr>
-<tr>
-<td><code>baseline(agent, recent_window?)</code></td>
-<td>Drift detection</td>
-</tr>
-<tr>
-<td><code>memory_diff(session_id)</code></td>
-<td>Session summary</td>
-</tr>
-<tr>
-<td><code>forget(filter_key, filter_value)</code></td>
-<td>GDPR delete</td>
-</tr>
-<tr>
-<td><code>agents()</code></td>
-<td>List agents</td>
-</tr>
-</tbody>
-</table>
-<p>Python 3.10+, TypeScript works on Node/Deno/Bun/edge.</p>
-<hr />
-<h2 id="architecture-for-technical-due-diligence">9. Architecture (for
-technical due diligence)</h2>
-<p><strong>Managed production (db.zizka.ai):</strong></p>
-<ul>
-<li><strong>Dashboard:</strong> Next.js 14 (PM2 on port 3001 behind
-nginx)<br />
-</li>
-<li><strong>API:</strong> FastAPI (Python), Docker, port 8000<br />
-</li>
-<li><strong>Postgres</strong> + <strong>pgvector</strong> — events,
-tenants, embeddings<br />
-</li>
-<li><strong>Qdrant</strong> — vector search<br />
-</li>
-<li><strong>Redis</strong> — caching/sessions<br />
-</li>
-<li><strong>Nginx</strong> — TLS, routes <code>/</code> → frontend,
-<code>/v1/</code> → API</li>
-</ul>
-<p><strong>Self-host (Docker Compose):</strong></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/Zizka-ai/ZizkaDB</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre>
+    </div>
+    <p>
+      <strong>Self-hosted MCP:</strong> set <code>ZIZKADB_HOST</code> to your
+      API URL.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>MCP tool</th>
+          <th>What it does</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>log_event</code></td>
+          <td>Log action with optional causal parent</td>
+        </tr>
+        <tr>
+          <td><code>search_memory</code></td>
+          <td>Semantic search over history</td>
+        </tr>
+        <tr>
+          <td><code>get_context</code></td>
+          <td>Prompt-ready memory block</td>
+        </tr>
+        <tr>
+          <td><code>why</code></td>
+          <td>Causal chain for an event</td>
+        </tr>
+        <tr>
+          <td><code>query_events</code></td>
+          <td>List/filter recent events</td>
+        </tr>
+        <tr>
+          <td><code>time_travel</code></td>
+          <td>State at a timestamp</td>
+        </tr>
+        <tr>
+          <td><code>memory_diff</code></td>
+          <td>Session summary</td>
+        </tr>
+        <tr>
+          <td><code>forget</code></td>
+          <td>GDPR delete by filter</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>MCP license:</strong> MIT (SDK/core stack: AGPL-3.0 — see §12).
+    </p>
+    <hr />
+    <h2 id="rest-api-map-for-show-me-the-http-questions">
+      7. REST API map (for “show me the HTTP” questions)
+    </h2>
+    <p>
+      Base URL: <code>https://db.zizka.ai</code> (self-host: your host, port
+      <strong>8000</strong>).
+    </p>
+    <p>
+      <strong>Auth:</strong> <code>Authorization: Bearer &lt;token&gt;</code>
+    </p>
+    <ul>
+      <li>
+        Production API keys: prefix <strong><code>zizkadb_live_</code></strong>
+        <br />
+      </li>
+      <li>Dashboard login uses JWT (OTP email)<br /></li>
+      <li>
+        Self-host dev: optional <code>DEV_API_KEY</code> in
+        <code>.env</code> (never in production)
+      </li>
+    </ul>
+    <table>
+      <thead>
+        <tr>
+          <th>Area</th>
+          <th>Method</th>
+          <th>Path</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Events</td>
+          <td>POST</td>
+          <td><code>/v1/events</code></td>
+          <td>Log event</td>
+        </tr>
+        <tr>
+          <td>Events</td>
+          <td>GET</td>
+          <td><code>/v1/events</code></td>
+          <td>Query events</td>
+        </tr>
+        <tr>
+          <td>Events</td>
+          <td>GET</td>
+          <td><code>/v1/events/{id}/why</code></td>
+          <td>Causal chain</td>
+        </tr>
+        <tr>
+          <td>Events</td>
+          <td>GET</td>
+          <td><code>/v1/events/at</code></td>
+          <td>Time travel</td>
+        </tr>
+        <tr>
+          <td>Search</td>
+          <td>POST</td>
+          <td><code>/v1/search</code></td>
+          <td>Semantic search</td>
+        </tr>
+        <tr>
+          <td>Memory</td>
+          <td>POST</td>
+          <td><code>/v1/memory/context</code></td>
+          <td>Context block</td>
+        </tr>
+        <tr>
+          <td>Memory</td>
+          <td>GET</td>
+          <td><code>/v1/memory/diff/{session_id}</code></td>
+          <td>Session diff</td>
+        </tr>
+        <tr>
+          <td>Memory</td>
+          <td>DELETE</td>
+          <td><code>/v1/memory/forget</code></td>
+          <td>GDPR erase</td>
+        </tr>
+        <tr>
+          <td>Agents</td>
+          <td>GET</td>
+          <td><code>/v1/agents</code></td>
+          <td>List agents</td>
+        </tr>
+        <tr>
+          <td>Agents</td>
+          <td>GET</td>
+          <td><code>/v1/agents/{id}/baseline</code></td>
+          <td>Drift / baseline</td>
+        </tr>
+        <tr>
+          <td>Agents</td>
+          <td>GET</td>
+          <td><code>/v1/agents/{id}/sessions</code></td>
+          <td>Sessions</td>
+        </tr>
+        <tr>
+          <td>Auth</td>
+          <td>POST</td>
+          <td><code>/v1/auth/request-otp</code></td>
+          <td>Email OTP</td>
+        </tr>
+        <tr>
+          <td>Auth</td>
+          <td>POST</td>
+          <td><code>/v1/auth/verify-otp</code></td>
+          <td>Get JWT</td>
+        </tr>
+        <tr>
+          <td>Auth</td>
+          <td>POST</td>
+          <td><code>/v1/auth/api-keys</code></td>
+          <td>Create API key</td>
+        </tr>
+        <tr>
+          <td>Health</td>
+          <td>GET</td>
+          <td><code>/health</code></td>
+          <td>Status check</td>
+        </tr>
+        <tr>
+          <td>Stats</td>
+          <td>GET</td>
+          <td><code>/v1/stats</code></td>
+          <td>Public install counters (homepage)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Interactive docs:
+      <strong>https://db.zizka.ai/api-explorer</strong> (FastAPI OpenAPI).
+    </p>
+    <hr />
+    <h2 id="sdk-method-cheat-sheet">8. SDK method cheat sheet</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>log(...)</code></td>
+          <td>Write event</td>
+        </tr>
+        <tr>
+          <td><code>why(event_id)</code></td>
+          <td>Causal chain</td>
+        </tr>
+        <tr>
+          <td><code>search(query, ...)</code></td>
+          <td>Semantic search</td>
+        </tr>
+        <tr>
+          <td><code>at(agent, timestamp)</code></td>
+          <td>Time travel</td>
+        </tr>
+        <tr>
+          <td><code>query(agent, ...)</code></td>
+          <td>List events</td>
+        </tr>
+        <tr>
+          <td><code>context_for(agent, task, max_tokens?)</code></td>
+          <td>Prompt memory</td>
+        </tr>
+        <tr>
+          <td><code>baseline(agent, recent_window?)</code></td>
+          <td>Drift detection</td>
+        </tr>
+        <tr>
+          <td><code>memory_diff(session_id)</code></td>
+          <td>Session summary</td>
+        </tr>
+        <tr>
+          <td><code>forget(filter_key, filter_value)</code></td>
+          <td>GDPR delete</td>
+        </tr>
+        <tr>
+          <td><code>agents()</code></td>
+          <td>List agents</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>Python 3.10+, TypeScript works on Node/Deno/Bun/edge.</p>
+    <hr />
+    <h2 id="architecture-for-technical-due-diligence">
+      9. Architecture (for technical due diligence)
+    </h2>
+    <p><strong>Managed production (db.zizka.ai):</strong></p>
+    <ul>
+      <li>
+        <strong>Dashboard:</strong> Next.js 14 (PM2 on port 3001 behind
+        nginx)<br />
+      </li>
+      <li><strong>API:</strong> FastAPI (Python), Docker, port 8000<br /></li>
+      <li>
+        <strong>Postgres</strong> + <strong>pgvector</strong> — events, tenants,
+        embeddings<br />
+      </li>
+      <li><strong>Qdrant</strong> — vector search<br /></li>
+      <li><strong>Redis</strong> — caching/sessions<br /></li>
+      <li>
+        <strong>Nginx</strong> — TLS, routes <code>/</code> → frontend,
+        <code>/v1/</code> → API
+      </li>
+    </ul>
+    <p><strong>Self-host (Docker Compose):</strong></p>
+    <div class="sourceCode" id="cb10">
+      <pre
+        class="sourceCode bash"
+      ><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/Zizka-ai/ZizkaDB</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> .env.example infra/.env   <span class="co"># OPENAI_API_KEY required for embeddings</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose <span class="at">-f</span> infra/docker-compose.yml up <span class="at">-d</span></span></code></pre></div>
-<p>Stack: postgres (pgvector), qdrant, redis, api. Dashboard optional
-(<code>npm run dev</code> in <code>dashboard/</code>).</p>
-<p><strong>Embeddings:</strong> Without <code>OPENAI_API_KEY</code>,
-<strong>logging still works</strong>; semantic search and context
-injection that rely on embeddings will not.</p>
-<p><strong>Telemetry:</strong> SDK/MCP send <strong>one anonymous
-ping</strong> on startup (SDK name, version, OS, cloud vs self-host). No
-event payloads, no API keys. Opt out:
-<code>ZIZKADB_TELEMETRY=false</code>
-<code>ZIZKADB_TELEMETRY=false</code> (confirm env name in release
-notes).</p>
-<hr />
-<h2 id="authentication-onboarding-flow">10. Authentication &amp;
-onboarding flow</h2>
-<ol type="1">
-<li>Sign up at <strong>https://db.zizka.ai/signup</strong> — email OTP,
-no password.<br />
-</li>
-<li>Dashboard → <strong>Settings</strong> → <strong>Create API
-key</strong> (<code>zizkadb_live_...</code>).<br />
-</li>
-<li>Paste key into SDK, MCP env, or <code>Authorization: Bearer</code>
-header.<br />
-</li>
-<li>Start logging from agent code or MCP.</li>
-</ol>
-<p><strong>Multi-tenant:</strong> API keys are scoped to a
-tenant/project; events are isolated per tenant.</p>
-<hr />
-<h2 id="pricing-managed-cloud">11. Pricing (managed cloud)</h2>
-<table>
-<colgroup>
-<col style="width: 24%" />
-<col style="width: 28%" />
-<col style="width: 48%" />
-</colgroup>
-<thead>
-<tr>
-<th>Plan</th>
-<th>Price</th>
-<th>Highlights</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Self-Hosted</strong></td>
-<td>Free forever</td>
-<td>Full feature set, your infra, Docker, community support</td>
-</tr>
-<tr>
-<td><strong>Pro</strong></td>
-<td>€39/mo</td>
-<td>100M events, 90-day retention, 3 projects, email support,
-<strong>1-month free trial</strong>, no credit card to start</td>
-</tr>
-<tr>
-<td><strong>Team</strong></td>
-<td>€99/mo</td>
-<td>1B events, 1-year retention, 10 seats, priority support, 1-month
-free trial</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Line for developers:</strong> “Free if you self-host; paid if
-you don’t want to run Postgres/Qdrant yourself.”</p>
-<hr />
-<h2 id="licensing-do-not-hand-wave-this">12. Licensing (do not hand-wave
-this)</h2>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>License</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Core API + self-host stack</td>
-<td><strong>AGPL-3.0</strong></td>
-</tr>
-<tr>
-<td>Python SDK</td>
-<td><strong>AGPL-3.0</strong></td>
-</tr>
-<tr>
-<td>TypeScript SDK</td>
-<td><strong>AGPL-3.0</strong> (per package metadata)</td>
-</tr>
-<tr>
-<td>MCP server</td>
-<td><strong>MIT</strong></td>
-</tr>
-</tbody>
-</table>
-<p><strong>What to say:</strong> “Open source, self-hostable. AGPL
-applies to the core platform and SDKs — if you modify and distribute the
-server, AGPL obligations apply. MCP is MIT for easy IDE integration.
-Legal review for commercial embedding is normal.”</p>
-<p><strong>Do not say:</strong> “Fully MIT” or “no license
-restrictions.”</p>
-<hr />
-<h2 id="competitive-positioning-facts-first">13. Competitive positioning
-(facts-first)</h2>
-<p>Use the comparison on the homepage; verify competitors’ docs before
-live debates.</p>
-<table>
-<thead>
-<tr>
-<th>Capability</th>
-<th>LangSmith</th>
-<th>Mem0</th>
-<th>Pinecone</th>
-<th><strong>ZizkaDB</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Agent event logging</td>
-<td>✓</td>
-<td>✗</td>
-<td>✗</td>
-<td>✓</td>
-</tr>
-<tr>
-<td>Causal lineage</td>
-<td>~</td>
-<td>✗</td>
-<td>✗</td>
-<td>✓</td>
-</tr>
-<tr>
-<td>Time travel (state at T)</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✓</td>
-</tr>
-<tr>
-<td>Semantic search on history</td>
-<td>✗</td>
-<td>✓</td>
-<td>✓</td>
-<td>✓</td>
-</tr>
-<tr>
-<td>Any framework/model</td>
-<td>~</td>
-<td>✓</td>
-<td>✓</td>
-<td>✓</td>
-</tr>
-<tr>
-<td>Behavioral baseline / drift</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✓</td>
-</tr>
-<tr>
-<td>Cross-agent fleet queries</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✓</td>
-</tr>
-<tr>
-<td>Tamper-evident audit</td>
-<td>✗</td>
-<td>✗</td>
-<td>✗</td>
-<td>✓</td>
-</tr>
-<tr>
-<td>Self-host free</td>
-<td>✓</td>
-<td>✓</td>
-<td>✗</td>
-<td>✓</td>
-</tr>
-</tbody>
-</table>
-<p><strong>~</strong> = partial (e.g. LangSmith is strongest inside
-LangChain ecosystem).</p>
-<p><strong>ZizkaDB wedge:</strong> Vector DBs store embeddings; ZizkaDB
-stores <strong>what happened, why, and what came next</strong>, plus
-<strong>drift vs the agent’s own past</strong>.</p>
-<hr />
-<h2 id="faq-hard-questions-from-developers">14. FAQ — hard questions
-from developers</h2>
-<p><strong>Q: How is this different from LangSmith?</strong><br />
-A: LangSmith is excellent for LangChain-centric tracing and evals.
-ZizkaDB is a <strong>standalone operational DB</strong> with causal
-trees, time travel, cross-agent queries, and behavioral baselines —
-works with any stack.</p>
-<p><strong>Q: How is this different from Mem0?</strong><br />
-A: Mem0 focuses on long-term memory retrieval for prompts. ZizkaDB adds
-<strong>causal lineage, session replay, drift baselines, and
-audit-oriented event storage</strong>.</p>
-<p><strong>Q: Do we need to replace Pinecone?</strong><br />
-A: No. Pinecone is for RAG document search. ZizkaDB is for <strong>agent
-decision history</strong>. Many teams use both.</p>
-<p><strong>Q: Does it wrap our LLM calls?</strong><br />
-A: No. You add <code>db.log()</code> (or MCP <code>log_event</code>)
-where you already handle messages/tools. One line for causal link:
-<code>parent_id=...</code>.</p>
-<p><strong>Q: Latency impact?</strong><br />
-A: Logging is async HTTP; embedding generation is non-blocking on the
-hot path. Typical integration is fire-and-forget
-<code>await db.log(...)</code>.</p>
-<p><strong>Q: What if OpenAI is down / we don’t use
-OpenAI?</strong><br />
-A: Logging and causal features work without embeddings. Semantic search
-and <code>context_for</code> need embeddings (today: OpenAI). Other
-embedding providers = roadmap; say “check with team” unless confirmed
-shipped.</p>
-<p><strong>Q: PII / GDPR?</strong><br />
-A: You control what goes in <code>data</code> and <code>metadata</code>.
-<code>forget()</code> deletes by metadata filter. Self-host keeps data
-on your infra.</p>
-<p><strong>Q: Can we use it in regulated environments?</strong><br />
-A: Self-host + your VPC is the usual answer. Managed cloud: discuss DPA,
-retention, and region with founders — don’t invent certifications.</p>
-<p><strong>Q: PyPI package confusion?</strong><br />
-A: Install <strong><code>zizkadb-sdk</code></strong> (not the unrelated
-<code>agentdb</code> package on PyPI). Import:
-<code>from zizkadb import ZizkaDB</code>.</p>
-<hr />
-<h2 id="integration-snippets-copy-for-demos">15. Integration snippets
-(copy for demos)</h2>
-<p><strong>Minimal Python (managed):</strong></p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncio</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> compose <span class="at">-f</span> infra/docker-compose.yml up <span class="at">-d</span></span></code></pre>
+    </div>
+    <p>
+      Stack: postgres (pgvector), qdrant, redis, api. Dashboard optional (<code
+        >npm run dev</code
+      >
+      in <code>dashboard/</code>).
+    </p>
+    <p>
+      <strong>Embeddings:</strong> Without <code>OPENAI_API_KEY</code>,
+      <strong>logging still works</strong>; semantic search and context
+      injection that rely on embeddings will not.
+    </p>
+    <p>
+      <strong>Telemetry:</strong> SDK/MCP send
+      <strong>one anonymous ping</strong> on startup (SDK name, version, OS,
+      cloud vs self-host). No event payloads, no API keys. Opt out:
+      <code>ZIZKADB_TELEMETRY=false</code>
+      <code>ZIZKADB_TELEMETRY=false</code> (confirm env name in release notes).
+    </p>
+    <hr />
+    <h2 id="authentication-onboarding-flow">
+      10. Authentication &amp; onboarding flow
+    </h2>
+    <ol type="1">
+      <li>
+        Sign up at <strong>https://db.zizka.ai/signup</strong> — email OTP, no
+        password.<br />
+      </li>
+      <li>
+        Dashboard → <strong>Settings</strong> →
+        <strong>Create API key</strong> (<code>zizkadb_live_...</code>).<br />
+      </li>
+      <li>
+        Paste key into SDK, MCP env, or
+        <code>Authorization: Bearer</code> header.<br />
+      </li>
+      <li>Start logging from agent code or MCP.</li>
+    </ol>
+    <p>
+      <strong>Multi-tenant:</strong> API keys are scoped to a tenant/project;
+      events are isolated per tenant.
+    </p>
+    <hr />
+    <h2 id="pricing-managed-cloud">11. Pricing (managed cloud)</h2>
+    <table>
+      <colgroup>
+        <col style="width: 24%" />
+        <col style="width: 28%" />
+        <col style="width: 48%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Plan</th>
+          <th>Price</th>
+          <th>Highlights</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Self-Hosted</strong></td>
+          <td>Free forever</td>
+          <td>Full feature set, your infra, Docker, community support</td>
+        </tr>
+        <tr>
+          <td><strong>Pro</strong></td>
+          <td>€39/mo</td>
+          <td>
+            100M events, 90-day retention, 3 projects, email support,
+            <strong>1-month free trial</strong>, no credit card to start
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Team</strong></td>
+          <td>€99/mo</td>
+          <td>
+            1B events, 1-year retention, 10 seats, priority support, 1-month
+            free trial
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>Line for developers:</strong> “Free if you self-host; paid if you
+      don’t want to run Postgres/Qdrant yourself.”
+    </p>
+    <hr />
+    <h2 id="licensing-do-not-hand-wave-this">
+      12. Licensing (do not hand-wave this)
+    </h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>License</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Core API + self-host stack</td>
+          <td><strong>AGPL-3.0</strong></td>
+        </tr>
+        <tr>
+          <td>Python SDK</td>
+          <td><strong>AGPL-3.0</strong></td>
+        </tr>
+        <tr>
+          <td>TypeScript SDK</td>
+          <td><strong>AGPL-3.0</strong> (per package metadata)</td>
+        </tr>
+        <tr>
+          <td>MCP server</td>
+          <td><strong>MIT</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>What to say:</strong> “Open source, self-hostable. AGPL applies to
+      the core platform and SDKs — if you modify and distribute the server, AGPL
+      obligations apply. MCP is MIT for easy IDE integration. Legal review for
+      commercial embedding is normal.”
+    </p>
+    <p>
+      <strong>Do not say:</strong> “Fully MIT” or “no license restrictions.”
+    </p>
+    <hr />
+    <h2 id="competitive-positioning-facts-first">
+      13. Competitive positioning (facts-first)
+    </h2>
+    <p>
+      Use the comparison on the homepage; verify competitors’ docs before live
+      debates.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>LangSmith</th>
+          <th>Mem0</th>
+          <th>Pinecone</th>
+          <th><strong>ZizkaDB</strong></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Agent event logging</td>
+          <td>✓</td>
+          <td>✗</td>
+          <td>✗</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Causal lineage</td>
+          <td>~</td>
+          <td>✗</td>
+          <td>✗</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Time travel (state at T)</td>
+          <td>✗</td>
+          <td>✗</td>
+          <td>✗</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Semantic search on history</td>
+          <td>✗</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Any framework/model</td>
+          <td>~</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Behavioral baseline / drift</td>
+          <td>✗</td>
+          <td>✗</td>
+          <td>✗</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Cross-agent fleet queries</td>
+          <td>✗</td>
+          <td>✗</td>
+          <td>✗</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Tamper-evident audit</td>
+          <td>✗</td>
+          <td>✗</td>
+          <td>✗</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Self-host free</td>
+          <td>✓</td>
+          <td>✓</td>
+          <td>✗</td>
+          <td>✓</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>~</strong> = partial (e.g. LangSmith is strongest inside LangChain
+      ecosystem).
+    </p>
+    <p>
+      <strong>ZizkaDB wedge:</strong> Vector DBs store embeddings; ZizkaDB
+      stores <strong>what happened, why, and what came next</strong>, plus
+      <strong>drift vs the agent’s own past</strong>.
+    </p>
+    <hr />
+    <h2 id="faq-hard-questions-from-developers">
+      14. FAQ — hard questions from developers
+    </h2>
+    <p>
+      <strong>Q: How is this different from LangSmith?</strong><br />
+      A: LangSmith is excellent for LangChain-centric tracing and evals. ZizkaDB
+      is a <strong>standalone operational DB</strong> with causal trees, time
+      travel, cross-agent queries, and behavioral baselines — works with any
+      stack.
+    </p>
+    <p>
+      <strong>Q: How is this different from Mem0?</strong><br />
+      A: Mem0 focuses on long-term memory retrieval for prompts. ZizkaDB adds
+      <strong
+        >causal lineage, session replay, drift baselines, and audit-oriented
+        event storage</strong
+      >.
+    </p>
+    <p>
+      <strong>Q: Do we need to replace Pinecone?</strong><br />
+      A: No. Pinecone is for RAG document search. ZizkaDB is for
+      <strong>agent decision history</strong>. Many teams use both.
+    </p>
+    <p>
+      <strong>Q: Does it wrap our LLM calls?</strong><br />
+      A: No. You add <code>db.log()</code> (or MCP <code>log_event</code>) where
+      you already handle messages/tools. One line for causal link:
+      <code>parent_id=...</code>.
+    </p>
+    <p>
+      <strong>Q: Latency impact?</strong><br />
+      A: Logging is async HTTP; embedding generation is non-blocking on the hot
+      path. Typical integration is fire-and-forget
+      <code>await db.log(...)</code>.
+    </p>
+    <p>
+      <strong>Q: What if OpenAI is down / we don’t use OpenAI?</strong><br />
+      A: Logging and causal features work without embeddings. Semantic search
+      and <code>context_for</code> need embeddings (today: OpenAI). Other
+      embedding providers = roadmap; say “check with team” unless confirmed
+      shipped.
+    </p>
+    <p>
+      <strong>Q: PII / GDPR?</strong><br />
+      A: You control what goes in <code>data</code> and <code>metadata</code>.
+      <code>forget()</code> deletes by metadata filter. Self-host keeps data on
+      your infra.
+    </p>
+    <p>
+      <strong>Q: Can we use it in regulated environments?</strong><br />
+      A: Self-host + your VPC is the usual answer. Managed cloud: discuss DPA,
+      retention, and region with founders — don’t invent certifications.
+    </p>
+    <p>
+      <strong>Q: PyPI package confusion?</strong><br />
+      A: Install <strong><code>zizkadb-sdk</code></strong> (not the unrelated
+      <code>agentdb</code> package on PyPI). Import:
+      <code>from zizkadb import ZizkaDB</code>.
+    </p>
+    <hr />
+    <h2 id="integration-snippets-copy-for-demos">
+      15. Integration snippets (copy for demos)
+    </h2>
+    <p><strong>Minimal Python (managed):</strong></p>
+    <div class="sourceCode" id="cb11">
+      <pre
+        class="sourceCode python"
+      ><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncio</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> zizkadb <span class="im">import</span> ZizkaDB</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> main():</span>
@@ -814,119 +1100,140 @@ class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a h
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    r <span class="op">=</span> <span class="cf">await</span> db.log(agent<span class="op">=</span><span class="st">&quot;demo-bot&quot;</span>, event<span class="op">=</span><span class="st">&quot;started&quot;</span>, data<span class="op">=</span>{<span class="st">&quot;env&quot;</span>: <span class="st">&quot;prod&quot;</span>})</span>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="cf">await</span> db.why(r.event_id))</span>
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>asyncio.run(main())</span></code></pre></div>
-<p><strong>Claude / OpenAI agents:</strong> Log
-<code>user_message</code>, each <code>tool_call</code>, and
-<code>assistant_response</code> with <code>parent_id</code> chaining —
-see homepage examples at db.zizka.ai.</p>
-<p><strong>curl:</strong></p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-X</span> POST https://db.zizka.ai/v1/events <span class="dt">\</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>asyncio.run(main())</span></code></pre>
+    </div>
+    <p>
+      <strong>Claude / OpenAI agents:</strong> Log <code>user_message</code>,
+      each <code>tool_call</code>, and <code>assistant_response</code> with
+      <code>parent_id</code> chaining — see homepage examples at db.zizka.ai.
+    </p>
+    <p><strong>curl:</strong></p>
+    <div class="sourceCode" id="cb12">
+      <pre
+        class="sourceCode bash"
+      ><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-X</span> POST https://db.zizka.ai/v1/events <span class="dt">\</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-H</span> <span class="st">&quot;Authorization: Bearer zizkadb_live_xxxx&quot;</span> <span class="dt">\</span></span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-H</span> <span class="st">&quot;Content-Type: application/json&quot;</span> <span class="dt">\</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">&#39;{&quot;agent&quot;:&quot;demo&quot;,&quot;event&quot;:&quot;tool_call&quot;,&quot;data&quot;:{&quot;tool&quot;:&quot;search&quot;}}&#39;</span></span></code></pre></div>
-<hr />
-<h2 id="what-marketing-should-not-claim-yet">16. What marketing should
-<strong>not</strong> claim (yet)</h2>
-<ul>
-<li>“Real-time alerts” everywhere — baseline exists; <strong>alerting
-product</strong> may be partial/roadmap (homepage mentions “Alerts
-coming” for session 50 narrative).<br />
-</li>
-<li>“Replaces your observability stack” — it complements APM/logs;
-different layer.<br />
-</li>
-<li>“Detects hallucinations” — drift is <strong>behavioral
-statistics</strong>, not truth verification.<br />
-</li>
-<li>“SOC2 / HIPAA certified” — unless explicitly launched.<br />
-</li>
-<li>“Works offline” — needs API reachability (or self-host on
-localhost).</li>
-</ul>
-<p>When unsure: <strong>“Let me connect you to engineering”</strong> or
-point to <strong>docs + GitHub</strong>.</p>
-<hr />
-<h2 id="elevator-pitches-by-persona">17. Elevator pitches by
-persona</h2>
-<table>
-<colgroup>
-<col style="width: 56%" />
-<col style="width: 43%" />
-</colgroup>
-<thead>
-<tr>
-<th>Persona</th>
-<th>Pitch</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Backend engineer</strong></td>
-<td>“One <code>log()</code> per decision, <code>parent_id</code> for
-causality, <code>why()</code> when prod breaks.”</td>
-</tr>
-<tr>
-<td><strong>AI/ML engineer</strong></td>
-<td>“Semantic search + time travel + drift baselines without locking to
-LangChain.”</td>
-</tr>
-<tr>
-<td><strong>Platform / infra</strong></td>
-<td>“Self-host Postgres+Qdrant stack, AGPL, Docker in 60 seconds.”</td>
-</tr>
-<tr>
-<td><strong>Cursor/Claude power user</strong></td>
-<td>“Add MCP — your IDE gets memory, search, and why() with no SDK
-refactor.”</td>
-</tr>
-<tr>
-<td><strong>CTO / head of AI</strong></td>
-<td>“Operational DB for agents: audit trail, GDPR forget, fleet
-baselines — not another vector index.”</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="links-contacts">18. Links &amp; contacts</h2>
-<table>
-<thead>
-<tr>
-<th>Resource</th>
-<th>URL</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Product</td>
-<td>https://db.zizka.ai</td>
-</tr>
-<tr>
-<td>Sign up</td>
-<td>https://db.zizka.ai/signup</td>
-</tr>
-<tr>
-<td>Docs</td>
-<td>https://db.zizka.ai/docs</td>
-</tr>
-<tr>
-<td>API explorer</td>
-<td>https://db.zizka.ai/api-explorer</td>
-</tr>
-<tr>
-<td>GitHub</td>
-<td>https://github.com/Zizka-ai/ZizkaDB</td>
-</tr>
-<tr>
-<td>Company</td>
-<td>Zizka AI</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="quick-reference-card-print-this">19. Quick reference card (print
-this)</h2>
-<pre><code>Product:     ZizkaDB — operational DB for AI agents
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> <span class="st">&#39;{&quot;agent&quot;:&quot;demo&quot;,&quot;event&quot;:&quot;tool_call&quot;,&quot;data&quot;:{&quot;tool&quot;:&quot;search&quot;}}&#39;</span></span></code></pre>
+    </div>
+    <hr />
+    <h2 id="what-marketing-should-not-claim-yet">
+      16. What marketing should <strong>not</strong> claim (yet)
+    </h2>
+    <ul>
+      <li>
+        “Real-time alerts” everywhere — baseline exists;
+        <strong>alerting product</strong> may be partial/roadmap (homepage
+        mentions “Alerts coming” for session 50 narrative).<br />
+      </li>
+      <li>
+        “Replaces your observability stack” — it complements APM/logs; different
+        layer.<br />
+      </li>
+      <li>
+        “Detects hallucinations” — drift is
+        <strong>behavioral statistics</strong>, not truth verification.<br />
+      </li>
+      <li>“SOC2 / HIPAA certified” — unless explicitly launched.<br /></li>
+      <li>
+        “Works offline” — needs API reachability (or self-host on localhost).
+      </li>
+    </ul>
+    <p>
+      When unsure: <strong>“Let me connect you to engineering”</strong> or point
+      to <strong>docs + GitHub</strong>.
+    </p>
+    <hr />
+    <h2 id="elevator-pitches-by-persona">17. Elevator pitches by persona</h2>
+    <table>
+      <colgroup>
+        <col style="width: 56%" />
+        <col style="width: 43%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Persona</th>
+          <th>Pitch</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Backend engineer</strong></td>
+          <td>
+            “One <code>log()</code> per decision, <code>parent_id</code> for
+            causality, <code>why()</code> when prod breaks.”
+          </td>
+        </tr>
+        <tr>
+          <td><strong>AI/ML engineer</strong></td>
+          <td>
+            “Semantic search + time travel + drift baselines without locking to
+            LangChain.”
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Platform / infra</strong></td>
+          <td>
+            “Self-host Postgres+Qdrant stack, AGPL, Docker in 60 seconds.”
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Cursor/Claude power user</strong></td>
+          <td>
+            “Add MCP — your IDE gets memory, search, and why() with no SDK
+            refactor.”
+          </td>
+        </tr>
+        <tr>
+          <td><strong>CTO / head of AI</strong></td>
+          <td>
+            “Operational DB for agents: audit trail, GDPR forget, fleet
+            baselines — not another vector index.”
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <hr />
+    <h2 id="links-contacts">18. Links &amp; contacts</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Resource</th>
+          <th>URL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Product</td>
+          <td>https://db.zizka.ai</td>
+        </tr>
+        <tr>
+          <td>Sign up</td>
+          <td>https://db.zizka.ai/signup</td>
+        </tr>
+        <tr>
+          <td>Docs</td>
+          <td>https://db.zizka.ai/docs</td>
+        </tr>
+        <tr>
+          <td>API explorer</td>
+          <td>https://db.zizka.ai/api-explorer</td>
+        </tr>
+        <tr>
+          <td>GitHub</td>
+          <td>https://github.com/Zizka-ai/ZizkaDB</td>
+        </tr>
+        <tr>
+          <td>Company</td>
+          <td>Zizka AI</td>
+        </tr>
+      </tbody>
+    </table>
+    <hr />
+    <h2 id="quick-reference-card-print-this">
+      19. Quick reference card (print this)
+    </h2>
+    <pre><code>Product:     ZizkaDB — operational DB for AI agents
 URL:         db.zizka.ai
 Install:     pip install zizkadb-sdk | npm install zizkadb-sdk | uvx zizkadb-mcp
 Key prefix:  zizkadb_live_
@@ -934,9 +1241,13 @@ Core APIs:   log · why · search · at · context_for · baseline · forget
 Different:   causal lineage · time travel · behavioral drift · self-host free
 Not:         vector-only DB · LangChain-only · LLM wrapper
 License:     AGPL (core/SDK) · MIT (MCP)</code></pre>
-<hr />
-<p><em>Internal doc for Zizka AI marketing. For engineering changes,
-verify against <code>main</code> branch and live docs before external
-publication.</em></p>
-</body>
+    <hr />
+    <p>
+      <em
+        >Internal doc for Zizka AI marketing. For engineering changes, verify
+        against <code>main</code> branch and live docs before external
+        publication.</em
+      >
+    </p>
+  </body>
 </html>

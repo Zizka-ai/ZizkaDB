@@ -13,13 +13,13 @@ zizkadb init my-agent --template mcp-cursor # ~/.cursor/mcp.json
 
 ## In this folder
 
-| Example | Description |
-|---------|-------------|
-| [minimal-python](minimal-python/) | `log` → `parent_id` → `why()` |
-| [openai-agent](openai-agent/) | AsyncOpenAI causal logging |
-| [langchain-agent](langchain-agent/) | LangChain callbacks |
-| [crewai-agent](crewai-agent/) | CrewAI kickoff + output |
-| [mcp-cursor](mcp-cursor/) | MCP config for Cursor |
+| Example                             | Description                   |
+| ----------------------------------- | ----------------------------- |
+| [minimal-python](minimal-python/)   | `log` → `parent_id` → `why()` |
+| [openai-agent](openai-agent/)       | AsyncOpenAI causal logging    |
+| [langchain-agent](langchain-agent/) | LangChain callbacks           |
+| [crewai-agent](crewai-agent/)       | CrewAI kickoff + output       |
+| [mcp-cursor](mcp-cursor/)           | MCP config for Cursor         |
 
 ## Local API
 

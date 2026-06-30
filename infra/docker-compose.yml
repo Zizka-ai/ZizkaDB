@@ -12,12 +12,12 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zizkadb}
       POSTGRES_DB: ${POSTGRES_DB:-zizkadb}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../core/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U zizkadb"]
+      test: ['CMD-SHELL', 'pg_isready -U zizkadb']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,8 +26,8 @@ services:
     image: qdrant/qdrant:latest
     container_name: zizkadb_qdrant
     ports:
-      - "6333:6333"
-      - "6334:6334"
+      - '6333:6333'
+      - '6334:6334'
     volumes:
       - qdrant_data:/qdrant/storage
     environment:
@@ -37,12 +37,12 @@ services:
     image: redis:7-alpine
     container_name: zizkadb_redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -53,7 +53,7 @@ services:
       dockerfile: Dockerfile
     container_name: zizkadb_api
     ports:
-      - "8000:8000"
+      - '8000:8000'
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-zizkadb}:${POSTGRES_PASSWORD:-zizkadb}@postgres:5432/${POSTGRES_DB:-zizkadb}
       QDRANT_URL: http://qdrant:6333
@@ -69,7 +69,7 @@ services:
       EMAIL_PORT: ${EMAIL_PORT:-465}
       EMAIL_USER: ${EMAIL_USER}
       EMAIL_PASS: ${EMAIL_PASS}
-      EMAIL_FROM: "${EMAIL_FROM}"
+      EMAIL_FROM: '${EMAIL_FROM}'
       PUBLIC_API_URL: ${PUBLIC_API_URL:-https://db.zizka.ai}
       COMMUNITY_UPLOAD_DIR: /data/community_uploads
     depends_on:

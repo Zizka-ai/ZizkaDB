@@ -20,6 +20,6 @@ cp mcp.local.json ~/.cursor/mcp.json
 
 Requires `bash scripts/setup-local.sh` running first.
 
-Quit Cursor (`Cmd+Q`) and reopen. Try: *"Log that we chose Postgres for the agent store"*.
+Quit Cursor (`Cmd+Q`) and reopen. Try: _"Log that we chose Postgres for the agent store"_.
 
 Tools: `log_event`, `why`, `search_memory`, `get_context`, `time_travel`, `memory_diff`, `forget`.

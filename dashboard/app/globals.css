@@ -13,7 +13,11 @@
   --brand: #f97316;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
@@ -21,12 +25,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.font-mono { font-family: 'JetBrains Mono', monospace; }
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 2px;
+}
 
 /* Code blocks */
 pre {

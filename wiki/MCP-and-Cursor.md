@@ -1,6 +1,6 @@
 # MCP and Cursor
 
-**Package:** `zizkadb-mcp` on PyPI  
+**Package:** `zizkadb-mcp` on PyPI
 **Run:** `uvx zizkadb-mcp`
 
 ## Install uv (for uvx)
@@ -57,14 +57,14 @@ Dev key `zizkadb_dev_local` is auto-injected on localhost (matches `DEV_API_KEY`
 
 ## MCP tools
 
-| Tool | Purpose |
-|------|---------|
-| `log_event` | Record decision / action |
-| `search_memory` | Semantic search |
-| `get_context` | Memory for system prompt |
-| `why` | Causal chain |
-| `query_events` | List/filter recent events |
-| `time_travel` | State at timestamp |
+| Tool            | Purpose                   |
+| --------------- | ------------------------- |
+| `log_event`     | Record decision / action  |
+| `search_memory` | Semantic search           |
+| `get_context`   | Memory for system prompt  |
+| `why`           | Causal chain              |
+| `query_events`  | List/filter recent events |
+| `time_travel`   | State at timestamp        |
 
 ## Example prompt in Cursor
 
