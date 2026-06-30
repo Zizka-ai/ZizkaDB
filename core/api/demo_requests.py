@@ -5,19 +5,25 @@ Public demo request form — landing page "Book demo" submissions.
 from __future__ import annotations
 
 import logging
-import time
-
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
-
 from db.connection import get_pool
+from services.rate_limiter import RateLimiter, InMemoryStorage, SlidingWindowStrategy
 
 router = APIRouter()
 log = logging.getLogger(__name__)
 
-_rate: dict[str, list[float]] = {}
+
 RATE_WINDOW_SEC = 3600
 RATE_MAX = 8
+
+demo_limiter = RateLimiter(
+    limit=RATE_MAX,
+    window_sec=RATE_WINDOW_SEC,
+    storage=InMemoryStorage(),
+    strategy=SlidingWindowStrategy(),
+    detail="Too many requests. Try again later."
+)
 
 
 class CreateDemoRequestBody(BaseModel):
@@ -36,22 +42,13 @@ def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def _check_rate(ip: str) -> None:
-    now = time.time()
-    hits = [t for t in _rate.get(ip, []) if now - t < RATE_WINDOW_SEC]
-    if len(hits) >= RATE_MAX:
-        raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
-    hits.append(now)
-    _rate[ip] = hits
-
-
 @router.post("", status_code=201)
 async def create_demo_request(body: CreateDemoRequestBody, request: Request):
     if body.botcheck:
         raise HTTPException(status_code=400, detail="Invalid submission")
 
     ip = _client_ip(request)
-    _check_rate(ip)
+    await demo_limiter.check(ip)
 
     pool = get_pool()
     row = await pool.fetchrow(
