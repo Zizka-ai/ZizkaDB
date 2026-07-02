@@ -7,7 +7,7 @@ import logging
 from fastapi import HTTPException
 
 from services.auth import generate_api_key
-from services.billing import billing_enforced, fetch_tenant_plan
+from services.billing import fetch_tenant_plan
 from services.plan_limits import api_key_limit_for_plan, limits_enforced
 
 log = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ async def assert_and_reserve_api_key_slot(conn, *, tenant_id: str) -> None:
         )
         return
 
-    limit = api_key_limit_for_plan(plan, billing_enforced=billing_enforced())
+    limit = api_key_limit_for_plan(plan)
     if limit is None:
         return
 

@@ -152,7 +152,7 @@ async def api_keys_usage(session: dict = Depends(require_dashboard_session)):
     Returns unlimited whenever enforcement is off or the plan is uncapped, so the
     dashboard UI stays consistent with the backend guard. Fail-open on lookup error.
     """
-    from services.billing import billing_enforced, fetch_tenant_plan
+    from services.billing import fetch_tenant_plan
     from services.plan_limits import api_key_limit_for_plan, limits_enforced
 
     pool = get_pool()
@@ -164,7 +164,7 @@ async def api_keys_usage(session: dict = Depends(require_dashboard_session)):
     if limits_enforced():
         try:
             plan = await fetch_tenant_plan(pool, tenant_id)
-            limit = api_key_limit_for_plan(plan, billing_enforced=billing_enforced())
+            limit = api_key_limit_for_plan(plan)
         except Exception as e:
             log.warning("api-key usage: plan lookup failed for tenant %s: %s", tenant_id, e)
             limit = None

@@ -248,8 +248,6 @@ async def admin_managed_overview(_: dict = Depends(require_admin)):
                 WHERE subscription_status = 'trialing') AS trialing,
             (SELECT COUNT(*) FROM users
                 WHERE subscription_status = 'active') AS active_paid,
-            (SELECT COUNT(*) FROM users
-                WHERE stripe_customer_id IS NOT NULL) AS stripe_linked,
             (SELECT COUNT(DISTINCT u.user_id) FROM users u
                 JOIN api_keys ak ON ak.tenant_id = u.tenant_id AND ak.revoked = FALSE) AS users_with_keys,
             (SELECT COUNT(DISTINCT tenant_id) FROM events
@@ -289,7 +287,6 @@ async def admin_managed_subscribers(
         f"""
         SELECT
             u.user_id, u.email, u.plan, u.subscription_status, u.trial_ends_at,
-            u.stripe_customer_id, u.stripe_subscription_id,
             u.created_at, u.last_login,
             t.tenant_id, t.name AS tenant_name,
             (SELECT COUNT(*) FROM api_keys
@@ -312,15 +309,12 @@ async def admin_managed_subscribers(
             "plan":                   r["plan"],
             "subscription_status":    r["subscription_status"],
             "trial_ends_at":          r["trial_ends_at"].isoformat() if r["trial_ends_at"] else None,
-            "stripe_customer_id":     r["stripe_customer_id"],
-            "stripe_subscription_id": r["stripe_subscription_id"],
             "created_at":             r["created_at"].isoformat() if r["created_at"] else None,
             "last_login":             r["last_login"].isoformat() if r["last_login"] else None,
             "tenant_id":              str(r["tenant_id"]) if r["tenant_id"] else None,
             "tenant_name":            r["tenant_name"],
             "active_keys":            r["active_keys"],
             "events_7d":              r["events_7d"],
-            "billing_source":         "stripe" if r["stripe_customer_id"] else "local_trial",
         }
         for r in rows
     ]
@@ -375,7 +369,6 @@ async def admin_managed_users(
         f"""
         SELECT
             u.user_id, u.email, u.plan, u.subscription_status, u.trial_ends_at,
-            u.stripe_customer_id, u.stripe_subscription_id,
             u.created_at, u.last_login,
             t.tenant_id, t.name AS tenant_name, t.created_at AS tenant_created_at,
             (SELECT COUNT(*) FROM api_keys
@@ -432,13 +425,7 @@ async def admin_managed_users(
             ),
             "plan":              r["plan"],
             "subscription_status": r["subscription_status"],
-            "stripe_customer_id": r["stripe_customer_id"],
             "trial_ends_at":     r["trial_ends_at"].isoformat() if r["trial_ends_at"] else None,
-            "billing_source":    (
-                "stripe" if r["stripe_customer_id"]
-                else "local_trial" if r["subscription_status"]
-                else "none"
-            ),
         }
         for r in rows
     ]

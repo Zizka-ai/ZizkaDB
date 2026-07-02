@@ -20,9 +20,7 @@
     "clsx": "^2.1.1",
     "tailwind-merge": "^2.3.0",
     "date-fns": "^3.6.0",
-    "jose": "^5.2.4",
-    "@stripe/stripe-js": "^4.8.0",
-    "@stripe/react-stripe-js": "^2.8.1"
+    "jose": "^5.2.4"
   },
   "devDependencies": {
     "typescript": "^5",

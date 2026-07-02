@@ -64,7 +64,6 @@ interface ManagedUser {
   customer_status: 'active' | 'signed_up' | 'registered'
   plan: string | null
   subscription_status: string | null
-  stripe_customer_id: string | null
   trial_ends_at: string | null
 }
 
@@ -74,7 +73,6 @@ interface ManagedOverview {
   subscribers?: number
   trialing?: number
   active_paid?: number
-  stripe_linked?: number
   users_with_keys?: number
   tenants_active_7d?: number
 }
@@ -85,15 +83,12 @@ interface Subscriber {
   plan: string | null
   subscription_status: string | null
   trial_ends_at: string | null
-  stripe_customer_id: string | null
-  stripe_subscription_id: string | null
   created_at: string | null
   last_login: string | null
   tenant_id: string | null
   tenant_name: string | null
   active_keys: number
   events_7d: number
-  billing_source: string
 }
 
 interface ManagedUsage {
@@ -504,11 +499,10 @@ function SubscribersSection({ token }: { token: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {overview && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
           <Stat label="Subscribers" value={fmt(overview.subscribers)} sub="trial + active + past due" accent="#22c55e" />
           <Stat label="Trialing" value={fmt(overview.trialing)} sub="free trial period" accent="#3b82f6" />
-          <Stat label="Active paid" value={fmt(overview.active_paid)} sub="Stripe active" />
-          <Stat label="Stripe linked" value={fmt(overview.stripe_linked)} sub="has customer id in Stripe" accent="#f97316" />
+          <Stat label="Active paid" value={fmt(overview.active_paid)} sub="active subscription" />
         </div>
       )}
 
@@ -539,7 +533,7 @@ function SubscribersSection({ token }: { token: string }) {
         <button type="button" onClick={load} style={btnSmall()}>Refresh</button>
       </div>
 
-      <Card title="Who has subscribed" subtitle="Everyone on a Pro/Team trial or paid plan. Email = signup identity. Stripe column links to Stripe Dashboard when checkout has run.">
+      <Card title="Who has subscribed" subtitle="Everyone on a Pro/Team trial or paid plan. Email = signup identity.">
         {!rows ? <SkeletonBlock /> : rows.length === 0 ? (
           <Empty>
             No subscribers yet. Run DB migration 002_user_billing.sql on the server, then restart API.
@@ -554,7 +548,6 @@ function SubscribersSection({ token }: { token: string }) {
                   <Th>Plan</Th>
                   <Th>Status</Th>
                   <Th>Trial ends</Th>
-                  <Th>Billing</Th>
                   <Th>Joined</Th>
                   <Th align="right">Keys</Th>
                   <Th align="right">Events 7d</Th>
@@ -575,21 +568,6 @@ function SubscribersSection({ token }: { token: string }) {
                       {u.trial_ends_at
                         ? format(new Date(u.trial_ends_at), 'MMM d, yyyy HH:mm')
                         : '—'}
-                    </Td>
-                    <Td>
-                      <Tag color={u.billing_source === 'stripe' ? '#f97316' : '#3b82f6'}>
-                        {u.billing_source === 'stripe' ? 'Stripe' : 'Local trial'}
-                      </Tag>
-                      {u.stripe_customer_id && (
-                        <a
-                          href={`https://dashboard.stripe.com/customers/${u.stripe_customer_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ display: 'block', fontSize: 10, color: '#f97316', marginTop: 6 }}
-                        >
-                          Open Stripe ↗
-                        </a>
-                      )}
                     </Td>
                     <Td subtle>
                       {u.created_at ? format(new Date(u.created_at), 'MMM d, yyyy') : '—'}
@@ -742,16 +720,6 @@ function ManagedSection({ token }: { token: string }) {
                       {u.plan ?? '—'}
                       {u.subscription_status && (
                         <div style={{ fontSize: 10, marginTop: 2 }}>{u.subscription_status}</div>
-                      )}
-                      {u.stripe_customer_id && (
-                        <a
-                          href={`https://dashboard.stripe.com/customers/${u.stripe_customer_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ display: 'block', fontSize: 10, color: '#f97316', marginTop: 4 }}
-                        >
-                          Stripe ↗
-                        </a>
                       )}
                     </Td>
                     <Td subtle>

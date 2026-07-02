@@ -72,12 +72,7 @@ services:
       EMAIL_FROM: "${EMAIL_FROM}"
       PUBLIC_API_URL: ${PUBLIC_API_URL:-https://db.zizka.ai}
       DASHBOARD_URL: ${DASHBOARD_URL:-https://db.zizka.ai}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
-      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
-      STRIPE_PRO_PRICE_ID: ${STRIPE_PRO_PRICE_ID:-}
-      STRIPE_TEAM_PRICE_ID: ${STRIPE_TEAM_PRICE_ID:-}
-      STRIPE_TRIAL_DAYS: ${STRIPE_TRIAL_DAYS:-30}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      TRIAL_DAYS: ${TRIAL_DAYS:-30}
       COMMUNITY_UPLOAD_DIR: /data/community_uploads
     depends_on:
       postgres:

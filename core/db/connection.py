@@ -61,6 +61,12 @@ async def init_db():
             trial_ends_at = COALESCE(trial_ends_at, created_at + INTERVAL '30 days')
         WHERE plan IS NULL OR subscription_status IS NULL
     """)
+    await _pg_pool.execute("""
+        UPDATE users
+        SET subscription_status = 'trialing',
+            trial_ends_at = COALESCE(trial_ends_at, NOW() + INTERVAL '30 days')
+        WHERE subscription_status = 'pending_checkout'
+    """)
 
     await _pg_pool.execute("""
         CREATE TABLE IF NOT EXISTS community_posts (

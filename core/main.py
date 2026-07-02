@@ -15,7 +15,6 @@ from api.memory import router as memory_router
 from api.telemetry import router as telemetry_router
 from api.admin import router as admin_router
 from api.stats import router as stats_router
-from api.billing import router as billing_router
 from api.billing_checkout import router as billing_checkout_router
 from api.community import router as community_router
 from api.demo_requests import router as demo_requests_router
@@ -71,7 +70,6 @@ app.include_router(memory_router,    prefix="/v1/memory",    tags=["memory"])
 app.include_router(telemetry_router, prefix="/v1/telemetry", tags=["telemetry"])
 app.include_router(admin_router,     prefix="/v1/admin",     include_in_schema=False)
 app.include_router(stats_router,     prefix="/v1/stats",     tags=["stats"])
-app.include_router(billing_router,   prefix="/v1/webhooks",  include_in_schema=False)
 app.include_router(billing_checkout_router, prefix="/v1/billing", tags=["billing"])
 app.include_router(community_router, prefix="/v1/community", tags=["community"])
 app.include_router(demo_requests_router, prefix="/v1/demo-requests", tags=["demo"])

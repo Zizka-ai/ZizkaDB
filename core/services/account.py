@@ -7,7 +7,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from db.connection import get_pool, get_qdrant, QDRANT_COLLECTION
-from services.billing import billing_enforced, fetch_user_billing
+from services.billing import fetch_user_billing
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ async def grant_retention_trial(*, user_id: str) -> dict:
     pool = get_pool()
     row = await pool.fetchrow(
         """
-        SELECT user_id, email, retention_trial_used, stripe_subscription_id, trial_ends_at
+        SELECT user_id, email, retention_trial_used, trial_ends_at
         FROM users WHERE user_id = $1::uuid
         """,
         user_id,
@@ -54,20 +54,6 @@ async def grant_retention_trial(*, user_id: str) -> dict:
         raise ValueError("You have already used your extra free month")
 
     new_trial_end = datetime.now(timezone.utc) + timedelta(days=RETENTION_TRIAL_DAYS)
-
-    sub_id = row["stripe_subscription_id"]
-    stripe_secret = os.getenv("STRIPE_SECRET_KEY", "")
-    if sub_id and stripe_secret:
-        try:
-            import stripe
-
-            stripe.api_key = stripe_secret
-            stripe.Subscription.modify(
-                sub_id,
-                trial_end=int(new_trial_end.timestamp()),
-            )
-        except Exception as e:
-            log.warning("Stripe trial extension skipped for %s: %s", user_id, e)
 
     await pool.execute(
         """
@@ -112,7 +98,7 @@ async def delete_managed_account(*, user_id: str, tenant_id: str) -> None:
     pool = get_pool()
     row = await pool.fetchrow(
         """
-        SELECT user_id, email, tenant_id, stripe_subscription_id
+        SELECT user_id, email, tenant_id
         FROM users WHERE user_id = $1::uuid
         """,
         user_id,
@@ -121,17 +107,6 @@ async def delete_managed_account(*, user_id: str, tenant_id: str) -> None:
         raise ValueError("Account not found")
     if str(row["tenant_id"]) != str(tenant_id):
         raise PermissionError("Tenant mismatch")
-
-    sub_id = row["stripe_subscription_id"]
-    stripe_secret = os.getenv("STRIPE_SECRET_KEY", "")
-    if sub_id and stripe_secret:
-        try:
-            import stripe
-
-            stripe.api_key = stripe_secret
-            stripe.Subscription.cancel(sub_id)
-        except Exception as e:
-            log.warning("Stripe subscription cancel skipped for %s: %s", user_id, e)
 
     email = row["email"]
     tid = str(row["tenant_id"])

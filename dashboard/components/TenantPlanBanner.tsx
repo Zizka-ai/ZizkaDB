@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react'
 import { getToken } from '@/lib/auth'
 import { getBillingStatus, type BillingStatus } from '@/lib/api'
 
-const IS_DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
-
 const PLAN_LABELS: Record<string, string> = {
   pro: 'Pro',
   team: 'Team',
@@ -27,7 +25,6 @@ export function TenantPlanBanner() {
   const [status, setStatus] = useState<BillingStatus | null>(null)
 
   useEffect(() => {
-    if (IS_DEV_MODE) return
     const token = getToken()
     if (!token) return
 
@@ -38,19 +35,15 @@ export function TenantPlanBanner() {
     return () => { cancelled = true }
   }, [])
 
-  if (IS_DEV_MODE || !status?.plan) return null
+  if (!status?.plan) return null
 
   const label = PLAN_LABELS[status.plan] ?? status.plan.toUpperCase()
   const trialing = status.subscription_status === 'trialing'
-  const pastDue = status.subscription_status === 'past_due'
 
   return (
     <div
       className="px-4 sm:px-6 py-2.5 border-b flex flex-wrap items-center justify-between gap-2"
-      style={{
-        background: pastDue ? '#2a1515' : '#111',
-        borderColor: pastDue ? '#7f1d1d' : '#1f1f1f',
-      }}
+      style={{ background: '#111', borderColor: '#1f1f1f' }}
     >
       <div className="flex items-center gap-2 text-sm">
         <span style={{ color: '#a3a3a3' }}>Plan</span>
@@ -70,9 +63,6 @@ export function TenantPlanBanner() {
         )}
         {!trialing && status.subscription_status === 'active' && (
           <span style={{ color: '#86efac' }}>· Active</span>
-        )}
-        {pastDue && (
-          <span style={{ color: '#fca5a5' }}>· Payment failed — update card in Settings</span>
         )}
       </div>
     </div>

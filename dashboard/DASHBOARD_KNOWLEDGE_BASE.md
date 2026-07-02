@@ -2,7 +2,7 @@
 
 > Single source of truth for the Dashboard module. Reverse-engineered directly from the codebase.
 >
-> **Last verified:** 2026-07-02 · **Maintenance:** when you change billing/auth/the signup funnel, `lib/api.ts`, routes, or a backend endpoint the dashboard calls, update the affected section here (esp. §7, §8, §17.3, §18, §19) in the same change. Line numbers are best-effort snapshots — verify the cited file and prefer symbol names. This doc is auto-surfaced to the agent via `.cursor/rules/dashboard.mdc`.
+> **Last verified:** 2026-07-02 · **Stripe removed:** no payment provider; signup is plan → OTP → dashboard with 30-day trial. Legacy `/signup/checkout` and `/signup/success` redirect away.
 >
 > **Important finding:** There is **no "Pricing Modal"** in this codebase. Pricing is a static section on the landing page (`app/page.tsx`, `#pricing`). The only actual modal is the **Calendly "Book demo" modal** (`components/marketing/CalendlyBookModal.tsx`).
 >
@@ -128,10 +128,7 @@ DashboardLayout (app/dashboard/layout.tsx)
     ├── BrandLogo
     ├── nav Links (Agents/Search/Settings)
     └── <main>
-        ├── TenantPlanBanner     # plan pill + trial/active/past_due
-        ├── ConnectionStatus     # /health poll
-        └── SubscriptionGate     # billing redirect guard
-            └── {page}           # DashboardPage / SearchPage / SettingsPage / AgentDetail
+        └── {page}           # DashboardPage / SearchPage / SettingsPage / AgentDetail
 ```
 
 **Landing tree (`app/page.tsx`):** `SiteNav` → Hero (+`CalendlyBookModal`, `IntegrationStrip`) → `ThreeWaysConnectSection` → `ConversationCompare` → engineering cards → `TrustBar` → **Pricing section** → `CompetitorCompare` → final CTA → footer.
@@ -152,14 +149,8 @@ flowchart TD
   Signup -->|no gdpr consent| Start["/signup/start?plan=x"]
   Plan --> Start
   Start -->|consent given| Signup2["/signup?plan=x (email+OTP)"]
-  Signup2 -->|verifyOtp ok| Redirect{"postAuthRedirect"}
-  Redirect -->|has_access| Dash["/dashboard"]
-  Redirect -->|requires_plan_selection| Plan
-  Redirect -->|requires_checkout| Checkout["/signup/checkout?plan=x"]
-  Checkout -->|Stripe| StripeExt["Stripe Checkout"]
-  StripeExt -->|success_url| Success["/signup/success?session_id"]
-  Success -->|confirmCheckout has_access| Dash
-  Login -->|verifyOtp| Redirect
+  Signup2 -->|verifyOtp ok| Dash["/dashboard"]
+  Login -->|verifyOtp| Dash
   Login -->|DEV_MODE dev-token| Dash
   Middleware["middleware.ts"] -->|no token| Login
   Dash --> AgentDetail["/dashboard/agents/[id]"]
@@ -169,7 +160,6 @@ flowchart TD
 
 **Route guards / redirects:**
 - **Edge (`middleware.ts`):** `/dashboard*` without `zizkadb_token` → `/login?next=<path>` (all responses `X-Robots-Tag: noindex`). `/admin*` subpaths without `zizkadb_admin_token` → `/admin`.
-- **Client (`SubscriptionGate`)**: billing-based redirect (see §6/§7).
 - **Note:** middleware reads a **cookie**, but `lib/auth.ts` reads the token from **localStorage**. Both are written on `setToken()`, so they normally agree (see Risks §14).
 
 ---
@@ -212,10 +202,8 @@ Landing pricing → Link → (none) → sessionStorage.signup_plan=pro → /sign
   /signup otp → handleVerifyOtp → verifyOtp(email,otp,{gdpr,marketing})
        → setToken(access_token) → clear consent keys
        → selectBillingPlan(token,'pro')  [best-effort]
-       → clear signup_plan → router.replace(postAuthRedirect(data))
-  postAuthRedirect → requires_checkout → /signup/checkout?plan=pro
-  /signup/checkout → getBillingStatus → selectBillingPlan (if none) → createCheckoutSession → window.location = Stripe
-  Stripe → /signup/success?session_id=... → confirmCheckout (retry x5) → has_access → /dashboard
+       → clear signup_plan → router.replace('/dashboard')
+  Backend sets subscription_status=trialing, trial_ends_at=+30d on OTP verify
 ```
 
 **B. From a generic CTA (`/signup`, no plan):** `/signup` sees no `signup_plan` → `router.replace('/signup/plan')` → user picks plan → `/signup/start?plan=x` → back to `/signup?plan=x` → same as A.

@@ -309,15 +309,6 @@ export async function verifyOtp(
   }
 }
 
-export interface BillingPlan {
-  id: 'pro' | 'team'
-  name: string
-  price: string
-  price_sub: string
-  highlight: boolean
-  features: string[]
-}
-
 export interface BillingStatus {
   enforced: boolean
   has_access: boolean
@@ -326,19 +317,7 @@ export interface BillingStatus {
   subscription_status: string | null
   trial_ends_at: string | null
   plan: string | null
-  stripe_publishable_key?: string | null
   trial_days?: number | null
-}
-
-export async function getBillingConfig(): Promise<{
-  enforced: boolean
-  stripe_publishable_key: string | null
-  trial_days: number | null
-  plans: BillingPlan[]
-}> {
-  const res = await fetch(`${API}/v1/billing/config`)
-  if (!res.ok) throw new Error('Could not load billing config')
-  return res.json()
 }
 
 export async function getBillingStatus(token: string): Promise<BillingStatus> {
@@ -352,47 +331,13 @@ export async function selectBillingPlan(token: string, plan: 'pro' | 'team'): Pr
   })
 }
 
-export async function createCheckoutSession(
-  token: string,
-  plan: 'pro' | 'team',
-): Promise<{ url: string; session_id: string }> {
-  return apiFetch('/v1/billing/checkout-session', token, {
-    method: 'POST',
-    body: JSON.stringify({ plan }),
-  })
-}
-
-export async function confirmCheckout(token: string, sessionId: string): Promise<BillingStatus> {
-  return apiFetch('/v1/billing/confirm-checkout', token, {
-    method: 'POST',
-    body: JSON.stringify({ session_id: sessionId }),
-  })
-}
-
-export function postAuthRedirect(data: {
+export function postAuthRedirect(_data: {
   requires_plan_selection?: boolean
   requires_checkout?: boolean
   has_access?: boolean
   plan?: string | null
 }): string {
-  if (data.has_access) return '/dashboard'
-  if (data.requires_plan_selection) return '/signup/plan'
-  if (data.requires_checkout) {
-    const plan = data.plan === 'team' ? 'team' : data.plan === 'pro' ? 'pro' : null
-    return plan ? `/signup/checkout?plan=${plan}` : '/signup/plan'
-  }
   return '/dashboard'
-}
-
-export function billingGateRedirect(status: BillingStatus): string | null {
-  if (!status.enforced || status.has_access) return null
-  if (status.requires_plan_selection) return '/signup/plan'
-  if (status.requires_checkout) {
-    const plan = status.plan === 'team' ? 'team' : status.plan === 'pro' ? 'pro' : null
-    return plan ? `/signup/checkout?plan=${plan}` : '/signup/plan'
-  }
-  if (!status.has_access) return '/signup/plan'
-  return null
 }
 
 export interface AccountOptions {

@@ -262,35 +262,18 @@ async def verify_otp(
                     # We still enforce that consent was checked in the signup UI/API payload.
                     log.warning("consent persistence skipped for user %s: %s", user_id, e)
 
-            from services.billing import billing_enforced
-
-            if billing_enforced():
-                # mark_pending_checkout uses pool-level execute; keep inside txn boundary via direct SQL
-                await conn.execute(
-                    """
-                    UPDATE users
-                    SET subscription_status = 'pending_checkout'
-                    WHERE user_id = $1::uuid
-                      AND stripe_subscription_id IS NULL
-                      AND subscription_status IS DISTINCT FROM 'active'
-                      AND subscription_status IS DISTINCT FROM 'trialing'
-                    """,
-                    user_id,
-                )
-            else:
-                # Self-host / local: 30-day Pro trial without Stripe
-                await conn.execute(
-                    """
-                    UPDATE users
-                    SET plan = COALESCE(plan, 'pro'),
-                        subscription_status = COALESCE(subscription_status, 'trialing'),
-                        trial_ends_at = COALESCE(trial_ends_at, NOW() + INTERVAL '30 days')
-                    WHERE user_id = $1::uuid
-                      AND plan IS NULL
-                      AND subscription_status IS NULL
-                    """,
-                    user_id,
-                )
+            await conn.execute(
+                """
+                UPDATE users
+                SET plan = COALESCE(plan, 'pro'),
+                    subscription_status = COALESCE(subscription_status, 'trialing'),
+                    trial_ends_at = COALESCE(trial_ends_at, NOW() + INTERVAL '30 days')
+                WHERE user_id = $1::uuid
+                  AND (plan IS NULL OR subscription_status IS NULL
+                       OR subscription_status = 'pending_checkout')
+                """,
+                user_id,
+            )
 
     return _issue_tokens(user_id, email, tenant_id)
 

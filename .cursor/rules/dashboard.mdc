@@ -11,21 +11,20 @@ alwaysApply: false
 ## Conventions (match these)
 - Next.js 14 App Router. Interactive pages are Client Components (`'use client'`). TS `strict`, `@/*` alias. No Prettier — match surrounding style (2-space, single quotes, no semicolons).
 - **All API calls go through `lib/api.ts`** (`apiFetch` injects auth + normalizes errors). No React Query/SWR/Redux/Zustand/Context — local `useState`/`useEffect` only.
-- Guard every async effect with a `let cancelled = false` flag; check it before `setState` (see `SubscriptionGate`, `checkout`, `success`).
+- Guard every async effect with a `let cancelled = false` flag; check it before `setState` (see `signup/page.tsx`, `TenantPlanBanner`).
 - Redirect guards: render the page's `*Fallback` loader while a redirect is pending; never render real UI before guard checks resolve (see the `checked` gate in `signup/page.tsx`).
 - Wrap `useSearchParams` pages in `<Suspense>` (Next CSR bailout).
 - Errors: `apiFetch` throws a normalized `Error`; catch and render into a local `error` string.
 
 ## Critical gotchas (do not break)
-- **Billing is a client-side UX gate, not a security boundary.** `get_tenant` (backend) does NOT check subscription; a `pending_checkout` JWT can still hit `/v1/agents` and `/v1/events`. Access is enforced by `SubscriptionGate` + `has_access` only. Account routes are the exception (JWT-only).
+- **No payment gate.** Signup: plan → consent → OTP → `/dashboard`. `postAuthRedirect` always returns `/dashboard`.
 - **Auth split:** middleware reads the access-token cookie; client code reads `localStorage`. The refresh token is an HttpOnly cookie (backend). Keep both cookie + localStorage in sync via `setToken`/`clearToken`.
 - **Funnel state** lives in `sessionStorage` (`signup_plan`, `signup_consent_gdpr`, `signup_consent_marketing`); cleared after OTP verify.
-- Routing helpers `postAuthRedirect` / `billingGateRedirect` (`lib/api.ts`) are the single source for gated redirects — reuse them.
-- Self-host `NEXT_PUBLIC_DEV_MODE=true` bypasses the billing gate, hides the plan banner, and enables dev-token login.
-- **API key limits (§7):** active keys per tenant are capped by plan (Pro 3 / Team 10; else unlimited) and count ALL keys (tenant-wide + agent-scoped), so each agent consumes a slot on Pro/Team. UI reads `useApiKeyQuota` (`GET /v1/auth/api-keys/usage`) — never hardcode limits; render `<ApiKeyUsage>` and disable create at `at_limit`. Refresh the quota after every create/delete (including agent create/delete). Backend is the real guard; enforcement is behind `API_KEY_LIMITS_ENFORCED` (default OFF).
+- Self-host `NEXT_PUBLIC_DEV_MODE=true` enables dev-token login and changes onboarding copy.
+- **API key limits (§7):** active keys per tenant are capped by plan (Pro 3 / Team 10; else unlimited) when `API_KEY_LIMITS_ENFORCED=true`. UI reads `useApiKeyQuota` — never hardcode limits.
 
 ## Testing / safety
-- There are **no frontend tests** and `apiFetch` is untyped. Prefer adding tests for pure helpers (`postAuthRedirect`, `billingGateRedirect`, funnel guards) when touching them, and type new `apiFetch` responses.
+- There are **no frontend tests** and `apiFetch` is untyped. Prefer adding tests for pure helpers (`postAuthRedirect`, funnel guards) when touching them.
 
 ## Keep the KB in sync
-If you change billing/auth/the signup funnel, `lib/api.ts`, routes, a backend endpoint the dashboard calls, or the DB schema, **update `dashboard/DASHBOARD_KNOWLEDGE_BASE.md`** (esp. §7, §8, §17.3, §18, §19-21) in the same change. Line numbers there are best-effort — verify the cited file, prefer symbol names over line numbers.
+If you change billing/auth/the signup funnel, `lib/api.ts`, routes, a backend endpoint the dashboard calls, or the DB schema, **update `dashboard/DASHBOARD_KNOWLEDGE_BASE.md`** (esp. §7, §8, §17.3, §18, §19-21) in the same change.

@@ -21,30 +21,25 @@ from services.plan_limits import (
 
 class TestApiKeyLimitForPlan:
     def test_pro_plan_capped_at_three(self):
-        assert api_key_limit_for_plan("pro", billing_enforced=True) == 3
+        assert api_key_limit_for_plan("pro") == 3
 
     def test_team_plan_capped_at_ten(self):
-        assert api_key_limit_for_plan("team", billing_enforced=True) == 10
+        assert api_key_limit_for_plan("team") == 10
 
     def test_config_dict_matches_expected(self):
         assert API_KEY_LIMITS == {"pro": 3, "team": 10}
 
     def test_plan_is_case_and_whitespace_insensitive(self):
-        assert api_key_limit_for_plan("  TEAM  ", billing_enforced=True) == 10
-        assert api_key_limit_for_plan("Pro", billing_enforced=True) == 3
+        assert api_key_limit_for_plan("  TEAM  ") == 10
+        assert api_key_limit_for_plan("Pro") == 3
 
     def test_unknown_plan_is_unlimited(self):
-        assert api_key_limit_for_plan("enterprise", billing_enforced=True) is None
-        assert api_key_limit_for_plan("free", billing_enforced=True) is None
-        assert api_key_limit_for_plan("pending_checkout", billing_enforced=True) is None
+        assert api_key_limit_for_plan("enterprise") is None
+        assert api_key_limit_for_plan("free") is None
+        assert api_key_limit_for_plan("pending_checkout") is None
 
     def test_none_plan_is_unlimited(self):
-        assert api_key_limit_for_plan(None, billing_enforced=True) is None
-
-    def test_billing_not_enforced_is_always_unlimited(self):
-        # Self-host / local dev: never gate, even for a capped plan value.
-        assert api_key_limit_for_plan("pro", billing_enforced=False) is None
-        assert api_key_limit_for_plan("team", billing_enforced=False) is None
+        assert api_key_limit_for_plan(None) is None
 
 
 # ─────────────────────────────────────────
@@ -102,9 +97,8 @@ class ExplodingConn(FakeConn):
 
 @pytest.fixture
 def enforce(monkeypatch):
-    """Turn enforcement ON with billing enforced for the guard under test."""
+    """Turn API key limit enforcement ON for the guard under test."""
     monkeypatch.setattr(api_keys, "limits_enforced", lambda: True)
-    monkeypatch.setattr(api_keys, "billing_enforced", lambda: True)
 
 
 async def test_guard_no_op_when_enforcement_off(monkeypatch):
