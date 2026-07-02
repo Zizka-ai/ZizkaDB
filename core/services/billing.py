@@ -132,6 +132,29 @@ async def fetch_user_billing(*, user_id: str | None = None, email: str | None = 
     return dict(row)
 
 
+async def fetch_tenant_plan(executor, tenant_id: str) -> str | None:
+    """Resolve the owning user's plan for a tenant.
+
+    Signup creates one tenant per user (see ``services.auth.verify_otp``), so a
+    tenant maps to a single owner. If a tenant ever has multiple users, the
+    earliest-created (owner) row wins. Returns ``None`` when no user row exists.
+
+    ``executor`` is any asyncpg pool or connection. Pass the guard's own
+    transaction connection so the read stays inside its advisory lock; pass the
+    pool for read-only callers (e.g. the usage endpoint).
+    """
+    return await executor.fetchval(
+        """
+        SELECT plan
+        FROM users
+        WHERE tenant_id = $1::uuid
+        ORDER BY created_at ASC
+        LIMIT 1
+        """,
+        tenant_id,
+    )
+
+
 async def update_user_billing(
     *,
     user_id: str | None = None,

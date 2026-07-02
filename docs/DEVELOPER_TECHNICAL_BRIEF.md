@@ -218,7 +218,7 @@ Base URL: `https://db.zizka.ai` (self-host: your host, port **8000**).
 | Agents | GET | `/v1/agents/{id}/sessions` | Sessions |
 | Auth | POST | `/v1/auth/request-otp` | Email OTP |
 | Auth | POST | `/v1/auth/verify-otp` | Get JWT |
-| Auth | POST | `/v1/auth/api-keys` | Create API key |
+| Auth | POST | `/v1/auth/api-keys` | Create API key (dashboard JWT only; plan-limited) |
 | Health | GET | `/health` | Status check |
 | Stats | GET | `/v1/stats` | Public install counters (homepage) |
 

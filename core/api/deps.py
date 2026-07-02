@@ -67,6 +67,48 @@ def _dev_key_accepted(token: str) -> bool:
     return token in _KNOWN_DEV_KEYS
 
 
+def dashboard_session_dependency(forbid_detail: str):
+    """Build a JWT-only FastAPI dependency for dashboard-managed actions.
+
+    Rejects API-key auth so a scoped agent key cannot perform dashboard-only
+    actions (e.g. minting new keys), and guarantees a ``user_id``/plan context.
+    ``forbid_detail`` is the 403 message shown when an API key is used instead of
+    a dashboard session. Returns a dependency that yields ``{tenant_id, user_id}``.
+
+    Single implementation reused by every JWT-only router (auth, agents, account,
+    settings) so the auth logic can never drift between them.
+    """
+
+    async def _require_dashboard_session(
+        credentials: HTTPAuthorizationCredentials = Security(bearer),
+    ) -> dict:
+        token = credentials.credentials
+        if await resolve_api_key_tenant(token):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=forbid_detail,
+            )
+        try:
+            payload = decode_access_token(token)
+            return {
+                "tenant_id": payload["tenant_id"],
+                "user_id": payload["sub"],
+            }
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+            )
+
+    return _require_dashboard_session
+
+
+# Default dependency for API-key management routes (auth, agents).
+require_dashboard_session = dashboard_session_dependency(
+    "Sign in to the dashboard to manage API keys"
+)
+
+
 async def get_tenant(
     credentials: HTTPAuthorizationCredentials = Security(bearer),
 ) -> dict:

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createAgentApiKey, getAgentApiKeys, revokeAgentApiKey, sendAgentTestEvent } from '@/lib/api'
 import { requireAuth } from '@/lib/auth'
+import { useApiKeyQuota } from '@/hooks/useApiKeyQuota'
+import { ApiKeyUsage } from '@/components/ApiKeyUsage'
 import { Key, Plus, Copy, Check, Trash2, Zap } from 'lucide-react'
 
 export interface AgentApiKey {
@@ -30,6 +32,7 @@ export function AgentApiKeys({
   const [err, setErr] = useState('')
   const [testBusy, setTestBusy] = useState(false)
   const [testMsg, setTestMsg] = useState('')
+  const quota = useApiKeyQuota()
 
   const load = useCallback(async () => {
     try {
@@ -55,6 +58,7 @@ export function AgentApiKeys({
       const res = await createAgentApiKey(token, agentId)
       setNewKey(res.key)
       await load()
+      await quota.refresh()
     } catch (e) {
       setErr(e instanceof Error ? e.message : 'Failed to create key')
     } finally {
@@ -71,6 +75,7 @@ export function AgentApiKeys({
       const token = requireAuth()
       await revokeAgentApiKey(token, agentId, key.key_id)
       setKeys(prev => prev.filter(k => k.key_id !== key.key_id))
+      await quota.refresh()
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed to revoke key')
     } finally {
@@ -124,9 +129,10 @@ export function AgentApiKeys({
           </button>
           <button
             type="button"
-            disabled={creating}
+            disabled={creating || quota.at_limit}
             onClick={handleCreate}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-black disabled:opacity-40"
+            title={quota.at_limit ? 'API key limit reached for your plan' : undefined}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: '#22c55e' }}
           >
             <Plus size={13} />
@@ -134,6 +140,11 @@ export function AgentApiKeys({
           </button>
         </div>
       </div>
+      {!quota.unlimited && (
+        <div className="px-5 py-3" style={{ background: '#111', borderBottom: '1px solid #1f1f1f' }}>
+          <ApiKeyUsage quota={quota} />
+        </div>
+      )}
       {testMsg && (
         <p className="px-5 py-2 text-xs" style={{ color: '#22c55e', background: '#111', borderBottom: '1px solid #1f1f1f' }}>
           {testMsg}

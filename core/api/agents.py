@@ -4,9 +4,10 @@ import re
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from api.deps import get_tenant
+from api.deps import get_tenant, require_dashboard_session
 from db.connection import get_pool
 from services.api_keys import (
+    assert_and_reserve_api_key_slot,
     create_api_key_record,
     list_api_keys_for_agent,
     revoke_api_key_record,
@@ -74,35 +75,44 @@ async def list_agents(tenant: dict = Depends(get_tenant)):
 @router.post("", status_code=201)
 async def create_agent(
     body: CreateAgentBody,
-    tenant: dict = Depends(get_tenant),
+    session: dict = Depends(require_dashboard_session),
 ):
-    """Create an agent and its first API key (shown once)."""
+    """Create an agent and its first API key (shown once).
+
+    Agent + first key are created in one transaction so a plan-limit rejection
+    (the auto-created key counts against the quota) rolls back the agent instead
+    of leaving an agent with no key.
+    """
     agent_id = _validate_agent_id(body.agent_id)
     pool = get_pool()
-    tenant_id = tenant["tenant_id"]
+    tenant_id = session["tenant_id"]
 
-    existing = await pool.fetchrow(
-        "SELECT 1 FROM agents WHERE tenant_id = $1 AND agent_id = $2",
-        tenant_id, agent_id,
-    )
-    if existing:
-        raise HTTPException(status_code=409, detail="Agent already exists")
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            existing = await conn.fetchrow(
+                "SELECT 1 FROM agents WHERE tenant_id = $1 AND agent_id = $2",
+                tenant_id, agent_id,
+            )
+            if existing:
+                raise HTTPException(status_code=409, detail="Agent already exists")
 
-    await pool.execute(
-        """
-        INSERT INTO agents (agent_id, tenant_id, metadata)
-        VALUES ($1, $2, $3::jsonb)
-        """,
-        agent_id, tenant_id, json.dumps(body.metadata or {}),
-    )
+            await assert_and_reserve_api_key_slot(conn, tenant_id=tenant_id)
 
-    key_name = body.key_name or f"{agent_id} production"
-    api_key = await create_api_key_record(
-        pool,
-        tenant_id=tenant_id,
-        name=key_name,
-        agent_id=agent_id,
-    )
+            await conn.execute(
+                """
+                INSERT INTO agents (agent_id, tenant_id, metadata)
+                VALUES ($1, $2, $3::jsonb)
+                """,
+                agent_id, tenant_id, json.dumps(body.metadata or {}),
+            )
+
+            key_name = body.key_name or f"{agent_id} production"
+            api_key = await create_api_key_record(
+                conn,
+                tenant_id=tenant_id,
+                name=key_name,
+                agent_id=agent_id,
+            )
 
     return {
         "agent": agent_id,
@@ -200,25 +210,29 @@ async def list_agent_api_keys(
 async def create_agent_api_key(
     agent_id: str,
     body: CreateAgentKeyBody,
-    tenant: dict = Depends(get_tenant),
+    session: dict = Depends(require_dashboard_session),
 ):
     agent_id = _validate_agent_id(agent_id)
     pool = get_pool()
-    tenant_id = tenant["tenant_id"]
+    tenant_id = session["tenant_id"]
 
-    exists = await pool.fetchrow(
-        "SELECT 1 FROM agents WHERE tenant_id = $1 AND agent_id = $2",
-        tenant_id, agent_id,
-    )
-    if not exists:
-        raise HTTPException(status_code=404, detail="Agent not found")
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            exists = await conn.fetchrow(
+                "SELECT 1 FROM agents WHERE tenant_id = $1 AND agent_id = $2",
+                tenant_id, agent_id,
+            )
+            if not exists:
+                raise HTTPException(status_code=404, detail="Agent not found")
 
-    return await create_api_key_record(
-        pool,
-        tenant_id=tenant_id,
-        name=body.name or f"{agent_id} key",
-        agent_id=agent_id,
-    )
+            await assert_and_reserve_api_key_slot(conn, tenant_id=tenant_id)
+
+            return await create_api_key_record(
+                conn,
+                tenant_id=tenant_id,
+                name=body.name or f"{agent_id} key",
+                agent_id=agent_id,
+            )
 
 
 @router.delete("/{agent_id}/api-keys/{key_id}")

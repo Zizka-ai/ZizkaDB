@@ -4,35 +4,17 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Security, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import APIRouter, Depends, HTTPException
 
-from api.deps import resolve_api_key_tenant
-from services.auth import decode_access_token
+from api.deps import dashboard_session_dependency
 from services.account import account_options, delete_managed_account, grant_retention_trial
 
 router = APIRouter()
 log = logging.getLogger(__name__)
-bearer = HTTPBearer()
 
-
-async def require_dashboard_session(
-    credentials: HTTPAuthorizationCredentials = Security(bearer),
-) -> dict:
-    token = credentials.credentials
-    if await resolve_api_key_tenant(token):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Sign in to the dashboard to manage your account",
-        )
-    try:
-        payload = decode_access_token(token)
-        return {
-            "tenant_id": payload["tenant_id"],
-            "user_id": payload["sub"],
-        }
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+require_dashboard_session = dashboard_session_dependency(
+    "Sign in to the dashboard to manage your account"
+)
 
 
 @router.get("/options")

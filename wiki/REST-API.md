@@ -57,11 +57,11 @@ GET /v1/events/{event_id}/why?depth=10
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/v1/agents` | List agents |
-| POST | `/v1/agents` | Create agent + first key |
+| POST | `/v1/agents` | Create agent + first key (dashboard JWT only) |
 | DELETE | `/v1/agents/{id}` | Delete agent + events + keys |
 | POST | `/v1/agents/{id}/test-event` | Dashboard test (JWT) |
 | GET | `/v1/agents/{id}/api-keys` | List keys |
-| POST | `/v1/agents/{id}/api-keys` | Create key |
+| POST | `/v1/agents/{id}/api-keys` | Create key (dashboard JWT only) |
 | DELETE | `/v1/agents/{id}/api-keys/{key_id}` | Revoke key |
 
 ## Auth / keys
@@ -70,9 +70,12 @@ GET /v1/events/{event_id}/why?depth=10
 |--------|------|-------------|
 | POST | `/v1/auth/request-otp` | Login OTP |
 | POST | `/v1/auth/verify-otp` | Get JWT |
-| POST | `/v1/auth/api-keys` | Tenant-wide key |
+| POST | `/v1/auth/api-keys` | Tenant-wide key (dashboard JWT only) |
 | GET | `/v1/auth/api-keys` | List all keys |
+| GET | `/v1/auth/api-keys/usage` | Plan key quota `{plan, limit, used, unlimited, at_limit}` |
 | DELETE | `/v1/auth/api-keys/{id}` | Revoke key |
+
+**API key creation** requires a dashboard login session (JWT), not an API key. Active keys per tenant are limited by plan (Pro 3, Team 10; self-host/other unlimited); exceeding the limit returns `409` with `{detail:{code:"api_key_limit_reached", plan, limit, used}}`. Enforcement is gated by the `API_KEY_LIMITS_ENFORCED` server flag.
 
 ## Health
 

@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAgents, createAgent, deleteAgent } from '@/lib/api'
 import { getToken, requireAuth } from '@/lib/auth'
+import { useApiKeyQuota } from '@/hooks/useApiKeyQuota'
+import { ApiKeyUsage } from '@/components/ApiKeyUsage'
 import { formatDistanceToNow } from 'date-fns'
 import { Zap, Plus, Trash2, Copy, Check } from 'lucide-react'
 import { GettingStartedChecklist } from '@/components/ConnectionStatus'
@@ -29,6 +31,7 @@ export default function DashboardPage() {
   const [newAgentKey, setNewAgentKey] = useState<string | null>(null)
   const [newAgentName, setNewAgentName] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const quota = useApiKeyQuota()
 
   useEffect(() => {
     const token = getToken()
@@ -88,6 +91,7 @@ export default function DashboardPage() {
       const data = await getAgents(token)
       setAgents(Array.isArray(data) ? data : [])
       setLastSync(new Date())
+      await quota.refresh()
     } catch (err) {
       setCreateErr(err instanceof Error ? err.message : 'Failed to create agent')
     } finally {
@@ -104,6 +108,7 @@ export default function DashboardPage() {
       const token = requireAuth()
       await deleteAgent(token, agentId)
       setAgents(prev => prev.filter(a => a.agent !== agentId))
+      await quota.refresh()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete agent')
     } finally {
@@ -195,6 +200,7 @@ export default function DashboardPage() {
             </button>
           </div>
         )}
+        {!quota.unlimited && <ApiKeyUsage quota={quota} className="mb-3" />}
         <form onSubmit={handleCreateAgent} className="flex gap-3">
           <input
             value={newAgentId}
@@ -207,14 +213,20 @@ export default function DashboardPage() {
           />
           <button
             type="submit"
-            disabled={creating || !newAgentId.trim()}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-black disabled:opacity-40"
+            disabled={creating || !newAgentId.trim() || quota.at_limit}
+            title={quota.at_limit ? 'API key limit reached — each agent includes a key' : undefined}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ background: '#22c55e' }}
           >
             <Plus size={14} />
             {creating ? 'Creating…' : 'Create'}
           </button>
         </form>
+        {quota.at_limit && (
+          <p className="text-xs mt-2" style={{ color: '#f87171' }}>
+            You&apos;ve reached your plan&apos;s API key limit. Delete an API key or upgrade to add more agents.
+          </p>
+        )}
         {createErr && (
           <p className="text-xs mt-2" style={{ color: '#f87171' }}>{createErr}</p>
         )}

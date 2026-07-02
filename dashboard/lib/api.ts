@@ -248,6 +248,20 @@ export async function revokeApiKey(token: string, keyId: string) {
   })
 }
 
+export interface ApiKeyUsage {
+  plan: string | null
+  limit: number | null
+  used: number
+  unlimited: boolean
+  at_limit: boolean
+}
+
+// Account-wide API key quota for the current plan. The backend is the source of
+// truth for the limit, so the UI never hardcodes plan limits.
+export async function getApiKeyUsage(token: string): Promise<ApiKeyUsage> {
+  return apiFetch('/v1/auth/api-keys/usage', token)
+}
+
 export async function requestOtp(email: string, intent?: 'signup' | 'login') {
   const res = await fetch(`${API}/v1/auth/request-otp`, {
     method: 'POST',

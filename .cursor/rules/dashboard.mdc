@@ -1,0 +1,31 @@
+---
+description: ZizkaDB dashboard context, conventions, and gotchas for future work
+globs: dashboard/**
+alwaysApply: false
+---
+
+# ZizkaDB Dashboard — Agent Guide
+
+**Read first:** `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` is the source of truth (has a Table of Contents). Consult it before implementing features, fixing bugs, or reasoning about flows. Section map: architecture (§1-3), funnel (§5), business rules (§7), API layer (§8), touch points (§17), backend state machine (§18), per-screen behavior (§19), marketing/community/docs/admin surfaces (§20), data model / DB schema (§21), glossary (§22).
+
+## Conventions (match these)
+- Next.js 14 App Router. Interactive pages are Client Components (`'use client'`). TS `strict`, `@/*` alias. No Prettier — match surrounding style (2-space, single quotes, no semicolons).
+- **All API calls go through `lib/api.ts`** (`apiFetch` injects auth + normalizes errors). No React Query/SWR/Redux/Zustand/Context — local `useState`/`useEffect` only.
+- Guard every async effect with a `let cancelled = false` flag; check it before `setState` (see `SubscriptionGate`, `checkout`, `success`).
+- Redirect guards: render the page's `*Fallback` loader while a redirect is pending; never render real UI before guard checks resolve (see the `checked` gate in `signup/page.tsx`).
+- Wrap `useSearchParams` pages in `<Suspense>` (Next CSR bailout).
+- Errors: `apiFetch` throws a normalized `Error`; catch and render into a local `error` string.
+
+## Critical gotchas (do not break)
+- **Billing is a client-side UX gate, not a security boundary.** `get_tenant` (backend) does NOT check subscription; a `pending_checkout` JWT can still hit `/v1/agents` and `/v1/events`. Access is enforced by `SubscriptionGate` + `has_access` only. Account routes are the exception (JWT-only).
+- **Auth split:** middleware reads the access-token cookie; client code reads `localStorage`. The refresh token is an HttpOnly cookie (backend). Keep both cookie + localStorage in sync via `setToken`/`clearToken`.
+- **Funnel state** lives in `sessionStorage` (`signup_plan`, `signup_consent_gdpr`, `signup_consent_marketing`); cleared after OTP verify.
+- Routing helpers `postAuthRedirect` / `billingGateRedirect` (`lib/api.ts`) are the single source for gated redirects — reuse them.
+- Self-host `NEXT_PUBLIC_DEV_MODE=true` bypasses the billing gate, hides the plan banner, and enables dev-token login.
+- **API key limits (§7):** active keys per tenant are capped by plan (Pro 3 / Team 10; else unlimited) and count ALL keys (tenant-wide + agent-scoped), so each agent consumes a slot on Pro/Team. UI reads `useApiKeyQuota` (`GET /v1/auth/api-keys/usage`) — never hardcode limits; render `<ApiKeyUsage>` and disable create at `at_limit`. Refresh the quota after every create/delete (including agent create/delete). Backend is the real guard; enforcement is behind `API_KEY_LIMITS_ENFORCED` (default OFF).
+
+## Testing / safety
+- There are **no frontend tests** and `apiFetch` is untyped. Prefer adding tests for pure helpers (`postAuthRedirect`, `billingGateRedirect`, funnel guards) when touching them, and type new `apiFetch` responses.
+
+## Keep the KB in sync
+If you change billing/auth/the signup funnel, `lib/api.ts`, routes, a backend endpoint the dashboard calls, or the DB schema, **update `dashboard/DASHBOARD_KNOWLEDGE_BASE.md`** (esp. §7, §8, §17.3, §18, §19-21) in the same change. Line numbers there are best-effort — verify the cited file, prefer symbol names over line numbers.

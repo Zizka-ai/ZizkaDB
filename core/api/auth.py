@@ -6,8 +6,13 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, EmailStr
 from services.auth import request_otp, verify_otp, _issue_tokens, email_exists
-from services.api_keys import create_api_key_record, revoke_api_key_record
-from api.deps import get_tenant
+from services.api_keys import (
+    assert_and_reserve_api_key_slot,
+    count_active_api_keys,
+    create_api_key_record,
+    revoke_api_key_record,
+)
+from api.deps import get_tenant, require_dashboard_session
 from fastapi import Depends
 from db.connection import get_pool
 from services.event_write import write_event
@@ -124,16 +129,54 @@ async def verify_otp_route(body: VerifyOTPBody, response: Response):
 @router.post("/api-keys")
 async def create_api_key(
     body: CreateAPIKeyBody,
-    tenant: dict = Depends(get_tenant),
+    session: dict = Depends(require_dashboard_session),
 ):
     """Tenant-wide key (no agent scope). Use for multi-agent apps. Per-agent keys: POST /v1/agents/{id}/api-keys."""
     pool = get_pool()
-    return await create_api_key_record(
-        pool,
-        tenant_id=tenant["tenant_id"],
-        name=body.name,
-        agent_id=None,
-    )
+    tenant_id = session["tenant_id"]
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            await assert_and_reserve_api_key_slot(conn, tenant_id=tenant_id)
+            return await create_api_key_record(
+                conn,
+                tenant_id=tenant_id,
+                name=body.name,
+                agent_id=None,
+            )
+
+
+@router.get("/api-keys/usage")
+async def api_keys_usage(session: dict = Depends(require_dashboard_session)):
+    """Account-wide API key quota for the current plan.
+
+    Returns unlimited whenever enforcement is off or the plan is uncapped, so the
+    dashboard UI stays consistent with the backend guard. Fail-open on lookup error.
+    """
+    from services.billing import billing_enforced, fetch_tenant_plan
+    from services.plan_limits import api_key_limit_for_plan, limits_enforced
+
+    pool = get_pool()
+    tenant_id = session["tenant_id"]
+    used = await count_active_api_keys(pool, tenant_id)
+
+    plan: str | None = None
+    limit: int | None = None
+    if limits_enforced():
+        try:
+            plan = await fetch_tenant_plan(pool, tenant_id)
+            limit = api_key_limit_for_plan(plan, billing_enforced=billing_enforced())
+        except Exception as e:
+            log.warning("api-key usage: plan lookup failed for tenant %s: %s", tenant_id, e)
+            limit = None
+
+    unlimited = limit is None
+    return {
+        "plan": plan,
+        "limit": limit,
+        "used": used,
+        "unlimited": unlimited,
+        "at_limit": (not unlimited) and used >= limit,
+    }
 
 
 @router.delete("/api-keys/{key_id}")

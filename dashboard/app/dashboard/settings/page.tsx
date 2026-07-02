@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getApiKeys, createApiKey, revokeApiKey, getEmbeddingCatalog, getEmbeddingSettings, updateEmbeddingSettings, sendTestEvent, getAccountOptions, grantRetentionTrial, deleteManagedAccount, type AccountOptions } from '@/lib/api'
 import { requireAuth, clearToken } from '@/lib/auth'
+import { useApiKeyQuota } from '@/hooks/useApiKeyQuota'
+import { ApiKeyUsage } from '@/components/ApiKeyUsage'
 import { Key, Trash2, Plus, Copy, Check, AlertTriangle, X } from 'lucide-react'
 
 interface ApiKey {
@@ -44,6 +46,7 @@ export default function SettingsPage() {
   const [accountBusy, setAccountBusy] = useState(false)
   const [accountMsg, setAccountMsg] = useState('')
   const [accountErr, setAccountErr] = useState('')
+  const quota = useApiKeyQuota()
 
   useEffect(() => {
     let token: string
@@ -76,6 +79,7 @@ export default function SettingsPage() {
       const token = requireAuth()
       await revokeApiKey(token, key.key_id)
       setKeys(prev => prev.filter(k => k.key_id !== key.key_id))
+      await quota.refresh()
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed to revoke key')
     } finally {
@@ -229,6 +233,7 @@ export default function SettingsPage() {
           Most users should create per-agent keys on the{' '}
           <Link href="/dashboard" className="underline" style={{ color: '#22c55e' }}>Agents</Link> page instead.
         </p>
+        {!quota.unlimited && <ApiKeyUsage quota={quota} className="mb-3" />}
         {tenantNewKey && (
           <div className="rounded-lg p-3 mb-3" style={{ background: '#0d2010', border: '1px solid #22c55e40' }}>
             <p className="text-xs mb-2" style={{ color: '#22c55e' }}>Tenant-wide key — copy now</p>
@@ -263,6 +268,7 @@ export default function SettingsPage() {
                 last_used: null,
               }, ...prev])
               setTenantKeyName('')
+              await quota.refresh()
             } catch (err) {
               alert(err instanceof Error ? err.message : 'Failed to create key')
             } finally {
@@ -277,7 +283,7 @@ export default function SettingsPage() {
             className="flex-1 rounded-lg px-3 py-2 text-sm text-white outline-none"
             style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
           />
-          <button type="submit" disabled={tenantKeyCreating} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-black disabled:opacity-40" style={{ background: '#22c55e' }}>
+          <button type="submit" disabled={tenantKeyCreating || quota.at_limit} title={quota.at_limit ? 'API key limit reached for your plan' : undefined} className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed" style={{ background: '#22c55e' }}>
             <Plus size={14} />
             {tenantKeyCreating ? 'Creating…' : 'Create'}
           </button>
