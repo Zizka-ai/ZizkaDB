@@ -1,12 +1,12 @@
 # ZizkaDB — Developer Technical Brief
 
-**Audience:** Marketing / sales talking to software engineers, ML engineers, and agent builders.  
-**Purpose:** Answer technical questions accurately without overstating the product.  
-**Last updated:** May 2026  
-**Product URL:** https://db.zizka.ai  
-**Docs:** https://db.zizka.ai/docs  
-**API explorer:** https://db.zizka.ai/swagger  
-**GitHub:** https://github.com/Zizka-ai/ZizkaDB  
+**Audience:** Marketing / sales talking to software engineers, ML engineers, and agent builders.
+**Purpose:** Answer technical questions accurately without overstating the product.
+**Last updated:** May 2026
+**Product URL:** https://db.zizka.ai
+**Docs:** https://db.zizka.ai/docs
+**API explorer:** https://db.zizka.ai/swagger
+**GitHub:** https://github.com/Zizka-ai/ZizkaDB
 
 ---
 
@@ -107,9 +107,9 @@ context = await db.context_for(agent="support-bot", task="user asking about bill
 
 After enough sessions (with `session_id` on logs), ZizkaDB compares **recent** behavior vs **historical baseline**:
 
-- Event-type distribution  
-- Parent→child transition patterns  
-- Session length, error rate  
+- Event-type distribution
+- Parent→child transition patterns
+- Session length, error rate
 
 Returns a **drift score** (0 = identical, 1 = totally different) and verdict: `stable`, `minor_drift`, `noticeable_drift`, `significant_drift`.
 
@@ -123,7 +123,7 @@ baseline = await db.baseline(agent="support-bot", recent_window=50)
 
 ### 4.7 Session diff & GDPR forget
 
-- **`memory_diff(session_id)`** — what changed in a session (API: `GET /v1/memory/diff/{session_id}`).  
+- **`memory_diff(session_id)`** — what changed in a session (API: `GET /v1/memory/diff/{session_id}`).
 - **`forget(filter_key, filter_value)`** — delete all events matching metadata (e.g. `user_id`, `email`) for GDPR erasure (API: `DELETE /v1/memory/forget`).
 
 ### 4.8 Audit trail
@@ -200,7 +200,7 @@ Base URL: `https://db.zizka.ai` (self-host: your host, port **8000**).
 **Auth:** `Authorization: Bearer <token>`
 
 - Production API keys: prefix **`zizkadb_live_`**
-- Dashboard login uses JWT (OTP email)  
+- Dashboard login uses JWT (OTP email)
 - Self-host dev: optional `DEV_API_KEY` in `.env` (never in production)
 
 | Area | Method | Path | Purpose |
@@ -249,12 +249,12 @@ Python 3.10+, TypeScript works on Node/Deno/Bun/edge.
 
 **Managed production (db.zizka.ai):**
 
-- **Dashboard:** Next.js 14 (PM2 on port 3001 behind nginx)  
-- **API:** FastAPI (Python), Docker, port 8000  
-- **Postgres** + **pgvector** — events, tenants, embeddings  
-- **Qdrant** — vector search  
-- **Redis** — caching/sessions  
-- **Nginx** — TLS, routes `/` → frontend, `/v1/` → API  
+- **Dashboard:** Next.js 14 (PM2 on port 3001 behind nginx)
+- **API:** FastAPI (Python), Docker, port 8000
+- **Postgres** + **pgvector** — events, tenants, embeddings
+- **Qdrant** — vector search
+- **Redis** — caching/sessions
+- **Nginx** — TLS, routes `/` → frontend, `/v1/` → API
 
 **Self-host (Docker Compose):**
 
@@ -274,9 +274,9 @@ Stack: postgres (pgvector), qdrant, redis, api. Dashboard optional (`npm run dev
 
 ## 10. Authentication & onboarding flow
 
-1. Sign up at **https://db.zizka.ai/signup** — email OTP, no password.  
-2. Dashboard → **Settings** → **Create API key** (`zizkadb_live_...`).  
-3. Paste key into SDK, MCP env, or `Authorization: Bearer` header.  
+1. Sign up at **https://db.zizka.ai/signup** — email OTP, no password.
+2. Dashboard → **Settings** → **Create API key** (`zizkadb_live_...`).
+3. Paste key into SDK, MCP env, or `Authorization: Bearer` header.
 4. Start logging from agent code or MCP.
 
 **Multi-tenant:** API keys are scoped to a tenant/project; events are isolated per tenant.
@@ -334,31 +334,31 @@ Use the comparison on the homepage; verify competitors’ docs before live debat
 
 ## 14. FAQ — hard questions from developers
 
-**Q: How is this different from LangSmith?**  
+**Q: How is this different from LangSmith?**
 A: LangSmith is excellent for LangChain-centric tracing and evals. ZizkaDB is a **standalone operational DB** with causal trees, time travel, cross-agent queries, and behavioral baselines — works with any stack.
 
-**Q: How is this different from Mem0?**  
+**Q: How is this different from Mem0?**
 A: Mem0 focuses on long-term memory retrieval for prompts. ZizkaDB adds **causal lineage, session replay, drift baselines, and audit-oriented event storage**.
 
-**Q: Do we need to replace Pinecone?**  
+**Q: Do we need to replace Pinecone?**
 A: No. Pinecone is for RAG document search. ZizkaDB is for **agent decision history**. Many teams use both.
 
-**Q: Does it wrap our LLM calls?**  
+**Q: Does it wrap our LLM calls?**
 A: No. You add `db.log()` (or MCP `log_event`) where you already handle messages/tools. One line for causal link: `parent_id=...`.
 
-**Q: Latency impact?**  
+**Q: Latency impact?**
 A: Logging is async HTTP; embedding generation is non-blocking on the hot path. Typical integration is fire-and-forget `await db.log(...)`.
 
-**Q: What if OpenAI is down / we don’t use OpenAI?**  
+**Q: What if OpenAI is down / we don’t use OpenAI?**
 A: Logging and causal features work without embeddings. Semantic search and `context_for` need embeddings (today: OpenAI). Other embedding providers = roadmap; say “check with team” unless confirmed shipped.
 
-**Q: PII / GDPR?**  
+**Q: PII / GDPR?**
 A: You control what goes in `data` and `metadata`. `forget()` deletes by metadata filter. Self-host keeps data on your infra.
 
-**Q: Can we use it in regulated environments?**  
+**Q: Can we use it in regulated environments?**
 A: Self-host + your VPC is the usual answer. Managed cloud: discuss DPA, retention, and region with founders — don’t invent certifications.
 
-**Q: PyPI package confusion?**  
+**Q: PyPI package confusion?**
 A: Install **`zizkadb-sdk`** (not the unrelated `agentdb` package on PyPI). Import: `from zizkadb import ZizkaDB`.
 
 ---
@@ -394,11 +394,11 @@ curl -X POST https://db.zizka.ai/v1/events \
 
 ## 16. What marketing should **not** claim (yet)
 
-- “Real-time alerts” everywhere — baseline exists; **alerting product** may be partial/roadmap (homepage mentions “Alerts coming” for session 50 narrative).  
-- “Replaces your observability stack” — it complements APM/logs; different layer.  
-- “Detects hallucinations” — drift is **behavioral statistics**, not truth verification.  
-- “SOC2 / HIPAA certified” — unless explicitly launched.  
-- “Works offline” — needs API reachability (or self-host on localhost).  
+- “Real-time alerts” everywhere — baseline exists; **alerting product** may be partial/roadmap (homepage mentions “Alerts coming” for session 50 narrative).
+- “Replaces your observability stack” — it complements APM/logs; different layer.
+- “Detects hallucinations” — drift is **behavioral statistics**, not truth verification.
+- “SOC2 / HIPAA certified” — unless explicitly launched.
+- “Works offline” — needs API reachability (or self-host on localhost).
 
 When unsure: **“Let me connect you to engineering”** or point to **docs + GitHub**.
 

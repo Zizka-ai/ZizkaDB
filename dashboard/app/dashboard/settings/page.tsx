@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { ApiKeyUsage } from '@/components/ApiKeyUsage'
+import { useApiKeyQuota } from '@/hooks/useApiKeyQuota'
+import { createApiKey, deleteManagedAccount, getAccountOptions, getApiKeys, getEmbeddingCatalog, getEmbeddingSettings, grantRetentionTrial, revokeApiKey, sendTestEvent, updateEmbeddingSettings, type AccountOptions } from '@/lib/api'
+import { clearToken, requireAuth } from '@/lib/auth'
+import { AlertTriangle, Check, Copy, Key, Plus, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getApiKeys, createApiKey, revokeApiKey, getEmbeddingCatalog, getEmbeddingSettings, updateEmbeddingSettings, sendTestEvent, getAccountOptions, grantRetentionTrial, deleteManagedAccount, type AccountOptions } from '@/lib/api'
-import { requireAuth, clearToken } from '@/lib/auth'
-import { useApiKeyQuota } from '@/hooks/useApiKeyQuota'
-import { ApiKeyUsage } from '@/components/ApiKeyUsage'
-import { Key, Trash2, Plus, Copy, Check, AlertTriangle, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface ApiKey {
   key_id: string

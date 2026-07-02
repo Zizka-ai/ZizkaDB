@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { ApiKeyUsage } from '@/components/ApiKeyUsage'
+import { useApiKeyQuota } from '@/hooks/useApiKeyQuota'
 import { createAgentApiKey, getAgentApiKeys, revokeAgentApiKey, sendAgentTestEvent } from '@/lib/api'
 import { requireAuth } from '@/lib/auth'
-import { useApiKeyQuota } from '@/hooks/useApiKeyQuota'
-import { ApiKeyUsage } from '@/components/ApiKeyUsage'
-import { Key, Plus, Copy, Check, Trash2, Zap } from 'lucide-react'
+import { Check, Copy, Key, Plus, Trash2, Zap } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 
 export interface AgentApiKey {
   key_id: string
