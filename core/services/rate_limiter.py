@@ -16,6 +16,9 @@ logger = logging.getLogger(__name__)
 # ──────────────────────────────────────────────────────────────────────────────
 
 class RateLimitStorage(ABC):
+    """
+    Abstract base class representing the storage backend for rate limiting hits.
+    """
     @abstractmethod
     async def get_hits(self, key: str, window_sec: int) -> list[float]:
         """Retrieve all active hit timestamps for key within the window."""
@@ -33,6 +36,10 @@ class RateLimitStorage(ABC):
 
 
 class InMemoryStorage(RateLimitStorage):
+    """
+    An in-memory thread-safe storage implementation for tracking rate limit hits.
+    Supports lazy or periodic cleanup of expired timestamps to prevent memory leaks.
+    """
     def __init__(
         self,
         enable_cleanup: bool = False,
@@ -40,6 +47,15 @@ class InMemoryStorage(RateLimitStorage):
         default_ttl_sec: float = 3600.0,
         cleanup_interval_sec: float = 60.0
     ):
+        """
+        Initialize the in-memory storage.
+
+        Args:
+            enable_cleanup: Enable garbage collection of expired keys.
+            cleanup_method: 'lazy' to prune on retrieval, or 'periodic' to use a background thread.
+            default_ttl_sec: Maximum lifespan of keys in seconds.
+            cleanup_interval_sec: Interval in seconds for the periodic GC loop.
+        """
         self._data: dict[str, list[float]] = {}
         self._lock = threading.Lock()
         self.enable_cleanup = enable_cleanup
@@ -54,15 +70,18 @@ class InMemoryStorage(RateLimitStorage):
             self._start_gc_thread()
 
     def _start_gc_thread(self):
+        """Start the background thread for periodic garbage collection."""
         self._gc_thread = threading.Thread(target=self._gc_loop, daemon=True, name="InMemoryStorage-GC")
         self._gc_thread.start()
         logger.info("Started periodic background garbage collection thread for InMemoryStorage")
 
     def _gc_loop(self):
+        """Loop run by the GC thread, executing prune_expired_keys periodically."""
         while not self._stop_gc.wait(self.cleanup_interval_sec):
             self.prune_expired_keys()
 
     def prune_expired_keys(self):
+        """Prune keys from storage whose hit lists contain no active timestamps."""
         now = time.time()
         cutoff = now - self.default_ttl_sec
         pruned_count = 0
@@ -78,6 +97,10 @@ class InMemoryStorage(RateLimitStorage):
             logger.debug(f"InMemoryStorage GC pruned {pruned_count} keys")
 
     async def get_hits(self, key: str, window_sec: int) -> list[float]:
+        """
+        Retrieve all active hit timestamps for a key within the specified window.
+        Optionally performs lazy pruning if cleanup is enabled.
+        """
         now = time.time()
         cutoff = now - window_sec
         with self._lock:
@@ -90,12 +113,14 @@ class InMemoryStorage(RateLimitStorage):
             return hits
 
     async def record_hit(self, key: str, timestamp: float, window_sec: int) -> None:
+        """Record a hit timestamp for the given key in memory."""
         with self._lock:
             if key not in self._data:
                 self._data[key] = []
             self._data[key].append(timestamp)
 
     async def clear(self) -> None:
+        """Clear all rate limit entries from memory."""
         with self._lock:
             self._data.clear()
 
@@ -107,13 +132,28 @@ class InMemoryStorage(RateLimitStorage):
 
 
 class RedisStorage(RateLimitStorage):
+    """
+    A Redis-backed storage implementation for tracking rate limit hits.
+    Uses sorted sets (ZSET) to store hit timestamps and enforce expiry.
+    """
     def __init__(self, key_prefix: str = "ratelimit"):
+        """
+        Initialize the Redis storage.
+
+        Args:
+            key_prefix: Prefix prepended to all Redis keys to isolate rate limiting data.
+        """
         self.key_prefix = key_prefix
 
     def _get_redis_key(self, key: str) -> str:
+        """Generate a prefixed Redis key string."""
         return f"{self.key_prefix}:{key}"
 
     async def get_hits(self, key: str, window_sec: int) -> list[float]:
+        """
+        Retrieve active hit timestamps from Redis for the key within the window.
+        Also automatically prunes expired timestamps from the sorted set.
+        """
         redis_client = get_redis()
         rkey = self._get_redis_key(key)
         now = time.time()
@@ -127,6 +167,10 @@ class RedisStorage(RateLimitStorage):
         return [score for _, score in results]
 
     async def record_hit(self, key: str, timestamp: float, window_sec: int) -> None:
+        """
+        Record a hit timestamp in Redis using a sorted set (ZSET).
+        Appends the thread identifier to make each entry unique.
+        """
         redis_client = get_redis()
         rkey = self._get_redis_key(key)
         
@@ -138,6 +182,7 @@ class RedisStorage(RateLimitStorage):
         await redis_client.expire(rkey, window_sec)
 
     async def clear(self) -> None:
+        """Remove all rate limit keys matching the configured prefix from Redis."""
         redis_client = get_redis()
         # Find all keys matching key_prefix and delete them
         pattern = f"{self.key_prefix}:*"
@@ -151,6 +196,9 @@ class RedisStorage(RateLimitStorage):
 # ──────────────────────────────────────────────────────────────────────────────
 
 class RateLimitStrategy(ABC):
+    """
+    Abstract base class for rate limiting algorithms/strategies.
+    """
     @abstractmethod
     async def check(
         self,
@@ -165,6 +213,10 @@ class RateLimitStrategy(ABC):
 
 
 class SlidingWindowStrategy(RateLimitStrategy):
+    """
+    Sliding Window rate limiting strategy.
+    Measures requests dynamically over the preceding sliding time window.
+    """
     async def check(
         self,
         key: str,
@@ -173,6 +225,10 @@ class SlidingWindowStrategy(RateLimitStrategy):
         storage: RateLimitStorage,
         detail: str
     ) -> None:
+        """
+        Check the limit using a sliding window algorithm.
+        Raises HTTPException 429 if the request count exceeds the limit.
+        """
         hits = await storage.get_hits(key, window_sec)
         if len(hits) >= limit:
             logger.warning(f"Rate limit exceeded (SlidingWindow) for key: {key} (limit={limit}, window={window_sec}s)")
@@ -182,6 +238,10 @@ class SlidingWindowStrategy(RateLimitStrategy):
 
 
 class FixedWindowStrategy(RateLimitStrategy):
+    """
+    Fixed Window rate limiting strategy.
+    Divides time into fixed buckets (e.g., calendar hours) and limits requests per bucket.
+    """
     async def check(
         self,
         key: str,
@@ -190,6 +250,10 @@ class FixedWindowStrategy(RateLimitStrategy):
         storage: RateLimitStorage,
         detail: str
     ) -> None:
+        """
+        Check the limit using a fixed window algorithm.
+        Raises HTTPException 429 if the request count in the current window exceeds the limit.
+        """
         now = time.time()
         # Segment time into fixed windows
         window_start = int(now // window_sec)
@@ -208,6 +272,10 @@ class FixedWindowStrategy(RateLimitStrategy):
 # ──────────────────────────────────────────────────────────────────────────────
 
 class RateLimiter:
+    """
+    Central controller class that coordinates rate limiting checks.
+    Combines a specific limit, window duration, storage engine, and algorithm strategy.
+    """
     def __init__(
         self,
         limit: int,
@@ -216,6 +284,16 @@ class RateLimiter:
         strategy: RateLimitStrategy,
         detail: str = "Rate limit exceeded. Please try again later."
     ):
+        """
+        Initialize the rate limiter controller.
+
+        Args:
+            limit: Maximum allowed requests within the window.
+            window_sec: Length of the rate limiting window in seconds.
+            storage: Storage backend (e.g., InMemoryStorage, RedisStorage).
+            strategy: Limiting strategy (e.g., SlidingWindowStrategy, FixedWindowStrategy).
+            detail: Error message detail to raise on failure.
+        """
         self.limit = limit
         self.window_sec = window_sec
         self.storage = storage
@@ -223,4 +301,8 @@ class RateLimiter:
         self.detail = detail
 
     async def check(self, key: str) -> None:
+        """
+        Check if the key is within the rate limit.
+        Raises HTTPException 429 if the limit is exceeded.
+        """
         await self.strategy.check(key, self.limit, self.window_sec, self.storage, self.detail)
