@@ -109,7 +109,8 @@ Dashboard runs on port **3001** behind nginx at `db.zizka.ai`.
 - `DATABASE_URL` — Postgres
 - `REDIS_URL`, `QDRANT_URL`
 - `JWT_SECRET`, `JWT_REFRESH_SECRET`
-- Stripe keys for billing (if enabled)
+- `TRIAL_DAYS` — trial length (default 30)
+- `API_KEY_LIMITS_ENFORCED` — enable Pro/Team API key caps (default false)
 - `NEXT_PUBLIC_API_URL=https://db.zizka.ai` for dashboard build
 - **Do not set** `DEV_API_KEY` in production
 

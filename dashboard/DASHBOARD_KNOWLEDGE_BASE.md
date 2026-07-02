@@ -2,7 +2,7 @@
 
 > Single source of truth for the Dashboard module. Reverse-engineered directly from the codebase.
 >
-> **Last verified:** 2026-07-02 · **Stripe removed:** no payment provider; signup is plan → OTP → dashboard with 30-day trial. Legacy `/signup/checkout` and `/signup/success` redirect away.
+> **Last verified:** 2026-07-02 · **No payment provider:** signup is plan → consent → OTP → `/dashboard` with a 30-day trial. Legacy `/signup/checkout` redirects to `/signup/plan`; `/signup/success` redirects to `/dashboard`. API key limits: Pro 3 / Team 10 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF).
 >
 > **Important finding:** There is **no "Pricing Modal"** in this codebase. Pricing is a static section on the landing page (`app/page.tsx`, `#pricing`). The only actual modal is the **Calendly "Book demo" modal** (`components/marketing/CalendlyBookModal.tsx`).
 >
@@ -38,7 +38,7 @@
 
 ## 1. Dashboard Architecture
 
-**Framework:** Next.js 14.2.3 App Router, React 18, TypeScript. Styling is a mix of **Tailwind** (dashboard app, `className`) and **inline styles** (marketing/landing + signup). Charts via `recharts`, icons via `lucide-react`, Stripe via `@stripe/stripe-js` + `@stripe/react-stripe-js`, JWT decode via `jose`.
+**Framework:** Next.js 14.2.3 App Router, React 18, TypeScript. Styling is a mix of **Tailwind** (dashboard app, `className`) and **inline styles** (marketing/landing + signup). Charts via `recharts`, icons via `lucide-react`, JWT decode via `jose`.
 
 **No global state library.** No Redux/Zustand/React Query/SWR/Context. State is:
 - **Local** via `useState`/`useEffect` per page.
@@ -62,15 +62,15 @@ middleware.ts (edge) → checks zizkadb_token cookie
    ↓ (token present)
 app/dashboard/layout.tsx
    → DashboardShell (sidebar/nav/signout)
-       → TenantPlanBanner (fetches billing status)
+       → TenantPlanBanner (fetches billing status — informational)
        → ConnectionStatus (polls /health)
-       → SubscriptionGate (billing gate) → children (page)
+       → children (page)
 ```
 
 **API integration:** single module `lib/api.ts`. All calls go through `apiFetch(path, token, options)` which injects `Authorization: Bearer <token>`, `Content-Type: application/json`, and throws normalized `Error(detail)` on non-2xx. Base URL from `NEXT_PUBLIC_API_URL` (empty string → same-origin, routed by nginx to FastAPI).
 
 **Feature flags (env):**
-- `NEXT_PUBLIC_DEV_MODE === 'true'` → self-host mode: skips billing gate, shows dev-token login, changes onboarding copy.
+- `NEXT_PUBLIC_DEV_MODE === 'true'` → self-host mode: enables dev-token login, changes onboarding copy.
 - `NEXT_PUBLIC_API_URL` → API base (default same-origin; login dev-token defaults to `http://localhost:8000`).
 
 **Loading/error handling:** per-page. Suspense boundaries wrap pages using `useSearchParams` (`/signup`, `/signup/start`, `/signup/checkout`, `/signup/success`, `/login`) — required by Next for CSR bailout. Errors are local component state rendered inline.
@@ -92,10 +92,10 @@ dashboard/
 │   │   ├── page.tsx         # Step 3: email + OTP (account creation)
 │   │   ├── plan/page.tsx    # Step 1: plan selection (Pro/Team)
 │   │   ├── start/page.tsx   # Step 2: "Before you begin" + GDPR consent
-│   │   ├── checkout/page.tsx# Step 4: create Stripe session, redirect
-│   │   └── success/page.tsx # Step 5: confirm checkout (poll), → dashboard
+│   │   ├── checkout/page.tsx# Legacy redirect → /signup/plan
+│   │   └── success/page.tsx # Legacy redirect → /dashboard
 │   ├── dashboard/
-│   │   ├── layout.tsx       # DashboardShell + SubscriptionGate
+│   │   ├── layout.tsx       # DashboardShell only (no billing gate)
 │   │   ├── page.tsx         # Agents home (list/create/delete)
 │   │   ├── agents/[id]/page.tsx  # Agent detail (events, sessions, drift)
 │   │   ├── search/page.tsx  # Semantic search
@@ -105,7 +105,8 @@ dashboard/
 │   ├── docs/                # Docs pages
 │   └── trust/page.tsx
 ├── components/
-│   ├── DashboardShell.tsx, SubscriptionGate.tsx, TenantPlanBanner.tsx
+│   ├── DashboardShell.tsx, TenantPlanBanner.tsx, ApiKeyUsage.tsx
+│   ├── hooks/useApiKeyQuota.ts
 │   ├── ConnectionStatus.tsx (+ GettingStartedChecklist)
 │   ├── SiteNav.tsx, BrandLogo.tsx, AgentApiKeys.tsx, brand.ts
 │   └── marketing/  (CalendlyBookModal, CompetitorCompare, etc.)
@@ -217,11 +218,7 @@ flowchart LR
   S --> E["/signup email"]
   E --> O["OTP verify"]
   O --> sel["selectBillingPlan best-effort"]
-  sel --> R{postAuthRedirect}
-  R --> C["/signup/checkout"]
-  C --> stripe[Stripe]
-  stripe --> Su["/signup/success"]
-  Su --> D["/dashboard"]
+  sel --> D["/dashboard"]
 ```
 
 **State initialization keys (`sessionStorage`):** `signup_plan` (`'pro'|'team'`), `signup_consent_gdpr` (`'1'`), `signup_consent_marketing` (`'1'|'0'`). All cleared after successful OTP verify.
@@ -235,12 +232,12 @@ flowchart LR
 **There is no pricing modal.** Two things could be meant:
 
 ### (a) Pricing section (`app/page.tsx:172-242`)
-Static array of 3 hard-coded plans rendered as cards. **Not** fetched from `getBillingConfig()`. CTAs:
+Static array of 3 hard-coded plans rendered as cards. **Not** fetched from the backend. CTAs:
 - **Self-Hosted** → `/docs` (no API, no auth) — "Setup guide".
 - **Pro** → `/signup?plan=pro`.
 - **Team** → `/signup?plan=team`.
 
-Pro/Team differ only by the `?plan=` value; downstream flow is identical (only plan id and Stripe price differ server-side).
+Pro/Team differ only by the `?plan=` value; downstream flow is identical (plan id is persisted via `selectBillingPlan` and shown in `TenantPlanBanner`).
 
 ### (b) The real modal: `CalendlyBookModal` (`components/marketing/CalendlyBookModal.tsx`)
 - **Owner:** `app/page.tsx` hero via `demoOpen` state (`page.tsx:34,86,91`).
@@ -260,26 +257,21 @@ There is a **separate** lead-capture path (`lib/demo.ts` → `submitDemoRequest`
 
 **Signup vs login:** `requestOtp(email, intent)` — signup passes `intent='signup'`; if backend says "already registered", signup surfaces a "Sign in →" link (`signup/page.tsx:72-73`).
 
-**Billing gate (managed cloud only)** — central logic in `lib/api.ts`:
-- `postAuthRedirect(data)` (`api.ts:358`): `has_access`→`/dashboard`; `requires_plan_selection`→`/signup/plan`; `requires_checkout`→`/signup/checkout?plan=<plan>` (or `/signup/plan` if plan unknown); default `/dashboard`.
-- `billingGateRedirect(status)` (`api.ts:373`): returns `null` if `!enforced` or `has_access`; else routes to plan/checkout; final fallback `/signup/plan`.
-- `SubscriptionGate` runs `billingGateRedirect` on every dashboard mount; **skipped entirely when `IS_DEV_MODE`**.
+**Billing / trial (no payment provider):** signup OTP verify sets `plan=pro` (if unset), `subscription_status=trialing`, `trial_ends_at=+30d` (also converts legacy `pending_checkout` rows). `postAuthRedirect()` always returns `/dashboard`. `getBillingStatus` / `billing_status_payload` always return `has_access: true`, `enforced: false`, `requires_checkout: false` — informational only for `TenantPlanBanner`.
 
-**Trial rules:** 30-day free trial (`trial_days` from `getBillingConfig`, shown in `TenantPlanBanner` as "Free trial until <date>" when `subscription_status==='trialing'`). Card is collected at Stripe checkout. **Copy inconsistency:** landing pricing says "card required"; `/signup/plan` and `/signup` say "No credit card required" (see Risks).
+**Trial rules:** 30-day free trial (`trial_days` from billing status, shown in `TenantPlanBanner` as "Free trial until <date>" when `subscription_status==='trialing'`). No credit card or checkout step. Landing pricing copy may still mention card for future billing — funnel copy says "No credit card required."
 
-**Managed vs self-host trial activation (backend, `core/services/`):** on first OTP verify, **managed cloud** users get `subscription_status='pending_checkout'` (no access until Stripe checkout completes → `trialing`), whereas **self-host** (`billing_enforced()==false`) users are auto-set to `plan=pro`, `trialing`, `trial_ends_at=+30d` and have immediate access. Full state machine in §18.1.
-
-**Auth gate vs access gate (important gotcha):** `get_tenant` (`core/api/deps.py`) validates the token but does **not** check subscription status — a JWT in `pending_checkout` can still call `/v1/agents` and `/v1/events`. Dashboard access is enforced **client-side** by `SubscriptionGate` + `has_access`, not by the API. Account routes are the exception (JWT-only, `require_dashboard_session`).
+**Auth gate vs subscription:** `get_tenant` (`core/api/deps.py`) validates the token but does **not** check subscription status. There is no client-side billing gate (`SubscriptionGate` removed). Account routes and API key **creation** are JWT-only via `require_dashboard_session`.
 
 **Retention trial:** managed-cloud users get a one-time "X more days free" offer in the delete-account modal (`grantRetentionTrial` → `/v1/account/retention-trial`), gated by `accountOpts.retention_trial_available`.
 
-**Plan selection persistence:** `selectBillingPlan` called twice in the happy path — best-effort after OTP (`signup/page.tsx:99`) and again in checkout if `!status.plan` (`checkout/page.tsx:83`).
+**Plan selection persistence:** `selectBillingPlan` called best-effort after OTP (`signup/page.tsx`) to persist the plan chosen in the funnel.
 
-**Feature gating:** Self-host (`DEV_MODE`) bypasses billing; pricing is UI-only (plans not enforced client-side beyond gate redirects).
+**Feature gating:** Self-host (`DEV_MODE`) enables dev-token login and changes onboarding copy; billing is not enforced anywhere.
 
-**API key plan limits:** the number of **active** (`revoked = FALSE`) API keys per tenant is capped by plan — Pro 3, Team 10; every other case (self-host, no/unknown plan, `pending_checkout`) is **unlimited**. The limit counts **all** keys (tenant-wide + agent-scoped), and because creating an agent auto-creates a key (`create_agent`), each agent consumes one slot on Pro/Team.
-- **Single source of truth:** `core/services/plan_limits.py` (`API_KEY_LIMITS`, `api_key_limit_for_plan(plan, *, billing_enforced)`). Adding a plan is a one-line change.
-- **Enforcement (backend, real guard):** `assert_and_reserve_api_key_slot` in `core/services/api_keys.py` runs inside a per-tenant advisory-locked transaction (race-safe) before every insert; wired into `create_api_key`, `create_agent_api_key`, and `create_agent`. Fail-open on plan-lookup error. Behind kill switch `API_KEY_LIMITS_ENFORCED` (defaults OFF; ships dormant for staged rollout). `billing_enforced()` is checked first so self-host is never capped despite the `plan='pro'` backfill.
+**API key plan limits:** the number of **active** (`revoked = FALSE`) API keys per tenant is capped by plan — Pro 3, Team 10; every other case (no/unknown plan) is **unlimited** when enforcement is off. The limit counts **all** keys (tenant-wide + agent-scoped), and because creating an agent auto-creates a key (`create_agent`), each agent consumes one slot on Pro/Team.
+- **Single source of truth:** `core/services/plan_limits.py` (`API_KEY_LIMITS`, `api_key_limit_for_plan(plan)`). Adding a plan is a one-line change.
+- **Enforcement (backend, real guard):** `assert_and_reserve_api_key_slot` in `core/services/api_keys.py` runs inside a per-tenant advisory-locked transaction (race-safe) before every insert; wired into `create_api_key`, `create_agent_api_key`, and `create_agent`. Fail-open on plan-lookup error. Behind kill switch `API_KEY_LIMITS_ENFORCED` (defaults OFF; ships dormant for staged rollout).
 - **Creation is JWT-only:** all three creation routes use `require_dashboard_session` (a scoped API key can no longer mint keys). List/revoke unchanged.
 - **Usage:** `GET /v1/auth/api-keys/usage` → `{plan, limit, used, unlimited, at_limit}` (unlimited whenever enforcement is off / uncapped). Frontend hook `useApiKeyQuota` + `ApiKeyUsage` component; the UI reads limits from this endpoint (never hardcodes them) and disables create at the limit. Deleting a key **or an agent** (cascade via `fk_api_keys_agent ON DELETE CASCADE`) frees a slot.
 - **Error shape:** limit breach returns `409` with `detail={msg, code:"api_key_limit_reached", plan, limit, used}` (the `msg` key renders through `formatApiError`).
@@ -288,11 +280,11 @@ There is a **separate** lead-capture path (`lib/demo.ts` → `submitDemoRequest`
 
 ## 8. API Layer
 
-All in `lib/api.ts` via `apiFetch` (except unauthenticated `fetch` calls for OTP/billing-config/dev-token/demo-requests). **No caching, no retry** except `/signup/success` (manual 5-attempt poll). **No React Query/SWR.**
+All in `lib/api.ts` via `apiFetch` (except unauthenticated `fetch` calls for OTP/dev-token/demo-requests). **No caching, no retry.** **No React Query/SWR.**
 
 **Endpoints by area:**
-- **Auth:** `requestOtp`, `verifyOtp`, dev-token (login page).
-- **Billing:** `getBillingConfig` (public), `getBillingStatus`, `selectBillingPlan`, `createCheckoutSession`, `confirmCheckout`.
+- **Auth:** `requestOtp`, `verifyOtp`, dev-token (login page), `getApiKeys`, `getApiKeyUsage`, `createApiKey`, `revokeApiKey`.
+- **Billing:** `getBillingStatus`, `selectBillingPlan` (informational / plan persistence only).
 - **Account:** `getAccountOptions`, `grantRetentionTrial`, `deleteManagedAccount`.
 - **Agents/events:** `getAgents`, `createAgent`, `deleteAgent`, `get/create/revokeAgentApiKey`, `sendTestEvent`, `sendAgentTestEvent`, `getAgentStats`, `getEvents`, `getWhyChain`, `searchEvents`, `getAgentSessions`, `getMemoryDiff`, `timeTravel`, `getAgentBaseline`.
 - **Settings:** embeddings catalog/get/update; tenant API keys.
@@ -300,7 +292,7 @@ All in `lib/api.ts` via `apiFetch` (except unauthenticated `fetch` calls for OTP
 
 **Error handling:** `formatApiError` flattens string / array / `{msg}` FastAPI detail shapes. `DashboardPage` special-cases `401`/"invalid token" → redirect to `/login` (`dashboard/page.tsx:54`).
 
-**Polling:** Agents list every 10s (`dashboard/page.tsx:66`); `/health` every 30s (`ConnectionStatus.tsx:25`); billing status refetched by `TenantPlanBanner` and `SubscriptionGate` on mount.
+**Polling:** Agents list every 10s (`dashboard/page.tsx:66`); `/health` every 30s (`ConnectionStatus.tsx:25`); billing status fetched once by `TenantPlanBanner` on mount; `useApiKeyQuota` refreshes on window focus.
 
 ---
 
@@ -308,7 +300,7 @@ All in `lib/api.ts` via `apiFetch` (except unauthenticated `fetch` calls for OTP
 
 - **Auth token:** `localStorage['zizkadb_token']` + a mirrored cookie (`lib/auth.ts`). Cookie is what middleware reads; localStorage is what client code reads.
 - **Signup funnel:** `sessionStorage` (`signup_plan`, `signup_consent_gdpr`, `signup_consent_marketing`).
-- **Per-page UI:** `useState` + `useEffect`. Cleanup uses a `cancelled` flag pattern to avoid setState-after-unmount (`SubscriptionGate`, `checkout`, `success`, `dashboard`).
+- **Per-page UI:** `useState` + `useEffect`. Cleanup uses a `cancelled` flag pattern to avoid setState-after-unmount (`signup`, `dashboard`, `TenantPlanBanner`).
 - **No derived global store, no memoization utilities, no context providers.**
 
 ```mermaid
@@ -327,15 +319,16 @@ flowchart LR
 ## 10. User Journey (end-to-end, with variations)
 
 **Managed cloud, new Pro user (happy path):**
-Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) → `/signup` (email → OTP) → account created + plan selected → `/signup/checkout?plan=pro` → Stripe → `/signup/success` → **/dashboard** → empty state `GettingStartedChecklist` → create agent (key shown once) → agent appears (10s poll).
+Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) → `/signup` (email → OTP) → account created + plan selected → **/dashboard** → empty state `GettingStartedChecklist` → create agent (key shown once) → agent appears (10s poll).
 
 **Variations:**
 - **Generic CTA (no plan):** inserts `/signup/plan` first.
 - **Existing account tries signup:** "already registered" → link to `/login`.
-- **Returning login:** `/login` → OTP → `postAuthRedirect` (may bounce to plan/checkout if billing incomplete).
-- **Self-host (DEV_MODE):** `/login` → "Open my dashboard" (dev-token) → `/dashboard` (no billing gate).
-- **Trial expiry / past_due:** `TenantPlanBanner` shows "Payment failed"; gate may push to checkout.
+- **Returning login:** `/login` → OTP → `/dashboard` (`postAuthRedirect` always `/dashboard`).
+- **Self-host (DEV_MODE):** `/login` → "Open my dashboard" (dev-token) → `/dashboard`.
+- **Trial expiry / past_due:** `TenantPlanBanner` shows plan + trial end; no checkout redirect (billing not enforced).
 - **Account deletion:** Settings → delete modal → optional retention trial → confirm "DELETE" → `/login?deleted=1`.
+- **Legacy URLs:** `/signup/checkout` → `/signup/plan`; `/signup/success` → `/dashboard`.
 
 ---
 
@@ -343,14 +336,13 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 
 - **Missing plan param:** every funnel page falls back to `/signup/plan`.
 - **Missing consent:** `/signup` bounces to `/signup/start`.
-- **Missing `session_id` on success:** shows "Missing checkout session" (`success/page.tsx:44`).
-- **Slow Stripe confirmation:** success page polls up to 5× with 1.5–2s backoff; distinguishes `pending_checkout`/`incomplete` states (`success/page.tsx:51-114`).
+- **Legacy checkout/success URLs:** immediately redirect client-side (`checkout` → plan, `success` → dashboard).
 - **401 / invalid token:** Agents page redirects to `/login`; `requireAuth()` hard-redirects via `window.location`.
 - **API unreachable:** `ConnectionStatus` red dot + setup hint; dev-login shows docker hint.
 - **Browser refresh mid-funnel:** state survives via `sessionStorage`; token via `localStorage`+cookie.
 - **Multiple clicks / races:** async effects guarded by `cancelled` flags; buttons disabled while `loading`/`creating`/`busy`.
 - **Empty states:** agents → `GettingStartedChecklist`; no API keys → prompt to create agent.
-- **Direct URL access:** `/dashboard*` guarded at edge; `/signup/checkout` & `/success` re-check token client-side and redirect to `/signup`.
+- **Direct URL access:** `/dashboard*` guarded at edge; legacy `/signup/checkout` & `/success` redirect away.
 - **`getEvents` response shape:** handles both array and `{events:[]}` (`api.ts:91`).
 - **Signup screen flicker (fixed):** `/signup` gates its email/OTP form behind a `checked` state so it no longer flashes before a redirect to `/signup/plan` or `/signup/start` resolves. Pattern: run checks in `useEffect`, `return` early on a redirect, call `setChecked(true)` only on the valid path, and render `SignupFallback` until then (`signup/page.tsx`).
 
@@ -360,9 +352,9 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 
 - Suspense wrappers are mandatory around `useSearchParams` pages (Next 14 CSR bailout).
 - `middleware` adds `noindex` to all dashboard/admin responses; `dashboard/layout` also sets `robots:false` metadata.
-- `postAuthRedirect` and `billingGateRedirect` are the two single-source-of-truth routing helpers — reuse them for any new gated flow.
+- `postAuthRedirect` always returns `/dashboard` — reuse it after OTP verify for consistency.
 - Styling is inconsistent: dashboard uses Tailwind; marketing/signup use inline styles + a raw `<style>` block for responsive breakpoints (`page.tsx:44-63`).
-- Plans are duplicated: landing (`page.tsx`), `/signup/plan` (`PLANS`), and backend `getBillingConfig` all define plan data independently.
+- Plans are duplicated: landing (`page.tsx`), `/signup/plan` (`PLANS`), and backend `PLAN_CATALOG` in `billing.py` all define plan data independently.
 
 ---
 
@@ -372,7 +364,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 - **Linting/formatting:** ESLint `next` + `next/core-web-vitals` only (`package.json`). **No Prettier** — match surrounding style manually (2-space indent, single quotes, no semicolons in TS files).
 - **Components:** all interactive pages are Client Components (`'use client'`). PascalCase component files; route files are `page.tsx`; shared logic lives in `lib/`.
 - **Data fetching:** always via `lib/api.ts` (`apiFetch` injects auth + normalizes errors). No React Query/SWR — manual `useEffect` + `useState`.
-- **Async safety:** guard every async effect with a `let cancelled = false` flag and check it before `setState` (see `SubscriptionGate`, `checkout`, `success`). Standard pattern — reuse it.
+- **Async safety:** guard every async effect with a `let cancelled = false` flag and check it before `setState` (see `TenantPlanBanner`, `signup`). Standard pattern — reuse it.
 - **Redirect guards:** always render the page's `*Fallback` loader while a redirect is pending; never render real UI before guard checks resolve (see the `checked` gate in `signup/page.tsx`).
 - **Errors:** `apiFetch` throws a normalized `Error`; catch in the component and render into a local `error` state string.
 - **Env flags:** client-exposed values must be prefixed `NEXT_PUBLIC_*`.
@@ -382,30 +374,30 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 
 ## 13. Areas for Improvement (documented, not changed)
 
-1. **Duplicate plan definitions** (landing, `/signup/plan`, backend `getBillingConfig`) → drift risk; consolidate on `getBillingConfig`.
+1. **Duplicate plan definitions** (landing, `/signup/plan`, backend `PLAN_CATALOG`) → drift risk; consolidate on one API or shared config.
 2. **No shared trial-CTA component** — 13 inline links; a `<StartTrialButton plan?>` would centralize analytics + copy.
-3. **Repeated funnel-guard logic** (`sessionStorage` plan/consent checks re-implemented in `/signup`, `/signup/start`, `/signup/checkout`) → extract a hook (`useSignupFunnelGuard`).
+3. **Repeated funnel-guard logic** (`sessionStorage` plan/consent checks re-implemented in `/signup`, `/signup/start`) → extract a hook (`useSignupFunnelGuard`).
 4. **Duplicated OTP form** (`login` vs `signup` are ~90% identical) → shared `<OtpForm/>`.
 5. **No analytics/telemetry** on funnel steps → hard to measure drop-off.
-6. **No React Query/SWR** → manual polling + no dedupe/caching; billing status fetched 2–3× per dashboard load (`SubscriptionGate` + `TenantPlanBanner`).
+6. **No React Query/SWR** → manual polling + no dedupe/caching; billing status fetched on mount by `TenantPlanBanner`.
 7. **Inconsistent styling systems** (Tailwind vs inline).
-8. **No frontend tests** — no `*.test.tsx`, no test runner, no `test` script (`package.json`); CI only runs `lint` + `build`. Highest-value first tests: the pure `postAuthRedirect` / `billingGateRedirect` helpers, then the signup funnel guards.
+8. **No frontend tests** — no `*.test.tsx`, no test runner, no `test` script (`package.json`); CI only runs `lint` + `build`. Highest-value first tests: `postAuthRedirect`, signup funnel guards, API key quota hook.
 9. **`apiFetch` is effectively untyped** (returns `any` from `res.json()`), so agents/events endpoints lose type safety despite `strict: true` → add response interfaces + a generic `apiFetch<T>()`.
 
 ---
 
 ## 14. Potential Risks
 
-1. **Copy contradiction on credit card:** `/signup/plan` and `/signup` say "No credit card required," but the flow forces Stripe checkout and landing says "card required." User-trust/legal risk. (`plan/page.tsx:57`, `signup/page.tsx:180` vs `page.tsx:190,196`.)
+1. **Copy inconsistency on credit card:** landing pricing may still say "card required" while funnel says "No credit card required" — align copy when payment is reintroduced.
 2. **Access token is XSS-exposed:** the **access** JWT lives in `localStorage` + a non-`HttpOnly` (JS-readable) cookie. (The **refresh** token is a proper `HttpOnly` cookie set by the backend — `core/api/auth.py:104-112` — so it is not JS-readable.) A structural fix would move the access token to an `HttpOnly` server-set cookie too. Middleware trusts the access cookie only.
 3. **Auth source mismatch:** middleware reads the access cookie, app code reads localStorage. If one is cleared (cookie expiry vs localStorage), a user can pass the edge guard but fail client calls, or vice-versa.
-4. **`selectBillingPlan` best-effort swallow** (`signup/page.tsx:99` `catch {}`) — a failure here silently defers plan to checkout; acceptable but undocumented.
+4. **`selectBillingPlan` best-effort swallow** (`signup/page.tsx` `catch {}`) — a failure here silently leaves default plan; acceptable but undocumented.
 5. **Retention-trial / delete** are destructive and rely on client `accountOpts.managed_cloud`; ensure backend re-validates.
 6. **Calendly `postMessage`**: origin is validated (good), but booked-state cannot be forged into app state beyond a UI success screen (low risk).
 7. **No client-side rate-limit/backoff on OTP request** (relies on backend).
-8. **Billing gate fails open:** if `getBillingStatus` throws, `SubscriptionGate` calls `setReady(true)` and lets the user into the dashboard (`SubscriptionGate.tsx:42-44`). Better UX when the billing API is down, but a potential revenue-leak / access risk — verify it's intentional.
-9. **No request timeouts:** only `adminRequestOtp` passes an `AbortSignal` (`api.ts:157`); other fetches (incl. 10s agents poll, 30s `/health` poll) can hang/stack. Consider an `AbortController` + timeout in `apiFetch`.
-10. **API does not enforce subscription:** `get_tenant` validates the token but not `subscription_status`; a `pending_checkout` JWT can still hit `/v1/agents` and `/v1/events`. Access is gated client-side only (see §7). Treat billing as a UX gate, not a security boundary, for non-account endpoints.
+8. **No request timeouts:** only `adminRequestOtp` passes an `AbortSignal` (`api.ts:157`); other fetches (incl. 10s agents poll, 30s `/health` poll) can hang/stack. Consider an `AbortController` + timeout in `apiFetch`.
+9. **API does not enforce subscription:** `get_tenant` validates the token but not `subscription_status`; there is no billing gate on API routes (by design after Stripe removal).
+10. **API key limits dormant by default:** `API_KEY_LIMITS_ENFORCED` defaults OFF — enable deliberately in production after measuring tenant key counts.
 
 ---
 
@@ -420,7 +412,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 | Var | Where read | Default | Purpose |
 |-----|-----------|---------|---------|
 | `NEXT_PUBLIC_API_URL` | client (`lib/api.ts`, `lib/demo.ts`, `lib/community.ts`, `ConnectionStatus`, `login`) | `''` (same-origin; `login` falls back to `http://localhost:8000`) | API base URL |
-| `NEXT_PUBLIC_DEV_MODE` | client (`SubscriptionGate`, `TenantPlanBanner`, `ConnectionStatus`, `login`) | unset | `'true'` = self-host: skips billing gate, enables dev-token login, changes onboarding copy |
+| `NEXT_PUBLIC_DEV_MODE` | client (`ConnectionStatus`, `login`) | unset | `'true'` = self-host: enables dev-token login, changes onboarding copy |
 | `API_REWRITE_TARGET` | build/server (`next.config.mjs`) | `http://127.0.0.1:8000` | upstream host for the `/swagger` + `/openapi.json` rewrites |
 
 **Rewrites / redirects (`next.config.mjs`):**
@@ -440,18 +432,18 @@ There is **no `.env.example`** in the repo — env vars are documented only here
 | Component | Role |
 |-----------|------|
 | `DashboardShell` | sidebar / mobile nav / sign-out frame |
-| `SubscriptionGate` | billing redirect guard (fails open on fetch error) |
-| `TenantPlanBanner` | plan pill + trial / active / past_due state |
+| `TenantPlanBanner` | plan pill + trial / active state (informational) |
+| `ApiKeyUsage` | quota indicator (used/limit from `/v1/auth/api-keys/usage`) |
 | `ConnectionStatus` (+ `GettingStartedChecklist`) | `/health` poll + empty-state onboarding |
-| `AgentApiKeys` | key create / reveal-once / revoke |
+| `AgentApiKeys` | key create / reveal-once / revoke (uses `useApiKeyQuota`) |
 | `SiteNav`, `BrandLogo`, `brand.ts` | marketing nav + branding tokens |
 | `marketing/*` | `CalendlyBookModal`, `CompetitorCompare`, `ConversationCompare`, `ThreeWaysConnectSection`, `TrustBar`, `IntegrationStrip`, `ProductPreview`, `SessionReplayDemo` |
 
 **Key types (`lib/api.ts`) — the funnel branches on these:**
-- `BillingStatus` — `enforced`, `has_access`, `requires_plan_selection`, `requires_checkout`, `subscription_status`, `trial_ends_at`, `plan`, `stripe_publishable_key?`, `trial_days?`.
-- `BillingPlan` — `id: 'pro'|'team'`, `name`, `price`, `price_sub`, `highlight`, `features[]`.
+- `BillingStatus` — `enforced`, `has_access`, `requires_plan_selection`, `requires_checkout`, `subscription_status`, `trial_ends_at`, `plan`, `trial_days?` (always access-granted today; fields kept for compatibility).
+- `ApiKeyUsage` — `plan`, `limit`, `used`, `unlimited`, `at_limit`.
 - `AccountOptions` — `managed_cloud`, `retention_trial_available?`, `retention_trial_days?`, `trial_ends_at?`, `email?`.
-- `verifyOtp` response — `access_token`, `token_type`, plus optional `requires_plan_selection`, `requires_checkout`, `has_access`, `plan`.
+- `verifyOtp` response — `access_token`, `token_type`, plus optional legacy billing flags (`has_access`, etc.).
 
 ---
 
@@ -495,6 +487,7 @@ Router prefixes are mounted in `core/main.py:66-79`.
 | dev-token (`login/page.tsx`) | POST `/v1/auth/dev-token` | `auth.py:151` |
 | `sendTestEvent` | POST `/v1/auth/test-event` | `auth.py:187` |
 | `getApiKeys` | GET `/v1/auth/api-keys` | `auth.py:205` |
+| `getApiKeyUsage` | GET `/v1/auth/api-keys/usage` | `auth.py` |
 | `createApiKey` | POST `/v1/auth/api-keys` | `auth.py:124` |
 | `revokeApiKey` | DELETE `/v1/auth/api-keys/{id}` | `auth.py:139` |
 
@@ -524,12 +517,8 @@ Router prefixes are mounted in `core/main.py:66-79`.
 **Billing (`core/api/billing_checkout.py`, prefix `/v1/billing`):**
 | Dashboard fn | Method · Path | Backend |
 |---|---|---|
-| `getBillingConfig` | GET `/v1/billing/config` | `billing_checkout.py:56` |
-| `getBillingStatus` | GET `/v1/billing/status` | `billing_checkout.py:68` |
-| `selectBillingPlan` | POST `/v1/billing/select-plan` | `billing_checkout.py:74` |
-| `createCheckoutSession` | POST `/v1/billing/checkout-session` | `billing_checkout.py:87` |
-| `confirmCheckout` | POST `/v1/billing/confirm-checkout` | `billing_checkout.py:115` |
-| _(Stripe → backend webhook)_ | POST `/v1/webhooks/stripe` | `billing.py:22` |
+| `getBillingStatus` | GET `/v1/billing/status` | `billing_checkout.py` |
+| `selectBillingPlan` | POST `/v1/billing/select-plan` | `billing_checkout.py` |
 
 **Settings / Account:**
 | Dashboard fn | Method · Path | Backend |
@@ -559,11 +548,10 @@ The dashboard **reads and visualizes** data that the **rest of the ecosystem wri
 
 ### 17.5 Service layer behind the routers (`core/services/`)
 
-`auth.py` (JWT + API-key hashing, OTP), `billing.py` (Stripe, plans, trials, state machine), `account.py` (retention/delete), `embeddings.py` + `embedding_config.py`, `api_keys.py`, `event_write.py`. Routers are thin; business logic lives here — the first place to look when a dashboard call returns unexpected data.
+`auth.py` (JWT + API-key hashing, OTP), `billing.py` (plan catalog, trials, status payload — no payment provider), `plan_limits.py` + `api_keys.py` (API key caps), `account.py` (retention/delete), `embeddings.py` + `embedding_config.py`, `event_write.py`. Routers are thin; business logic lives here — the first place to look when a dashboard call returns unexpected data.
 
 ### 17.6 External integrations
 
-- **Stripe** — checkout session created server-side (`billing_checkout.py`), dashboard redirects to `session.url`; completion confirmed via `confirmCheckout` + webhook `/v1/webhooks/stripe`.
 - **Calendly** — client-only embed in `CalendlyBookModal` (no backend); lead capture is the separate `submitDemoRequest` path.
 
 ---
@@ -572,53 +560,33 @@ The dashboard **reads and visualizes** data that the **rest of the ecosystem wri
 
 The logic that drives every dashboard gate and funnel branch. Routers are thin; the rules below live in `core/services/`.
 
-### 18.1 Billing / trial / subscription state machine (`core/services/billing.py`)
+### 18.1 Billing / trial state (`core/services/billing.py`)
 
-**When billing is enforced** (`billing_enforced()`, `billing.py:58-62`): `ENV=production` **and** `STRIPE_SECRET_KEY`, `STRIPE_PRO_PRICE_ID`, `STRIPE_TEAM_PRICE_ID` all set. Otherwise (self-host / dev) billing is off and everyone has access.
+**No payment provider.** Billing endpoints exist for plan persistence and informational status only.
 
-**Plans & prices** (`PLAN_CATALOG`, `billing.py:26-43`): `pro` = €39/mo, `team` = €99/mo. A plan is *valid* only if it is in `VALID_PLANS` **and** its Stripe price ID is configured (`_valid_plan`, `billing.py:54-55`). Trial length = `STRIPE_TRIAL_DAYS` (default **30**, `billing.py:19`).
+**Plans** (`PLAN_CATALOG`, `billing.py`): `pro` = €39/mo, `team` = €99/mo. Trial length = `TRIAL_DAYS` env (default **30**).
 
-**Access gate** (`billing.py:23-24, 74-82`): `ACCESS_STATUSES = {trialing, active}`. `has_dashboard_access` returns `true` if billing not enforced, else `subscription_status ∈ ACCESS_STATUSES`.
-
-**Decision tree (managed cloud):**
-
-```
-billing_enforced?
-  NO  → has_access=true, requires_plan_selection=false, requires_checkout=false
-  YES → has_access            = status ∈ {trialing, active}
-        requires_plan_selection = !has_access && !valid_plan            (billing.py:84-90)
-        requires_checkout       = !has_access && valid_plan &&
-                                  status ∈ {pending_checkout, null, "",
-                                            past_due, canceled, unpaid,
-                                            incomplete, incomplete_expired}  (billing.py:93-105)
-```
+**Access:** `billing_status_payload` always returns `has_access: true`, `enforced: false`, `requires_plan_selection: false`, `requires_checkout: false`. Used by `TenantPlanBanner` and verify-otp response for compatibility.
 
 **State transitions:**
 
 | Trigger | From | To | Side effects | Ref |
 |---------|------|----|-------------|-----|
-| New user OTP verify (managed) | anything ∉ {active,trialing} & no Stripe sub | `pending_checkout` | — | `auth.py` verify branch |
-| New user OTP verify (self-host) | plan+status both NULL | `plan=pro`, `trialing`, `trial_ends_at=+30d` | — | `services/auth.py` |
-| `select_plan` | any (no Stripe sub) | plan saved, `status=COALESCE(status,'pending_checkout')` | blocked if already active/trialing when enforced | `billing.py:247-267` |
-| Stripe checkout complete | `pending_checkout` | `trialing` (or Stripe status) | links customer/sub IDs, sets `trial_ends_at` | `sync_checkout_session` `billing.py:381-442` |
-| Retention trial | any | `trialing`, `retention_trial_used=true`, extended trial | Stripe `Subscription.modify(trial_end=…)` if sub exists | `account.py` service 39-88 |
-| Webhook `subscription.deleted` | * | `canceled` | — | `core/api/billing.py` |
-| Webhook `invoice.payment_failed` | * | `past_due` | — | `core/api/billing.py` |
+| New user OTP verify | plan/status NULL or `pending_checkout` | `plan=pro` (if unset), `trialing`, `trial_ends_at=+30d` | converts legacy `pending_checkout` | `services/auth.py` verify branch |
+| `select_plan` | any | plan saved; status/trial backfilled if NULL | — | `billing.py:83-98` |
+| Retention trial | any | `trialing`, `retention_trial_used=true`, extended trial | DB only (no payment provider) | `account.py` service |
 
-**`billing_status_payload` shape** (`billing.py:445-466`) — the object the dashboard branches on:
+**`billing_status_payload` shape** (`billing.py:101-122`):
 
 ```json
 {
-  "enforced": bool, "has_access": bool,
-  "requires_plan_selection": bool, "requires_checkout": bool,
-  "subscription_status": "trialing|active|pending_checkout|past_due|…|null",
+  "enforced": false, "has_access": true,
+  "requires_plan_selection": false, "requires_checkout": false,
+  "subscription_status": "trialing|active|…|null",
   "trial_ends_at": "ISO8601|null", "plan": "pro|team|null",
-  "stripe_publishable_key": "str|null",  // only when enforced
-  "trial_days": "int|null"                // only when enforced
+  "trial_days": 30
 }
 ```
-
-**Checkout** (`create_checkout_session`, `billing.py:270-307`): Stripe Hosted Checkout, `mode=subscription`, card required, `trial_period_days=STRIPE_TRIAL_DAYS`, metadata `{user_id, plan}`; success → `{DASHBOARD_URL}/signup/success?session_id={CHECKOUT_SESSION_ID}`, cancel → `/signup/plan?canceled=1`. `confirm-checkout` soft-fails to current status on Stripe errors (`billing_checkout.py:127-130`).
 
 ### 18.2 Auth internals (`core/services/auth.py`)
 
@@ -632,8 +600,8 @@ billing_enforced?
 ### 18.3 Account (`core/api/account.py` + `core/services/account.py`) — JWT only
 
 - **`account_options`**: non-production → `{managed_cloud:false}`; production → `{managed_cloud:true, retention_trial_available, retention_trial_days, trial_ends_at, plan, email}`; `retention_trial_available = !retention_trial_used`.
-- **Retention trial** (one-time): production only; 400 if `retention_trial_used`; extends trial by `RETENTION_TRIAL_DAYS` (default 30), modifies Stripe sub `trial_end` if present, sets `retention_trial_used=TRUE`.
-- **Delete account**: production only; tenant must match JWT (403 otherwise); cancels Stripe sub, purges Qdrant vectors, deletes user + auth_otps + tenant in a transaction.
+- **Retention trial** (one-time): production only; 400 if `retention_trial_used`; extends trial by `RETENTION_TRIAL_DAYS` (default 30), sets `retention_trial_used=TRUE`.
+- **Delete account**: production only; tenant must match JWT (403 otherwise); purges Qdrant vectors, deletes user + auth_otps + tenant in a transaction.
 
 ### 18.4 Events & memory
 
@@ -655,18 +623,9 @@ Single allow-listed email (`ADMIN_EMAIL`, default `founder@zizka.ai`). Non-admin
 ```mermaid
 flowchart TD
     A["POST /auth/request-otp (intent=signup)"] --> B["POST /auth/verify-otp (gdpr_consent=true)"]
-    B --> C{billing_enforced?}
-    C -->|No| D["Self-host: status=trialing, plan=pro, +30d"]
-    C -->|Yes| E["status=pending_checkout"]
-    E --> F{requires_plan_selection?}
-    F -->|Yes| G["POST /billing/select-plan"]
-    F -->|No| H["POST /billing/checkout-session"]
-    G --> H
-    H --> I["Stripe Hosted Checkout"]
-    I --> J["POST /billing/confirm-checkout (session_id)"]
-    J --> K["status=trialing, has_access=true"]
-    D --> L["Dashboard unlocked"]
-    K --> L
+    B --> C["plan=pro if unset, status=trialing, +30d trial"]
+    C --> D["POST /billing/select-plan (best-effort from dashboard)"]
+    D --> E["/dashboard"]
 ```
 
 ---
@@ -710,7 +669,7 @@ Exhaustive behavior per file (state, effects, API order, branches, edge cases, n
 
 ### 19.5 Dashboard layout — `app/dashboard/layout.tsx`
 
-Server component; `metadata.robots` = noindex/nofollow (`:5-7`); wraps children in `DashboardShell` → `SubscriptionGate` (`:9-14`). No API, no branching of its own.
+Server component; `metadata.robots` = noindex/nofollow (`:5-7`); wraps children in `DashboardShell` only (`:8-10`). No API, no branching of its own.
 
 ### 19.6 Login — `app/login/page.tsx`
 
@@ -728,14 +687,12 @@ Server component; `metadata.robots` = noindex/nofollow (`:5-7`); wraps children 
 
 ### 19.8 Checkout success — `app/signup/success/page.tsx`
 
-- **State (`:31-35`):** `sessionId` from query, `error`. **Effect (`:37-119`)** deps `[router, sessionId]`.
-- **Retry loop (max 5):** `confirmCheckout` → if no access `getBillingStatus` → on catch retry `getBillingStatus`. `isPendingStripeConfirmation` (`:51-60`) retries while status null / `pending_checkout` / `incomplete` / `incomplete_expired` and still requires checkout; waits 2000ms between pending attempts (`:81-83`), 1500ms on error path (`:101,108`); `has_access` → `/dashboard` immediately (`:69-78,96-98`).
-- **Edge/nav:** no token → `/signup` (`:39-41`); missing `session_id` → error, no API (`:43-45`); timeout after 5 → error message (`:86-89`); error UI offers full reload (`:131`) + link to `/signup/plan` (`:145`); `cancelled` on unmount (`:118`).
+- **Legacy redirect.** Client component; `useEffect` → `router.replace('/dashboard')`. No API calls, no state.
 
 ### 19.9 Components
 
 - **`DashboardShell.tsx`** — no state; `usePathname`/`useRouter`. Nav items Agents/Search/Settings (`:11-15`); active = exact/prefix match (`:40`); sign out `clearToken()` → `router.push('/login')` (`:21-24`). Renders `TenantPlanBanner` (`:84`) + `ConnectionStatus` (`:85`) + children.
-- **`TenantPlanBanner.tsx`** — state `status` (`:27`); effect once, **early-exits if `IS_DEV_MODE`** (`:30`), no token → return, `getBillingStatus` with `cancelled` cleanup (`:29-39`, errors swallowed). Returns `null` if dev mode or `!status?.plan` (`:41`); shows trial end date if `trialing` (`:66-70`), "Active" (`:71-73`), or "Payment failed" if `past_due` (`:74-76`). Informational only.
+- **`TenantPlanBanner.tsx`** — state `status` (`:27`); effect once, no token → return, `getBillingStatus` with `cancelled` cleanup (`:29-36`, errors swallowed). Returns `null` if `!status?.plan` (`:38`); shows trial end date if `trialing` (`:59-63`), "Active" if `active` (`:64-66`). Informational only.
 - **`ConnectionStatus.tsx`** — state `health: 'checking'|'ok'|'error'` (`:11`); effect mount + **30s `/health` poll** (`:14-30`, `cache:'no-store'`, `cancelled`+`clearInterval` cleanup). Empty `API` → label "same-origin (nginx)" (`:12`); dev label + setup hint on error. Also exports `GettingStartedChecklist` (static; Python snippet + step 1 copy differ by `IS_DEV`).
 - **`AgentApiKeys.tsx`** — state keys/loading/creating/revokingId/newKey/copied/err/testBusy/testMsg (`:24-32`); `load` useCallback → `getAgentApiKeys` (normalizes to array, `:34-44`); effect re-loads when `agentId` changes (`:46-48`). `createAgentApiKey` (`:55`) → reload; `revokeAgentApiKey` (`:72`, confirm first `:66-67`); `sendAgentTestEvent` (`:110`) → `onTestSuccess?.()` (`:112`). One-time key display; copy resets 2s (`:84`).
 
@@ -746,9 +703,9 @@ Server component; `metadata.robots` = noindex/nofollow (`:5-7`); wraps children 
 | `getToken()` | read-only, no redirect |
 | `requireAuth()` | no token → `window.location.href='/login'`, throws |
 | Agents home | explicit `router.replace('/login')` on missing/invalid token |
-| Layout gate | `SubscriptionGate` redirects unauthenticated + billing-blocked (skips if `IS_DEV_MODE`) |
+| Edge auth | middleware cookie check on `/dashboard/*` |
 | Polling | agents home 10s, agent detail 10s (tab-aware), `ConnectionStatus` 30s |
-| `NEXT_PUBLIC_DEV_MODE=true` | dev login bypass; hides plan banner; skips subscription gate; dev onboarding copy |
+| `NEXT_PUBLIC_DEV_MODE=true` | dev login bypass; dev onboarding copy |
 
 ### 19.11 Signup email/OTP — `app/signup/page.tsx`
 
@@ -767,9 +724,7 @@ Server component; `metadata.robots` = noindex/nofollow (`:5-7`); wraps children 
 
 ### 19.13 Checkout — `app/signup/checkout/page.tsx`
 
-- **Step 4 of the funnel.** Suspense-wrapped; `plan` from `?plan=` (`pro|team|null`). Renders `CheckoutFallback` ("Redirecting to Stripe…") by default.
-- **Effect (deps `[router, plan]`):** no token → `/signup`; no plan → `/signup/plan`. `startCheckout` (guarded by `cancelled`): `getBillingStatus` → `has_access` → `/dashboard`; `billingGateRedirect==='/signup/plan'` → `/signup/plan`; if `status.plan && status.plan !== plan` → redirect to `/signup/checkout?plan=<status.plan>`; if `!status.plan` → `selectBillingPlan(token, plan)`; then `createCheckoutSession(token, plan)` → `window.location.href = session.url` (or error if no url).
-- **Edge/nav:** on error shows message + "← Back to plan selection" (`/signup/plan`); `cancelled` guards all `setState`.
+- **Legacy redirect.** Client component; `useEffect` → `router.replace('/signup/plan')`. No API calls, no state.
 
 ---
 
@@ -807,7 +762,7 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 - **Three tiers:** `AdminPage` boot gate (reads `getAdminToken()`, shows Loading → Login → Dashboard) → `Login` (founder-only `ADMIN_EMAIL = 'founder@zizka.ai'`, OTP via `adminRequestOtp` with 30s `AbortSignal` + `adminVerifyOtp`) → `Dashboard`.
 - **Dashboard:** `OverviewRow` stats + 4 tabs — `subscribers` (`SubscribersSection`), `managed` (`ManagedSection`), `telemetry` (`TelemetrySection`), `demo_requests` (`DemoRequestsSection`). `adminOverview` polls every **10s**; **401/"Not Found" → auto `onLogout()`**.
 - **Data calls** (all admin JWT via `apiFetch`): `adminOverview`, `adminTelemetrySummary` + `adminTelemetryRecent(100)`, `adminManagedOverview`, `adminManagedSubscribers`, `adminManagedUsers`, `adminManagedUsage`, `adminDemoRequests({limit:200})`. Subscriber/managed/demo tabs also poll 10s.
-- **Behaviors:** most tab fetches `.catch(()=>…)` **silently**; **search reloads only on Enter/Refresh** (search text is not in effect deps); subscriber filters `trialing|active|past_due`; managed filters `all|active|keys|no_keys` (→ `has_keys`/`active_7d` query params); Stripe customer links to `dashboard.stripe.com`; empty subscribers message references migration `002_user_billing.sql`. No `NEXT_PUBLIC_DEV_MODE` bypass.
+- **Behaviors:** most tab fetches `.catch(()=>…)` **silently**; **search reloads only on Enter/Refresh** (search text is not in effect deps); subscriber filters `trialing|active|past_due`; managed filters `all|active|keys|no_keys` (→ `has_keys`/`active_7d` query params); empty subscribers message references migration `002_user_billing.sql`. No `NEXT_PUBLIC_DEV_MODE` bypass.
 
 ---
 
@@ -835,7 +790,7 @@ Schema sources: `core/db/schema.sql` (base DDL, Docker init) + `core/db/migratio
 
 ### 21.2 Billing storage (all on `users`)
 
-`plan` (`pro|team`), `subscription_status`, `trial_ends_at`, `stripe_customer_id` (unique), `stripe_subscription_id` (unique), `retention_trial_used` (one-time flag). No separate subscriptions table. `subscription_status` values and transitions are documented in §18.1. Startup backfill: users with NULL plan/status get `plan='pro'`, `subscription_status='trialing'`, `trial_ends_at = created_at + 30d` (`connection.py`, `002_user_billing.sql`).
+`plan` (`pro|team`), `subscription_status`, `trial_ends_at`, `retention_trial_used` (one-time flag). Legacy columns `stripe_customer_id` / `stripe_subscription_id` may remain from migration `002_user_billing.sql` but are unused. No separate subscriptions table. Startup backfill: users with NULL plan/status get `plan='pro'`, `subscription_status='trialing'`, `trial_ends_at = created_at + 30d` (`connection.py`, `002_user_billing.sql`).
 
 ### 21.3 Qdrant (vector search)
 
@@ -878,11 +833,10 @@ erDiagram
 | **API key** | Credential used by SDKs/MCP to write events (`zizkadb_live_*`, stored hashed). Tenant-wide or **agent-scoped** (bound to one agent). |
 | **JWT (session)** | Dashboard user's access token from OTP login; distinct from API keys. Resolved by `get_tenant`. |
 | **OTP** | One-time 6-digit code for passwordless email login/signup (`auth_otps`, 15-min expiry). |
-| **Billing enforced** | `true` only on managed cloud (`ENV=production` + Stripe keys). When false (self-host), everyone has access. |
-| **pending_checkout** | New managed-cloud user status before Stripe checkout completes — no dashboard access until it becomes `trialing`. |
+| **API key limit** | Pro = 3 active keys, Team = 10 (tenant-wide + agent-scoped). Enforced when `API_KEY_LIMITS_ENFORCED=true`. |
 | **Retention trial** | One-time extra free month offered in the delete-account modal (`retention_trial_used`). |
 | **Honeypot** | Hidden `website`/`botcheck` form field; if a bot fills it, the submission is silently dropped (community + demo forms). |
-| **Self-host / DEV_MODE** | `NEXT_PUBLIC_DEV_MODE=true` (frontend) / non-production backend — bypasses billing, enables dev-token login. |
+| **Self-host / DEV_MODE** | `NEXT_PUBLIC_DEV_MODE=true` (frontend) / non-production backend — enables dev-token login, changes onboarding copy. |
 
 ---
 
@@ -896,7 +850,7 @@ erDiagram
 | Landing + pricing section | `app/page.tsx` |
 | Signup funnel | `app/signup/{plan,start,page,checkout,success}` |
 | Login | `app/login/page.tsx` |
-| Dashboard shell/gate | `components/{DashboardShell,SubscriptionGate,TenantPlanBanner}.tsx` |
+| Dashboard shell | `components/{DashboardShell,TenantPlanBanner,ApiKeyUsage}.tsx`, `hooks/useApiKeyQuota.ts` |
 | Agents home | `app/dashboard/page.tsx` |
 | Settings (keys/embeddings/account) | `app/dashboard/settings/page.tsx` |
 | Book-demo modal | `components/marketing/CalendlyBookModal.tsx` |
@@ -910,7 +864,8 @@ erDiagram
 | FastAPI app + router mounts | `core/main.py` |
 | Auth resolution (JWT / API key / dev) | `core/api/deps.py` |
 | Auth service (JWT, OTP, API keys) | `core/services/auth.py`, `core/api/auth.py` |
-| Billing state machine + Stripe | `core/services/billing.py`, `core/api/billing_checkout.py`, `core/api/billing.py` (webhook) |
+| Billing + trials (no payment) | `core/services/billing.py`, `core/api/billing_checkout.py` |
+| API key plan limits | `core/services/plan_limits.py`, `core/services/api_keys.py` |
 | Account (retention trial, delete) | `core/api/account.py`, `core/services/account.py` |
 | Event write pipeline | `core/services/event_write.py`, `core/api/events.py` |
 | Memory (context/diff/forget) | `core/api/memory.py` |
