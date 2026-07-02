@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BrandLogo } from '@/components/BrandLogo'
+import { SIGNUP_PLAN_KEY } from '@/lib/signup-funnel'
 
 const BRAND = '#f97316'
 
@@ -31,7 +32,7 @@ export default function SignupPlanPage() {
 
   function handleContinue() {
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('signup_plan', selected)
+      sessionStorage.setItem(SIGNUP_PLAN_KEY, selected)
     }
     router.push(`/signup/start?plan=${selected}`)
   }

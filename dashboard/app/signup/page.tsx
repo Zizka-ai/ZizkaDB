@@ -1,10 +1,23 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { requestOtp, verifyOtp, postAuthRedirect, selectBillingPlan } from '@/lib/api'
+import { requestOtp, verifyOtp, selectBillingPlan } from '@/lib/api'
+import {
+  authErrorMessage,
+  isAlreadyRegisteredError,
+  isGdprConsentError,
+} from '@/lib/auth-errors'
 import { setToken } from '@/lib/auth'
+import { useResendCooldown } from '@/hooks/useResendCooldown'
+import {
+  clearSignupSession,
+  getStoredSignupPlan,
+  hasSignupConsent,
+  SIGNUP_CONSENT_MARKETING_KEY,
+  SIGNUP_PLAN_KEY,
+} from '@/lib/signup-funnel'
 import { BrandLogo } from '@/components/BrandLogo'
 
 export default function SignupPage() {
@@ -35,6 +48,10 @@ function SignupForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [alreadyRegistered, setAlreadyRegistered] = useState(false)
+  const [navigating, setNavigating] = useState(false)
+  const verifyLock = useRef(false)
+  const verifyFormRef = useRef<HTMLFormElement>(null)
+  const { cooldown, canResend, startCooldown } = useResendCooldown()
   // Gate the form render until the guard confirms the user belongs on /signup.
   // Prevents the email screen from flashing before a redirect to /signup/plan
   // or /signup/start resolves. Monotonic: only ever set true.
@@ -49,16 +66,16 @@ function SignupForm() {
 
     const planParam = searchParams.get('plan')
     if (planParam === 'pro' || planParam === 'team') {
-      sessionStorage.setItem('signup_plan', planParam)
+      sessionStorage.setItem(SIGNUP_PLAN_KEY, planParam)
     }
 
-    const stored = sessionStorage.getItem('signup_plan')
-    if (stored !== 'pro' && stored !== 'team') {
+    const stored = getStoredSignupPlan()
+    if (!stored) {
       router.replace('/signup/plan')
       return
     }
 
-    if (sessionStorage.getItem('signup_consent_gdpr') !== '1') {
+    if (!hasSignupConsent()) {
       router.replace(`/signup/start?plan=${stored}`)
       return
     }
@@ -66,20 +83,42 @@ function SignupForm() {
     setChecked(true)
   }, [searchParams, router])
 
+  useEffect(() => {
+    if (step !== 'otp' || otp.length !== 6 || loading || navigating || verifyLock.current) return
+    verifyFormRef.current?.requestSubmit()
+  }, [otp, step, loading, navigating])
+
+  async function sendSignupOtp() {
+    await requestOtp(email, 'signup')
+    setStep('otp')
+    startCooldown()
+  }
+
   async function handleRequestOtp(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
     setAlreadyRegistered(false)
     try {
-      await requestOtp(email, 'signup')
-      setStep('otp')
+      await sendSignupOtp()
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Could not send code. Please try again.'
-      if (msg.toLowerCase().includes('already registered')) {
-        setAlreadyRegistered(true)
-      }
-      setError(msg)
+      setAlreadyRegistered(isAlreadyRegisteredError(e))
+      setError(authErrorMessage(e, 'Could not send code. Please try again.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleResendOtp() {
+    if (!canResend || loading) return
+    setLoading(true)
+    setError('')
+    setAlreadyRegistered(false)
+    try {
+      await sendSignupOtp()
+    } catch (e) {
+      setAlreadyRegistered(isAlreadyRegisteredError(e))
+      setError(authErrorMessage(e, 'Failed to resend code. Try again.'))
     } finally {
       setLoading(false)
     }
@@ -87,30 +126,56 @@ function SignupForm() {
 
   async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault()
+    if (verifyLock.current || navigating) return
+    verifyLock.current = true
     setLoading(true)
     setError('')
     try {
-      const gdprConsent = sessionStorage.getItem('signup_consent_gdpr') === '1'
-      const marketingConsent = sessionStorage.getItem('signup_consent_marketing') === '1'
+      const gdprConsent = hasSignupConsent()
+      const marketingConsent = sessionStorage.getItem(SIGNUP_CONSENT_MARKETING_KEY) === '1'
+      if (!gdprConsent) {
+        verifyLock.current = false
+        setLoading(false)
+        const plan = getStoredSignupPlan() ?? 'pro'
+        router.replace(`/signup/start?plan=${plan}`)
+        return
+      }
       const data = await verifyOtp(email, otp, {
+        intent: 'signup',
         gdprConsent,
         marketingConsent,
       })
+      const plan = getStoredSignupPlan()
       setToken(data.access_token)
-      sessionStorage.removeItem('signup_consent_gdpr')
-      sessionStorage.removeItem('signup_consent_marketing')
-      // Save the selected plan to the account (best-effort; doesn't block login)
-      const plan = sessionStorage.getItem('signup_plan') as 'pro' | 'team' | null
+      clearSignupSession()
       if (plan === 'pro' || plan === 'team') {
-        sessionStorage.removeItem('signup_plan')
         try { await selectBillingPlan(data.access_token, plan) } catch { /* non-fatal */ }
       }
-      router.replace(postAuthRedirect(data))
+      setNavigating(true)
+      window.location.assign('/dashboard')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Invalid or expired code.')
-    } finally {
+      verifyLock.current = false
+      if (isGdprConsentError(e)) {
+        setLoading(false)
+        const plan = getStoredSignupPlan() ?? 'pro'
+        router.replace(`/signup/start?plan=${plan}`)
+        return
+      }
+      setAlreadyRegistered(isAlreadyRegisteredError(e))
+      setError(authErrorMessage(e, 'Invalid or expired code.'))
       setLoading(false)
     }
+  }
+
+  if (navigating) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: '#fafafa', fontFamily: 'Inter, system-ui, sans-serif', color: '#555',
+      }}>
+        <p style={{ fontSize: 15 }}>Creating your account…</p>
+      </div>
+    )
   }
 
   // Hold the neutral loader until the guard resolves, so the email/OTP form
@@ -169,7 +234,10 @@ function SignupForm() {
                     {alreadyRegistered && (
                       <>
                         {' '}
-                        <Link href="/login" style={{ color: '#111', fontWeight: 600 }}>
+                        <Link
+                          href={`/login?email=${encodeURIComponent(email)}`}
+                          style={{ color: '#111', fontWeight: 600 }}
+                        >
                           Sign in →
                         </Link>
                       </>
@@ -200,7 +268,7 @@ function SignupForm() {
               <p style={{ fontSize: 14, color: '#888', marginBottom: 24, lineHeight: 1.6 }}>
                 We sent a 6-digit code to <strong style={{ color: '#111' }}>{email}</strong>
               </p>
-              <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <form ref={verifyFormRef} onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 6 }}>
                     Verification code
@@ -213,6 +281,7 @@ function SignupForm() {
                     required
                     autoFocus
                     maxLength={6}
+                    disabled={loading}
                     style={{
                       width: '100%', boxSizing: 'border-box',
                       padding: '12px', borderRadius: 9, fontSize: 28,
@@ -224,7 +293,22 @@ function SignupForm() {
                     onBlur={e => (e.target.style.borderColor = '#ddd')}
                   />
                 </div>
-                {error && <p style={{ fontSize: 13, color: '#ef4444', margin: 0 }}>{error}</p>}
+                {error && (
+                  <p style={{ fontSize: 13, color: '#ef4444', margin: 0 }}>
+                    {error}
+                    {alreadyRegistered && (
+                      <>
+                        {' '}
+                        <Link
+                          href={`/login?email=${encodeURIComponent(email)}`}
+                          style={{ color: '#111', fontWeight: 600 }}
+                        >
+                          Sign in →
+                        </Link>
+                      </>
+                    )}
+                  </p>
+                )}
                 <button
                   type="submit"
                   disabled={loading || otp.length < 6}
@@ -238,7 +322,25 @@ function SignupForm() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setStep('email'); setOtp(''); setError('') }}
+                  onClick={handleResendOtp}
+                  disabled={!canResend || loading}
+                  style={{
+                    fontSize: 13, color: canResend ? '#555' : '#bbb',
+                    background: 'none', border: 'none',
+                    cursor: canResend && !loading ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  {canResend ? 'Resend code' : `Resend code in ${cooldown}s`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    verifyLock.current = false
+                    setStep('email')
+                    setOtp('')
+                    setError('')
+                    setAlreadyRegistered(false)
+                  }}
                   style={{ fontSize: 13, color: '#888', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   ← Use a different email

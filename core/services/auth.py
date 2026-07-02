@@ -7,6 +7,7 @@ import jwt
 import bcrypt
 import random
 import smtplib
+from typing import Literal
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
@@ -170,17 +171,27 @@ async def _save_signup_consent(
     )
 
 
+AuthIntent = Literal["login", "signup"]
+
+_LOGIN_NO_ACCOUNT = (
+    "No account found for this email. Create an account to get started."
+)
+_SIGNUP_ALREADY_REGISTERED = (
+    "This email is already registered. Please sign in instead."
+)
+_SIGNUP_GDPR_REQUIRED = "GDPR consent is required to create an account."
+
+
 async def verify_otp(
     email: str,
     otp: str,
     *,
+    intent: AuthIntent = "login",
     gdpr_consent: bool | None = None,
     marketing_consent: bool | None = None,
 ) -> dict:
     email = email.lower().strip()
     pool = get_pool()
-
-    is_new_user = not await email_exists(email)
 
     row = await pool.fetchrow(
         """
@@ -198,39 +209,77 @@ async def verify_otp(
     if not valid:
         raise ValueError("Invalid OTP")
 
-    await pool.execute(
-        "UPDATE auth_otps SET used = TRUE WHERE otp_id = $1",
-        row["otp_id"],
-    )
+    user_exists = await email_exists(email)
+
+    if intent == "login":
+        if not user_exists:
+            raise ValueError(_LOGIN_NO_ACCOUNT)
+    elif intent == "signup":
+        if user_exists:
+            raise ValueError(_SIGNUP_ALREADY_REGISTERED)
+        if not gdpr_consent:
+            raise ValueError(_SIGNUP_GDPR_REQUIRED)
+    else:
+        raise ValueError("Invalid authentication intent")
 
     async with pool.acquire() as conn:
         async with conn.transaction():
-            # Upsert user + tenant — explicit ::text casts avoid asyncpg type ambiguity
-            user = await conn.fetchrow(
-                """
-                WITH ins_tenant AS (
-                    INSERT INTO tenants (name)
-                    SELECT $1::text
-                    WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = $1::text)
-                    RETURNING tenant_id
-                ),
-                ins_user AS (
-                    INSERT INTO users (email, tenant_id, last_login)
-                    VALUES (
-                        $1::text,
-                        (SELECT tenant_id FROM ins_tenant),
-                        NOW()
-                    )
-                    ON CONFLICT (email) DO UPDATE SET last_login = NOW()
-                    RETURNING user_id, email, tenant_id
+            if intent == "login":
+                user = await conn.fetchrow(
+                    """
+                    SELECT user_id, email, tenant_id
+                    FROM users WHERE email = $1
+                    """,
+                    email,
                 )
-                SELECT * FROM ins_user
-                """,
-                email,
-            )
+                if not user:
+                    raise ValueError(_LOGIN_NO_ACCOUNT)
 
-            user_id = str(user["user_id"])
-            tenant_id = user["tenant_id"]
+                await conn.execute(
+                    "UPDATE users SET last_login = NOW() WHERE user_id = $1::uuid",
+                    user["user_id"],
+                )
+                user_id = str(user["user_id"])
+                tenant_id = user["tenant_id"]
+            else:
+                tenant_id = await conn.fetchval(
+                    "INSERT INTO tenants (name) VALUES ($1) RETURNING tenant_id",
+                    email,
+                )
+                user = await conn.fetchrow(
+                    """
+                    INSERT INTO users (email, tenant_id, last_login)
+                    VALUES ($1, $2, NOW())
+                    RETURNING user_id, email, tenant_id
+                    """,
+                    email,
+                    tenant_id,
+                )
+                user_id = str(user["user_id"])
+                consent_at = datetime.now(timezone.utc)
+                try:
+                    await _save_signup_consent(
+                        db=conn,
+                        user_id=user_id,
+                        consent_at=consent_at,
+                        marketing_consent=bool(marketing_consent),
+                    )
+                except Exception as e:
+                    log.warning(
+                        "consent persistence skipped for user %s: %s", user_id, e
+                    )
+                await conn.execute(
+                    """
+                    UPDATE users
+                    SET plan = COALESCE(plan, 'pro'),
+                        subscription_status = COALESCE(subscription_status, 'trialing'),
+                        trial_ends_at = COALESCE(
+                            trial_ends_at, NOW() + INTERVAL '30 days'
+                        )
+                    WHERE user_id = $1::uuid
+                    """,
+                    user_id,
+                )
 
             # Legacy rows: user without tenant breaks /v1/agents (JWT has no valid tenant_id)
             if not tenant_id:
@@ -246,34 +295,16 @@ async def verify_otp(
 
             tenant_id = str(tenant_id)
 
-            if is_new_user:
-                if not gdpr_consent:
-                    raise ValueError("GDPR consent is required to create an account")
-                consent_at = datetime.now(timezone.utc)
-                try:
-                    await _save_signup_consent(
-                        db=conn,
-                        user_id=user_id,
-                        consent_at=consent_at,
-                        marketing_consent=bool(marketing_consent),
-                    )
-                except Exception as e:
-                    # Do not block account creation if consent persistence fails unexpectedly.
-                    # We still enforce that consent was checked in the signup UI/API payload.
-                    log.warning("consent persistence skipped for user %s: %s", user_id, e)
-
-            await conn.execute(
+            burned = await conn.fetchval(
                 """
-                UPDATE users
-                SET plan = COALESCE(plan, 'pro'),
-                    subscription_status = COALESCE(subscription_status, 'trialing'),
-                    trial_ends_at = COALESCE(trial_ends_at, NOW() + INTERVAL '30 days')
-                WHERE user_id = $1::uuid
-                  AND (plan IS NULL OR subscription_status IS NULL
-                       OR subscription_status = 'pending_checkout')
+                UPDATE auth_otps SET used = TRUE
+                WHERE otp_id = $1 AND used = FALSE
+                RETURNING otp_id
                 """,
-                user_id,
+                row["otp_id"],
             )
+            if not burned:
+                raise ValueError("OTP already used")
 
     return _issue_tokens(user_id, email, tenant_id)
 

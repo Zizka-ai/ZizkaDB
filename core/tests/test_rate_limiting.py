@@ -24,8 +24,10 @@ class TestOTPRateLimiting:
         # Clear the in-memory rate dictionary before each test
         _otp_rate.clear()
 
+    @patch("api.auth.email_exists", new_callable=AsyncMock)
     @patch("api.auth.request_otp", new_callable=AsyncMock)
-    def test_otp_requests_under_limit(self, mock_request_otp):
+    def test_otp_requests_under_limit(self, mock_request_otp, mock_exists):
+        mock_exists.return_value = True
         # Set up a fixed time
         start_time = 1000000.0
         with patch("time.time", return_value=start_time):
@@ -37,8 +39,10 @@ class TestOTPRateLimiting:
             
             assert mock_request_otp.call_count == _OTP_RATE_MAX
 
+    @patch("api.auth.email_exists", new_callable=AsyncMock)
     @patch("api.auth.request_otp", new_callable=AsyncMock)
-    def test_otp_requests_exceed_limit(self, mock_request_otp):
+    def test_otp_requests_exceed_limit(self, mock_request_otp, mock_exists):
+        mock_exists.return_value = True
         start_time = 1000000.0
         with patch("time.time", return_value=start_time):
             # Send up to the limit
@@ -51,8 +55,10 @@ class TestOTPRateLimiting:
             assert response.status_code == 429
             assert "Too many code requests" in response.json()["detail"]
 
+    @patch("api.auth.email_exists", new_callable=AsyncMock)
     @patch("api.auth.request_otp", new_callable=AsyncMock)
-    def test_otp_requests_partitioned_by_email(self, mock_request_otp):
+    def test_otp_requests_partitioned_by_email(self, mock_request_otp, mock_exists):
+        mock_exists.return_value = True
         start_time = 1000000.0
         with patch("time.time", return_value=start_time):
             # Send up to the limit for user1
@@ -68,8 +74,10 @@ class TestOTPRateLimiting:
             response = client.post("/v1/auth/request-otp", json={"email": "user2@example.com"})
             assert response.status_code == 200
 
+    @patch("api.auth.email_exists", new_callable=AsyncMock)
     @patch("api.auth.request_otp", new_callable=AsyncMock)
-    def test_otp_requests_window_expiry(self, mock_request_otp):
+    def test_otp_requests_window_expiry(self, mock_request_otp, mock_exists):
+        mock_exists.return_value = True
         start_time = 1000000.0
         
         # We use a mutable container to simulate advancing time

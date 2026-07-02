@@ -46,12 +46,13 @@ _DEV_EMAIL     = "dev@localhost"
 
 class RequestOTPBody(BaseModel):
     email: EmailStr
-    intent: Literal["signup", "login"] | None = None
+    intent: Literal["signup", "login"] = "login"
 
 
 class VerifyOTPBody(BaseModel):
     email: EmailStr
     otp: str
+    intent: Literal["signup", "login"] = "login"
     gdpr_consent: bool | None = None
     marketing_consent: bool | None = None
 
@@ -74,6 +75,12 @@ async def request_otp_route(body: RequestOTPBody):
             detail="This email is already registered. Please sign in instead.",
         )
 
+    if body.intent == "login" and not await email_exists(email):
+        raise HTTPException(
+            status_code=404,
+            detail="No account found for this email. Create an account to get started.",
+        )
+
     try:
         await request_otp(email)
         return {"message": "Code sent"}
@@ -89,6 +96,7 @@ async def verify_otp_route(body: VerifyOTPBody, response: Response):
         tokens = await verify_otp(
             email,
             body.otp,
+            intent=body.intent,
             gdpr_consent=body.gdpr_consent,
             marketing_consent=body.marketing_consent,
         )
@@ -103,8 +111,12 @@ async def verify_otp_route(body: VerifyOTPBody, response: Response):
 
     from services.billing import billing_status_payload, fetch_user_billing
 
-    billing_row = await fetch_user_billing(email=email)
-    billing = billing_status_payload(billing_row)
+    billing = billing_status_payload(None)
+    try:
+        billing_row = await fetch_user_billing(email=email)
+        billing = billing_status_payload(billing_row)
+    except Exception as e:
+        log.warning("billing status lookup failed after verify for %s: %s", email, e)
 
     response.set_cookie(
         key="refresh_token",

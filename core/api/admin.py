@@ -108,7 +108,7 @@ async def admin_verify_otp(body: AdminOTPVerify):
         # We reuse verify_otp() to validate + consume the OTP record.
         # We discard its returned tokens; admin gets a separately minted
         # token with is_admin=true and no tenant context.
-        await verify_otp(ADMIN_EMAIL, body.otp)
+        await verify_otp(ADMIN_EMAIL, body.otp, intent="login")
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
 

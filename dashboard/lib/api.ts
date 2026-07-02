@@ -2,6 +2,16 @@
 // Falls back to '' (relative URL) so Nginx can route /v1/ → FastAPI.
 const API = process.env.NEXT_PUBLIC_API_URL ?? ''
 
+export class AuthRequestError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'AuthRequestError'
+    this.status = status
+  }
+}
+
 function formatApiError(detail: unknown, fallback: string): string {
   if (typeof detail === 'string') return detail
   if (Array.isArray(detail)) {
@@ -262,18 +272,21 @@ export async function getApiKeyUsage(token: string): Promise<ApiKeyUsage> {
   return apiFetch('/v1/auth/api-keys/usage', token)
 }
 
-export async function requestOtp(email: string, intent?: 'signup' | 'login') {
+export async function requestOtp(email: string, intent: 'signup' | 'login' = 'login') {
   const res = await fetch(`${API}/v1/auth/request-otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       email: email.toLowerCase().trim(),
-      ...(intent ? { intent } : {}),
+      intent,
     }),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(formatApiError(err.detail, 'Failed to send code'))
+    throw new AuthRequestError(
+      formatApiError(err.detail, 'Failed to send code'),
+      res.status,
+    )
   }
   return res.json()
 }
@@ -281,21 +294,30 @@ export async function requestOtp(email: string, intent?: 'signup' | 'login') {
 export async function verifyOtp(
   email: string,
   otp: string,
-  opts?: { gdprConsent?: boolean; marketingConsent?: boolean },
+  opts?: {
+    intent?: 'signup' | 'login'
+    gdprConsent?: boolean
+    marketingConsent?: boolean
+  },
 ) {
+  const intent = opts?.intent ?? 'login'
   const res = await fetch(`${API}/v1/auth/verify-otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       email: email.toLowerCase().trim(),
       otp: otp.trim(),
+      intent,
       ...(opts?.gdprConsent ? { gdpr_consent: true } : {}),
       ...(opts?.marketingConsent ? { marketing_consent: true } : {}),
     }),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(formatApiError(err.detail, 'Invalid or expired code'))
+    throw new AuthRequestError(
+      formatApiError(err.detail, 'Invalid or expired code'),
+      res.status,
+    )
   }
   const data = await res.json()
   if (!data?.access_token) throw new Error('Sign-in succeeded but no session token was returned')

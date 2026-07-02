@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { BrandLogo } from '@/components/BrandLogo'
+import { SIGNUP_CONSENT_GDPR_KEY, SIGNUP_CONSENT_MARKETING_KEY, SIGNUP_PLAN_KEY } from '@/lib/signup-funnel'
 
 const GUIDELINES = [
   {
@@ -51,21 +52,21 @@ function SignupStartInner() {
     const resolved =
       planParam === 'pro' || planParam === 'team'
         ? planParam
-        : (sessionStorage.getItem('signup_plan') === 'pro' || sessionStorage.getItem('signup_plan') === 'team'
-          ? (sessionStorage.getItem('signup_plan') as 'pro' | 'team')
+        : (sessionStorage.getItem(SIGNUP_PLAN_KEY) === 'pro' || sessionStorage.getItem(SIGNUP_PLAN_KEY) === 'team'
+          ? (sessionStorage.getItem(SIGNUP_PLAN_KEY) as 'pro' | 'team')
           : null)
     if (!resolved) {
       router.replace('/signup/plan')
       return
     }
-    sessionStorage.setItem('signup_plan', resolved)
+    sessionStorage.setItem(SIGNUP_PLAN_KEY, resolved)
     setPlan(resolved)
   }, [searchParams, router])
 
   function handleContinue() {
     if (!plan || !gdprConsent) return
-    sessionStorage.setItem('signup_consent_gdpr', '1')
-    sessionStorage.setItem('signup_consent_marketing', marketingConsent ? '1' : '0')
+    sessionStorage.setItem(SIGNUP_CONSENT_GDPR_KEY, '1')
+    sessionStorage.setItem(SIGNUP_CONSENT_MARKETING_KEY, marketingConsent ? '1' : '0')
     router.push(`/signup?plan=${plan}`)
   }
 

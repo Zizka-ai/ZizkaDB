@@ -255,7 +255,7 @@ There is a **separate** lead-capture path (`lib/demo.ts` → `submitDemoRequest`
 
 **Auth model:** passwordless email OTP for managed cloud; `POST /v1/auth/request-otp` then `/verify-otp` returns a JWT (`access_token`, 7-day TTL per `TOKEN_MAX_AGE_SEC`). Self-host DEV_MODE offers `POST /v1/auth/dev-token`.
 
-**Signup vs login:** `requestOtp(email, intent)` — signup passes `intent='signup'`; if backend says "already registered", signup surfaces a "Sign in →" link (`signup/page.tsx:72-73`).
+**Signup vs login:** Both flows use `intent` on `requestOtp` / `verifyOtp` (`login` | `signup`, default `login`). Login request-otp returns **404** when no account exists; signup returns **409** when the email is already registered. Login verify only succeeds for existing users; signup requires `gdpr_consent=true` and creates a new tenant/user. OTP is consumed atomically inside the verify transaction (invalid OTP or pre-check failures do not burn the code). After success, auth uses `window.location.assign` (hard redirect) to avoid stuck OTP screens. Helpers: `lib/auth-errors.ts`, `lib/signup-funnel.ts`, `hooks/useResendCooldown.ts` (60s resend cooldown on login and signup).
 
 **Billing / trial (no payment provider):** signup OTP verify sets `plan=pro` (if unset), `subscription_status=trialing`, `trial_ends_at=+30d` (also converts legacy `pending_checkout` rows). `postAuthRedirect()` always returns `/dashboard`. `getBillingStatus` / `billing_status_payload` always return `has_access: true`, `enforced: false`, `requires_checkout: false` — informational only for `TenantPlanBanner`.
 
@@ -323,11 +323,13 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 
 **Variations:**
 - **Generic CTA (no plan):** inserts `/signup/plan` first.
-- **Existing account tries signup:** "already registered" → link to `/login`.
-- **Returning login:** `/login` → OTP → `/dashboard` (`postAuthRedirect` always `/dashboard`).
+- **Existing account tries signup:** request-otp **409** → "Sign in →" link with `?email=` prefill.
+- **Deleted account re-register:** after delete, `/login?deleted=1` banner → `/signup/plan`; signup path sends `intent=signup` + GDPR consent (not login verify).
+- **Login with unknown email:** request-otp **404** → "Create account" CTA to `/signup/plan`.
+- **Returning login:** `/login` → OTP (auto-submit at 6 digits, resend cooldown) → hard redirect `/dashboard`.
 - **Self-host (DEV_MODE):** `/login` → "Open my dashboard" (dev-token) → `/dashboard`.
 - **Trial expiry / past_due:** `TenantPlanBanner` shows plan + trial end; no checkout redirect (billing not enforced).
-- **Account deletion:** Settings → delete modal → optional retention trial → confirm "DELETE" → `/login?deleted=1`.
+- **Account deletion:** Settings → delete modal → optional retention trial → confirm "DELETE" → `clearSignupSession()` → `/login?deleted=1`.
 - **Legacy URLs:** `/signup/checkout` → `/signup/plan`; `/signup/success` → `/dashboard`.
 
 ---
@@ -344,7 +346,8 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 - **Empty states:** agents → `GettingStartedChecklist`; no API keys → prompt to create agent.
 - **Direct URL access:** `/dashboard*` guarded at edge; legacy `/signup/checkout` & `/success` redirect away.
 - **`getEvents` response shape:** handles both array and `{events:[]}` (`api.ts:91`).
-- **Signup screen flicker (fixed):** `/signup` gates its email/OTP form behind a `checked` state so it no longer flashes before a redirect to `/signup/plan` or `/signup/start` resolves. Pattern: run checks in `useEffect`, `return` early on a redirect, call `setChecked(true)` only on the valid path, and render `SignupFallback` until then (`signup/page.tsx`).
+- **Signup screen flicker (fixed):** `/signup` gates its email/OTP form behind a `checked` state so it no longer flashes before a redirect to `/signup/plan` or `/signup/start` resolves.
+- **Signup funnel keys:** centralized in `lib/signup-funnel.ts` (`SIGNUP_PLAN_KEY`, consent keys, `clearSignupSession()`).
 
 ---
 
@@ -673,17 +676,17 @@ Server component; `metadata.robots` = noindex/nofollow (`:5-7`); wraps children 
 
 ### 19.6 Login — `app/login/page.tsx`
 
-- **Consts:** `IS_DEV_MODE` (`:9`), `API_URL` (`:10`). Suspense wrapper (`:12-17`).
-- **State (`:34-39`):** `email`, `otp`, `step` (`'email'|'otp'`), `loading`, `devLoading`, `error`.
-- **`safeNext` (`:41-45`):** uses `next` param **only** if it starts with `/dashboard` and not `//` (open-redirect guard); else `/dashboard`.
-- **Effect (`:47-53`):** existing token → `setToken` + `router.replace(safeNext)`.
-- **API:** dev-token `fetch POST ${API_URL}/v1/auth/dev-token` (`:59-62`); `requestOtp(email)` (`:76`); `verifyOtp(email, otp)` (`:90`) → `postAuthRedirect(data)` (`:92`).
-- **Branches:** dev banner + bypass if `IS_DEV_MODE` (`:112-139`); OTP input digits-only max 6 (`:215`); signup link hidden in dev mode (`:255-262`). Dev-login failure shows docker hint (`:65`).
+- **Consts:** `IS_DEV_MODE`, `API_URL`. Suspense wrapper.
+- **State:** `email`, `otp`, `step`, `loading`, `devLoading`, `navigating`, `error`, `noAccount`; `verifyLock` ref prevents double verify; `useResendCooldown` (60s).
+- **`safeNext`:** uses `next` param only if it starts with `/dashboard` and not `//`; else `/dashboard`. `?email=` pre-fills email; `?deleted=1` shows re-register banner.
+- **Effect:** existing token → hard redirect `safeNext`. OTP auto-submits at 6 digits via `verifyFormRef.requestSubmit()`.
+- **API:** `requestOtp(email, 'login')`; `verifyOtp(email, otp, { intent: 'login' })` → `setToken` → `window.location.assign(safeNext)`.
+- **Errors:** `authErrorMessage` / `isNoAccountError` (404) → inline "Create account" CTA. Resend with cooldown. Dev-token bypass when `IS_DEV_MODE`.
 
 ### 19.7 Plan selection — `app/signup/plan/page.tsx`
 
 - `PLANS` const (`:9-26`), `selected` default `'pro'` (`:30`), no effect.
-- On continue: `sessionStorage.setItem('signup_plan', selected)` (`:33-35`) → `router.push('/signup/start?plan={selected}')` (`:36`). Copy: "30-day free trial… No credit card required" (`:57`) — see credit-card copy risk (§14.1).
+- On continue: `sessionStorage.setItem(SIGNUP_PLAN_KEY, selected)` (`lib/signup-funnel.ts`) → `router.push('/signup/start?plan={selected}')`.
 
 ### 19.8 Checkout success — `app/signup/success/page.tsx`
 
@@ -711,9 +714,9 @@ Server component; `metadata.robots` = noindex/nofollow (`:5-7`); wraps children 
 
 - **Step 3 of the funnel** (account creation). Suspense-wrapped (`useSearchParams`); `SignupForm` inner.
 - **State:** `email`, `otp`, `step` (`'email'|'otp'`), `loading`, `error`, `alreadyRegistered`, and `checked` (the render gate).
-- **Guard effect (deps `[searchParams, router]`):** resets step/otp/error; persists `?plan=` to `sessionStorage.signup_plan`; if plan not `pro|team` → `router.replace('/signup/plan')` and return; if `sessionStorage.signup_consent_gdpr !== '1'` → `router.replace('/signup/start?plan=<plan>')` and return; else `setChecked(true)`. **Renders `SignupFallback` until `checked`** (this is the flicker fix — see §11).
-- **API:** `handleRequestOtp` → `requestOtp(email, 'signup')` → `step='otp'`; on "already registered" sets `alreadyRegistered` (shows "Sign in →" link). `handleVerifyOtp` → `verifyOtp(email, otp, {gdpr, marketing})` → `setToken` → clear consent keys → best-effort `selectBillingPlan(token, plan)` (`catch {}`) → clear `signup_plan` → `router.replace(postAuthRedirect(data))`.
-- **Edge:** OTP input digits-only max 6; buttons disabled while `loading` or empty/short input.
+- **Guard effect:** resets step/otp/error; persists `?plan=` via `SIGNUP_PLAN_KEY`; missing plan → `/signup/plan`; missing consent → `/signup/start`; else `setChecked(true)`. Renders `SignupFallback` until `checked`.
+- **API:** `requestOtp(email, 'signup')`; `verifyOtp(..., { intent: 'signup', gdprConsent, marketingConsent })` → `setToken` → `clearSignupSession()` → best-effort `selectBillingPlan` → `window.location.assign('/dashboard')`.
+- **UX:** OTP auto-submit at 6 digits; resend with 60s cooldown; `auth-errors` helpers for 409/GDPR; "already registered" links to `/login?email=`.
 
 ### 19.12 Before-you-begin / consent — `app/signup/start/page.tsx`
 

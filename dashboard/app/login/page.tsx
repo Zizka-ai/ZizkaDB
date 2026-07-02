@@ -1,13 +1,20 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { requestOtp, verifyOtp, postAuthRedirect } from '@/lib/api'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { requestOtp, verifyOtp } from '@/lib/api'
+import { authErrorMessage, isNoAccountError } from '@/lib/auth-errors'
 import { getToken, setToken } from '@/lib/auth'
+import { useResendCooldown } from '@/hooks/useResendCooldown'
 import { BrandLogo } from '@/components/BrandLogo'
 
 const IS_DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === 'true'
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+function completeAuthRedirect(path: string) {
+  window.location.assign(path)
+}
 
 export default function LoginPage() {
   return (
@@ -29,15 +36,21 @@ function LoginFallback() {
 }
 
 function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState<'email' | 'otp'>('email')
   const [loading, setLoading] = useState(false)
   const [devLoading, setDevLoading] = useState(false)
+  const [navigating, setNavigating] = useState(false)
   const [error, setError] = useState('')
+  const [noAccount, setNoAccount] = useState(false)
+  const verifyLock = useRef(false)
+  const verifyFormRef = useRef<HTMLFormElement>(null)
+  const { cooldown, canResend, startCooldown } = useResendCooldown()
 
+  const accountDeleted = searchParams.get('deleted') === '1'
+  const emailPrefill = searchParams.get('email')
   const nextPath = searchParams.get('next')
   const safeNext =
     nextPath && nextPath.startsWith('/dashboard') && !nextPath.startsWith('//')
@@ -45,12 +58,79 @@ function LoginForm() {
       : '/dashboard'
 
   useEffect(() => {
+    if (emailPrefill) {
+      setEmail(emailPrefill)
+    }
+  }, [emailPrefill])
+
+  useEffect(() => {
     const existing = getToken()
     if (existing) {
       setToken(existing)
-      router.replace(safeNext)
+      window.location.assign(safeNext)
     }
-  }, [router, safeNext])
+  }, [safeNext])
+
+  useEffect(() => {
+    if (step !== 'otp' || otp.length !== 6 || loading || navigating || verifyLock.current) return
+    verifyFormRef.current?.requestSubmit()
+  }, [otp, step, loading, navigating])
+
+  async function sendLoginOtp() {
+    await requestOtp(email, 'login')
+    setStep('otp')
+    startCooldown()
+  }
+
+  async function handleRequestOtp(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    setNoAccount(false)
+    try {
+      await sendLoginOtp()
+    } catch (err) {
+      setNoAccount(isNoAccountError(err))
+      setError(authErrorMessage(err, 'Failed to send code. Try again.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleResendOtp() {
+    if (!canResend || loading) return
+    setLoading(true)
+    setError('')
+    setNoAccount(false)
+    try {
+      await sendLoginOtp()
+    } catch (err) {
+      setNoAccount(isNoAccountError(err))
+      setError(authErrorMessage(err, 'Failed to resend code. Try again.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleVerifyOtp(e: React.FormEvent) {
+    e.preventDefault()
+    if (verifyLock.current || navigating) return
+    verifyLock.current = true
+    setLoading(true)
+    setError('')
+    setNoAccount(false)
+    try {
+      const data = await verifyOtp(email, otp, { intent: 'login' })
+      setToken(data.access_token)
+      setNavigating(true)
+      completeAuthRedirect(safeNext)
+    } catch (err) {
+      verifyLock.current = false
+      setNoAccount(isNoAccountError(err))
+      setError(authErrorMessage(err, 'Invalid or expired code.'))
+      setLoading(false)
+    }
+  }
 
   async function handleDevLogin() {
     setDevLoading(true)
@@ -60,7 +140,8 @@ function LoginForm() {
       if (!res.ok) throw new Error('Dev token failed')
       const data = await res.json() as { access_token: string }
       setToken(data.access_token)
-      router.push(safeNext)
+      setNavigating(true)
+      window.location.assign(safeNext)
     } catch {
       setError('Could not connect to ZizkaDB API. Is docker-compose running on port 8000?')
     } finally {
@@ -68,33 +149,15 @@ function LoginForm() {
     }
   }
 
-  async function handleRequestOtp(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    try {
-      await requestOtp(email)
-      setStep('otp')
-    } catch {
-      setError('Failed to send code. Try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    try {
-      const data = await verifyOtp(email, otp)
-      setToken(data.access_token)
-      router.replace(postAuthRedirect(data))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Invalid or expired code.')
-    } finally {
-      setLoading(false)
-    }
+  if (navigating) {
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: '#fafafa', fontFamily: 'Inter, system-ui, sans-serif', color: '#555',
+      }}>
+        <p style={{ fontSize: 15 }}>Signing you in…</p>
+      </div>
+    )
   }
 
   return (
@@ -108,7 +171,18 @@ function LoginForm() {
           <BrandLogo variant="full" suffix="The operational database for AI agents" />
         </div>
 
-        {/* Dev Mode Banner — shown only in self-hosted mode */}
+        {accountDeleted && (
+          <div style={{
+            background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 12,
+            padding: '14px 16px', marginBottom: 16, fontSize: 13, color: '#92400e', lineHeight: 1.55,
+          }}>
+            Your account was deleted.{' '}
+            <Link href="/signup/plan" style={{ color: '#111', fontWeight: 600 }}>
+              Create a new account →
+            </Link>
+          </div>
+        )}
+
         {IS_DEV_MODE && (
           <div style={{
             background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12,
@@ -138,7 +212,6 @@ function LoginForm() {
           </div>
         )}
 
-        {/* Standard email login card */}
         <div style={{
           background: '#fff', borderRadius: 16, padding: '36px 32px',
           border: '1px solid #e5e5e5', boxShadow: '0 2px 20px rgba(0,0,0,0.05)',
@@ -181,7 +254,23 @@ function LoginForm() {
                     onBlur={e => (e.target.style.borderColor = '#ddd')}
                   />
                 </div>
-                {error && <p style={{ fontSize: 13, color: '#ef4444' }}>{error}</p>}
+                {error && (
+                  <div style={{ fontSize: 13, color: '#ef4444' }}>
+                    <p style={{ margin: 0 }}>{error}</p>
+                    {noAccount && (
+                      <Link
+                        href="/signup/plan"
+                        style={{
+                          display: 'inline-block', marginTop: 10, padding: '8px 14px',
+                          borderRadius: 8, background: '#111', color: '#fff',
+                          fontWeight: 600, textDecoration: 'none', fontSize: 13,
+                        }}
+                      >
+                        Create account
+                      </Link>
+                    )}
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={loading || !email}
@@ -204,7 +293,7 @@ function LoginForm() {
               <p style={{ fontSize: 14, color: '#888', marginBottom: 24 }}>
                 We sent a 6-digit code to <strong style={{ color: '#111' }}>{email}</strong>
               </p>
-              <form onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <form ref={verifyFormRef} onSubmit={handleVerifyOtp} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#555', marginBottom: 6 }}>
                     Login code
@@ -217,6 +306,7 @@ function LoginForm() {
                     required
                     autoFocus
                     maxLength={6}
+                    disabled={loading}
                     style={{
                       width: '100%', boxSizing: 'border-box',
                       padding: '12px', borderRadius: 9, fontSize: 24,
@@ -228,7 +318,23 @@ function LoginForm() {
                     onBlur={e => (e.target.style.borderColor = '#ddd')}
                   />
                 </div>
-                {error && <p style={{ fontSize: 13, color: '#ef4444' }}>{error}</p>}
+                {error && (
+                  <div style={{ fontSize: 13, color: '#ef4444' }}>
+                    <p style={{ margin: 0 }}>{error}</p>
+                    {noAccount && (
+                      <Link
+                        href="/signup/plan"
+                        style={{
+                          display: 'inline-block', marginTop: 10, padding: '8px 14px',
+                          borderRadius: 8, background: '#111', color: '#fff',
+                          fontWeight: 600, textDecoration: 'none', fontSize: 13,
+                        }}
+                      >
+                        Create account
+                      </Link>
+                    )}
+                  </div>
+                )}
                 <button
                   type="submit"
                   disabled={loading || otp.length < 6}
@@ -238,11 +344,29 @@ function LoginForm() {
                     opacity: loading || otp.length < 6 ? 0.4 : 1,
                   }}
                 >
-                  {loading ? 'Verifying...' : 'Sign in →'}
+                  {loading ? 'Signing you in…' : 'Sign in →'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setStep('email'); setOtp(''); setError('') }}
+                  onClick={handleResendOtp}
+                  disabled={!canResend || loading}
+                  style={{
+                    fontSize: 13, color: canResend ? '#555' : '#bbb',
+                    background: 'none', border: 'none',
+                    cursor: canResend && !loading ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  {canResend ? 'Resend code' : `Resend code in ${cooldown}s`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    verifyLock.current = false
+                    setStep('email')
+                    setOtp('')
+                    setError('')
+                    setNoAccount(false)
+                  }}
                   style={{ fontSize: 13, color: '#888', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   ← Use a different email
@@ -255,9 +379,9 @@ function LoginForm() {
         {!IS_DEV_MODE && (
           <p style={{ textAlign: 'center', fontSize: 13, color: '#aaa', marginTop: 16 }}>
             No account yet?{' '}
-            <a href="/signup" style={{ color: '#555', textDecoration: 'none', fontWeight: 500 }}>
+            <Link href="/signup/plan" style={{ color: '#555', textDecoration: 'none', fontWeight: 500 }}>
               Create one free →
-            </a>
+            </Link>
           </p>
         )}
         <p style={{ textAlign: 'center', fontSize: 13, color: '#ccc', marginTop: 8 }}>

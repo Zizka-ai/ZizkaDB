@@ -4,6 +4,7 @@ import { ApiKeyUsage } from '@/components/ApiKeyUsage'
 import { useApiKeyQuota } from '@/hooks/useApiKeyQuota'
 import { createApiKey, deleteManagedAccount, getAccountOptions, getApiKeys, getEmbeddingCatalog, getEmbeddingSettings, grantRetentionTrial, revokeApiKey, sendTestEvent, updateEmbeddingSettings, type AccountOptions } from '@/lib/api'
 import { clearToken, requireAuth } from '@/lib/auth'
+import { clearSignupSession } from '@/lib/signup-funnel'
 import { AlertTriangle, Check, Copy, Key, Plus, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -457,6 +458,7 @@ export default function SettingsPage() {
                   const token = requireAuth()
                   await deleteManagedAccount(token)
                   clearToken()
+                  clearSignupSession()
                   router.replace('/login?deleted=1')
                 } catch (e) {
                   setAccountErr(e instanceof Error ? e.message : 'Could not delete account')

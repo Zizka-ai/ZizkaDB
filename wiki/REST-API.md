@@ -68,8 +68,8 @@ GET /v1/events/{event_id}/why?depth=10
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/v1/auth/request-otp` | Login OTP |
-| POST | `/v1/auth/verify-otp` | Get JWT |
+| POST | `/v1/auth/request-otp` | Send OTP — body `{email, intent:"login"|"signup"}`. Login returns **404** if email unknown; signup returns **409** if already registered. |
+| POST | `/v1/auth/verify-otp` | Get JWT — body `{email, otp, intent:"login"|"signup", gdpr_consent?, marketing_consent?}`. Login only works for existing users; signup requires `gdpr_consent:true` for new accounts. |
 | POST | `/v1/auth/api-keys` | Tenant-wide key (dashboard JWT only) |
 | GET | `/v1/auth/api-keys` | List all keys |
 | GET | `/v1/auth/api-keys/usage` | Plan key quota `{plan, limit, used, unlimited, at_limit}` |
