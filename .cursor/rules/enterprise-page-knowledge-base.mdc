@@ -1,0 +1,47 @@
+---
+description: Enterprise marketing page — copy guardrails, lead capture, QA, and cross-links
+globs: dashboard/app/enterprise/**,dashboard/components/marketing/enterprise/**,dashboard/components/marketing/MarketingFooter.tsx,dashboard/components/marketing/MarketingPageStyles.tsx,dashboard/components/SiteNav.tsx,dashboard/lib/demo.ts,core/api/demo_requests.py,core/db/migrations/007_demo_requests_enterprise.sql,docs/enterprise-page-qa.md,docs/enterprise-product-overview.md
+alwaysApply: false
+---
+
+# Enterprise Page — Agent Guide
+
+**Route:** `/enterprise` · **QA checklist:** `docs/enterprise-page-qa.md` · **Product overview:** `docs/enterprise-product-overview.md` · **Dashboard KB:** §20.6 · **Copy source:** `dashboard/components/marketing/enterprise/enterprise-copy.ts`
+
+## Page composition (order)
+
+Hero → What ZizkaDB is → Multi-agent fleets (drift bands) → Capabilities (open core vs VPC) → Tier compare → VPC deploy → Platform → FAQ → Footer CTA (`#connect`) → Resources strip.
+
+Shared shell: `SiteNav active="enterprise"`, `MarketingPageStyles`, `MarketingFooter`, `CalendlyBookModal`.
+
+## Lead capture
+
+- Form: `EnterpriseConnectForm` → `submitDemoRequest` (`lib/demo.ts`) → `POST /v1/demo-requests`
+- Always sends `source: 'enterprise'`; optional `position` (role/title)
+- Honeypot field name: **`botcheck`** (not `website`); client silently drops if filled
+- Backend allowlist: `enterprise`, `landing`, `newsletter` — else **422**
+- Admin demo tab shows Role + Source; search includes both
+- DB: nullable `position VARCHAR(120)`, `source VARCHAR(64)` — migration `007_demo_requests_enterprise.sql` + runtime DDL in `connection.py`
+
+## Copy guardrails (must NOT claim on `/enterprise`)
+
+SOC 2, HIPAA, SSO/SAML/SCIM **as shipped**, Slack/PagerDuty alerts, SLA guarantees, hallucination **detection** (negation OK).
+
+**Must stay honest:** behavioral drift (not hallucination detection), VPC deployment (Model A), commercial license, Week-1 install package, fleet UI + audit export **in customer VPC** (not on public cloud today). SSO/SAML only as **roadmap** footnote in platform section.
+
+## Cross-page consistency
+
+- Trust `#deployment`, `#limits`, `#licensing`: Enterprise row + links to `/enterprise`
+- Landing `#pricing`: "Enterprise — Contact sales →" link
+- `MarketingFooter` includes Enterprise on landing, trust, enterprise (docs/community when wired)
+
+## Before merge
+
+```bash
+cd dashboard && npm run lint && npm run build
+cd ../core && pytest tests/test_demo_requests.py tests/test_rate_limiting.py::TestDemoRequestsRateLimiting -q
+rg -i 'SOC 2|HIPAA|SAML|SCIM|PagerDuty|Slack alert|SLA guarantee|detects hallucination' \
+  dashboard/components/marketing/enterprise dashboard/app/enterprise
+```
+
+Update `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` §20.6, `wiki/REST-API.md`, and `backend-dashboard-contract.mdc` if demo-requests contract changes.

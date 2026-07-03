@@ -18,7 +18,7 @@ PLAN_CATALOG: list[dict[str, Any]] = [
         "price": "€39",
         "price_sub": "/ month",
         "highlight": True,
-        "features": ["100M events", "90-day retention", "3 projects", "Email support"],
+        "features": ["100M events", "90-day retention", "3 active API keys", "Email support"],
     },
     {
         "id": "team",
@@ -26,7 +26,7 @@ PLAN_CATALOG: list[dict[str, Any]] = [
         "price": "€99",
         "price_sub": "/ month",
         "highlight": False,
-        "features": ["Up to 1B events/mo", "1-year retention", "10 seats", "Priority support"],
+        "features": ["Up to 1B events/mo", "1-year retention", "10 active API keys", "Priority support"],
     },
 ]
 

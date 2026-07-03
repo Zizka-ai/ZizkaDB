@@ -18,6 +18,7 @@ build/
 node_modules/
 .next/
 .turbo/
+*.tsbuildinfo
 *.log
 
 # macOS

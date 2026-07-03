@@ -9,7 +9,8 @@ import { CompetitorCompare } from '@/components/marketing/CompetitorCompare'
 import { ConversationCompare } from '@/components/marketing/ConversationCompare'
 import { ThreeWaysConnectSection } from '@/components/marketing/ThreeWaysConnectSection'
 import { TrustBar } from '@/components/marketing/TrustBar'
-import { BrandLogo } from '@/components/BrandLogo'
+import { MarketingFooter } from '@/components/marketing/MarketingFooter'
+import { MarketingPageStyles } from '@/components/marketing/MarketingPageStyles'
 import { BRAND, BRAND_DARK } from '@/components/brand'
 import { M, container, h2, lead, sectionTitle, primaryBtn, blueBtn, violetBtn, ghostBtn, outlineBtn } from '@/components/marketing/marketing-theme'
 
@@ -41,26 +42,7 @@ export default function LandingPage() {
 
   return (
     <div style={{ fontFamily: 'Inter, system-ui, sans-serif', color: M.ink, background: '#fff' }}>
-      <style>{`
-        @media (max-width: 1024px) {
-          .zdb-connect-grid { grid-template-columns: 1fr !important; }
-        }
-        @media (max-width: 768px) {
-          .zdb-section { padding-left: 20px !important; padding-right: 20px !important; }
-          .zdb-hero-title { font-size: 32px !important; }
-          .zdb-hero-value { font-size: 16px !important; }
-          .zdb-connect-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
-          .zdb-section { padding-top: 48px !important; padding-bottom: 48px !important; }
-          .zdb-compare-grid { grid-template-columns: 1fr !important; }
-          .zdb-split { grid-template-columns: 1fr !important; }
-          .zdb-price-grid { grid-template-columns: 1fr !important; }
-          .zdb-trust-grid { grid-template-columns: 1fr 1fr !important; }
-          .zdb-hero-btns { flex-direction: column !important; align-items: stretch !important; }
-          .zdb-hero-btns a, .zdb-hero-btns button { justify-content: center !important; }
-          .zdb-footer { flex-direction: column !important; gap: 16px !important; align-items: flex-start !important; }
-          .zdb-footer-links { flex-wrap: wrap !important; gap: 16px !important; }
-        }
-      `}</style>
+      <MarketingPageStyles />
 
       <SiteNav />
 
@@ -185,13 +167,13 @@ export default function LandingPage() {
               },
               {
                 name: 'Pro', price: '€39', sub: '/ month',
-                features: ['100M events', '90-day retention', '3 projects', 'Email support'],
+                features: ['100M events', '90-day retention', '3 active API keys', 'Email support'],
                 cta: 'Start free trial', href: '/signup?plan=pro', highlight: true,
                 note: '30-day free trial · No credit card required',
               },
               {
                 name: 'Team', price: '€99', sub: '/ month',
-                features: ['Up to 1B events/mo', '1-year retention', '10 seats', 'Priority support'],
+                features: ['Up to 1B events/mo', '1-year retention', '10 active API keys', 'Priority support'],
                 cta: 'Start free trial', href: '/signup?plan=team', highlight: false,
                 note: '30-day free trial · No credit card required',
               },
@@ -238,6 +220,11 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+          <p style={{ textAlign: 'center', marginTop: 28, marginBottom: 0, fontSize: 15, fontWeight: 600, color: '#000' }}>
+            <Link href="/enterprise" style={{ color: BRAND, textDecoration: 'none' }}>
+              Enterprise — Contact sales →
+            </Link>
+          </p>
         </div>
       </section>
 
@@ -263,29 +250,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="zdb-footer" style={{
-        borderTop: `1px solid ${M.line}`, padding: '32px 24px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        fontSize: 13, color: '#000', background: '#fff', flexWrap: 'wrap', gap: 16,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <BrandLogo variant="mark" showWordmark={false} href="/" />
-          <span style={{ fontWeight: 700, color: '#000' }}>ZizkaDB</span>
-          <span style={{ color: '#000' }}>·</span>
-          <span style={{ fontWeight: 500, color: '#000' }}>Open source operational database for AI agents</span>
-        </div>
-        <div className="zdb-footer-links" style={{ display: 'flex', gap: 22, flexWrap: 'wrap' }}>
-          {[['Docs', '/docs'], ['Pricing', '#pricing'], ['Trust', '/trust'], ['GitHub', GITHUB_URL], ['Sign in', '/login']].map(([label, href]) =>
-            href.startsWith('http') ? (
-              <a key={label} href={href} target="_blank" rel="noreferrer" style={{ color: '#000', textDecoration: 'none', fontWeight: 500 }}>{label}</a>
-            ) : (
-              <Link key={label} href={href} style={{ color: '#000', textDecoration: 'none', fontWeight: 500 }}>{label}</Link>
-            )
-          )}
-          <Link href="/signup" style={{ color: '#000', fontWeight: 700, textDecoration: 'none' }}>Start free</Link>
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   )
 }

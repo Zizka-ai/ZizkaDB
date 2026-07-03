@@ -103,6 +103,8 @@ interface DemoRequest {
   email: string
   company_name: string
   website: string
+  position: string | null
+  source: string | null
   ip_address: string | null
   created_at: string | null
 }
@@ -792,7 +794,7 @@ function DemoRequestsSection({ token }: { token: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-        <Stat label="Total requests" value={fmt(rows?.length)} sub="from Book demo form" accent="#7c3aed" />
+        <Stat label="Total requests" value={fmt(rows?.length)} sub="from contact forms" accent="#7c3aed" />
       </div>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
@@ -800,7 +802,7 @@ function DemoRequestsSection({ token }: { token: string }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && load()}
-          placeholder="Search name, email, company, website…"
+          placeholder="Search name, email, company, website, role, source…"
           style={{
             flex: '1 1 220px', padding: '8px 12px', background: '#0a0a0a',
             border: '1px solid #2a2a2a', borderRadius: 8, color: '#fff', fontSize: 13,
@@ -809,18 +811,20 @@ function DemoRequestsSection({ token }: { token: string }) {
         <button type="button" onClick={load} style={btnSmall()}>Refresh</button>
       </div>
 
-      <Card title="Demo requests" subtitle="Submissions from the homepage Book demo form. Newest first.">
+      <Card title="Demo requests" subtitle="Submissions from Let's connect and contact forms. Newest first.">
         {!rows ? <SkeletonBlock /> : rows.length === 0 ? (
           <Empty>No demo requests yet.</Empty>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 760 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 920 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid #1f1f1f', color: '#737373', fontSize: 11, textTransform: 'uppercase' }}>
                   <Th>First name</Th>
                   <Th>Last name</Th>
                   <Th>Email</Th>
                   <Th>Company</Th>
+                  <Th>Role</Th>
+                  <Th>Source</Th>
                   <Th>Website</Th>
                   <Th align="right">Submitted</Th>
                 </tr>
@@ -832,6 +836,8 @@ function DemoRequestsSection({ token }: { token: string }) {
                     <Td>{r.last_name}</Td>
                     <Td mono>{r.email}</Td>
                     <Td>{r.company_name}</Td>
+                    <Td subtle>{r.position || '—'}</Td>
+                    <Td subtle>{r.source || '—'}</Td>
                     <Td>
                       <a href={r.website.startsWith('http') ? r.website : `https://${r.website}`}
                          target="_blank" rel="noreferrer"

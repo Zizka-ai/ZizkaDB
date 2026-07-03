@@ -14,7 +14,7 @@ const PLANS = [
     price: '€39',
     price_sub: '/ month',
     highlight: true,
-    features: ['100M events', '90-day retention', '3 projects', 'Email support'],
+    features: ['100M events', '90-day retention', '3 active API keys', 'Email support'],
   },
   {
     id: 'team' as const,
@@ -22,7 +22,7 @@ const PLANS = [
     price: '€99',
     price_sub: '/ month',
     highlight: false,
-    features: ['Up to 1B events/mo', '1-year retention', '10 seats', 'Priority support'],
+    features: ['Up to 1B events/mo', '1-year retention', '10 active API keys', 'Priority support'],
   },
 ]
 

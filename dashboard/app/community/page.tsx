@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { SiteNav } from '@/components/SiteNav'
+import { MarketingFooter } from '@/components/marketing/MarketingFooter'
 import { BRAND } from '@/components/brand'
 import { formatDistanceToNow } from 'date-fns'
 import {
@@ -165,6 +166,7 @@ export default function CommunityPage() {
           </div>
         )}
       </main>
+      <MarketingFooter />
     </div>
   )
 }

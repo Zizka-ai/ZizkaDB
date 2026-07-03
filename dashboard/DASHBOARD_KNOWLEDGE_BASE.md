@@ -757,7 +757,7 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 
 ### 20.4 Trust — `app/trust/page.tsx`
 
-- **Server Component** (static, SEO `metadata` set). 17 anchor sections (overview, architecture, data model, integrity, performance, security, API, deployment, comparison, licensing, limits, FAQ, contact, …). Desktop-only sticky sidebar (`@media min-width: 900px`). Links to `/docs`, `/swagger`, `/signup`, GitHub, `mailto:founder@zizka.ai`. No state/API.
+- **Server Component** (static, SEO `metadata` set). 17 anchor sections (overview, architecture, data model, integrity, performance, security, API, deployment, comparison, licensing, limits, FAQ, contact, …). Desktop-only sticky sidebar (`@media min-width: 900px`). Links to `/docs`, `/swagger`, `/signup`, `/enterprise`, GitHub, `mailto:founder@zizka.ai`. Includes `MarketingFooter`; deployment/limits tables include Enterprise row; security section links to `/enterprise` for VPC review. No state/API.
 
 ### 20.5 Admin console — `app/admin/page.tsx` (+ `layout.tsx`)
 
@@ -765,13 +765,23 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 - **Three tiers:** `AdminPage` boot gate (reads `getAdminToken()`, shows Loading → Login → Dashboard) → `Login` (founder-only `ADMIN_EMAIL = 'founder@zizka.ai'`, OTP via `adminRequestOtp` with 30s `AbortSignal` + `adminVerifyOtp`) → `Dashboard`.
 - **Dashboard:** `OverviewRow` stats + 4 tabs — `subscribers` (`SubscribersSection`), `managed` (`ManagedSection`), `telemetry` (`TelemetrySection`), `demo_requests` (`DemoRequestsSection`). `adminOverview` polls every **10s**; **401/"Not Found" → auto `onLogout()`**.
 - **Data calls** (all admin JWT via `apiFetch`): `adminOverview`, `adminTelemetrySummary` + `adminTelemetryRecent(100)`, `adminManagedOverview`, `adminManagedSubscribers`, `adminManagedUsers`, `adminManagedUsage`, `adminDemoRequests({limit:200})`. Subscriber/managed/demo tabs also poll 10s.
-- **Behaviors:** most tab fetches `.catch(()=>…)` **silently**; **search reloads only on Enter/Refresh** (search text is not in effect deps); subscriber filters `trialing|active|past_due`; managed filters `all|active|keys|no_keys` (→ `has_keys`/`active_7d` query params); empty subscribers message references migration `002_user_billing.sql`. No `NEXT_PUBLIC_DEV_MODE` bypass.
+- **Behaviors:** most tab fetches `.catch(()=>…)` **silently**; **search reloads only on Enter/Refresh** (search text is not in effect deps); subscriber filters `trialing|active|past_due`; managed filters `all|active|keys|no_keys` (→ `has_keys`/`active_7d` query params); demo requests search includes name, email, company, website, **role** (`position`), **source**; empty subscribers message references migration `002_user_billing.sql`. No `NEXT_PUBLIC_DEV_MODE` bypass.
+
+### 20.6 Enterprise marketing — `app/enterprise/page.tsx`
+
+- **Server shell** with SEO `metadata`; client body in `EnterprisePageClient`.
+- **10 sections** (order): Hero → What is → Fleet (drift) → Capabilities → Tier compare → VPC deploy → Platform → FAQ → Footer CTA (`#connect`) → Resources strip.
+- **Copy:** single source `components/marketing/enterprise/enterprise-copy.ts` — no false SOC 2 / SSO-as-shipped / hallucination-detection claims.
+- **Lead capture:** `EnterpriseConnectForm` → `submitDemoRequest` (`lib/demo.ts`) with `source: 'enterprise'`, optional `position`; honeypot `botcheck`.
+- **Shared marketing shell:** `SiteNav active="enterprise"`, `MarketingPageStyles`, `MarketingFooter`, `CalendlyBookModal` for Book demo.
+- **Cross-links:** landing `#pricing` → `/enterprise`; trust `#deployment`, `#limits`, `#licensing` → `/enterprise`.
+- **QA:** `docs/enterprise-page-qa.md` · agent rule `.cursor/rules/enterprise-page-knowledge-base.mdc`.
 
 ---
 
 ## 21. Data Model (backend)
 
-Schema sources: `core/db/schema.sql` (base DDL, Docker init) + `core/db/migrations/002-006` + **runtime idempotent DDL** in `core/db/connection.py` (production relies primarily on this). Extensions: `vector`, `uuid-ossp`. There is no migration `001`.
+Schema sources: `core/db/schema.sql` (base DDL, Docker init) + `core/db/migrations/002-007` + **runtime idempotent DDL** in `core/db/connection.py` (production relies primarily on this). Extensions: `vector`, `uuid-ossp`. There is no migration `001`.
 
 ### 21.1 Postgres tables (key columns)
 
@@ -786,7 +796,7 @@ Schema sources: `core/db/schema.sql` (base DDL, Docker init) + `core/db/migratio
 | `usage_daily` | `(tenant_id, date)` (PK), `events_written`, `queries_run`, `searches_run` | Daily metering (only `events_written` is incremented today) |
 | `community_posts` | `post_id` (PK), `author_name`, `category`, `title`, `body`, `image_urls` (JSONB), `reply_count` | Public community board |
 | `community_replies` | `reply_id` (PK), `post_id` (FK cascade), `author_name`, `body` | Replies; bumps parent `reply_count` |
-| `demo_requests` | `request_id` (PK), `first_name`, `last_name`, `email`, `company_name`, `website`, `ip_address` | Landing "Book demo" submissions |
+| `demo_requests` | `request_id` (PK), `first_name`, `last_name`, `email`, `company_name`, `website`, `position`, `source`, `ip_address` | Landing Book demo + Enterprise Let's connect submissions |
 | `sdk_telemetry` | `install_id` (PK), `sdk`, `sdk_version`, `runtime`, `os`, `mode` (`cloud`/`self-hosted`), `ping_count` | Anonymous SDK install pings (runtime-only table, not in `schema.sql`) |
 
 **Cascade:** `agents`, `api_keys`, `events`, `usage_daily` cascade from `tenants`. Account deletion explicitly deletes `users`, `auth_otps`, `tenants` and purges Qdrant vectors.
