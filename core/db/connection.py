@@ -1,6 +1,5 @@
 import asyncpg
 import redis.asyncio as redis
-from pathlib import Path
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import Distance, VectorParams
 import os
@@ -152,14 +151,6 @@ async def init_db():
     await _pg_pool.execute("""
         ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS email VARCHAR(255) NOT NULL DEFAULT '';
     """)
-
-    migration_path = Path(__file__).resolve().parent / "migrations" / "007_email_automation.sql"
-    if migration_path.exists():
-        await _pg_pool.execute(migration_path.read_text())
-
-    enterprise_demo_path = Path(__file__).resolve().parent / "migrations" / "008_demo_requests_enterprise.sql"
-    if enterprise_demo_path.exists():
-        await _pg_pool.execute(enterprise_demo_path.read_text())
 
     _redis = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
     logger.info("Redis connected")

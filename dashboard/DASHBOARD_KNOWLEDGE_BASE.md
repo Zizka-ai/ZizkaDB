@@ -631,33 +631,6 @@ flowchart TD
     D --> E["/dashboard"]
 ```
 
-### 18.8 Email lifecycle automation (`core/services/email/`)
-
-> **Definitive reference:** `.cursor/rules/email-lifecycle-knowledge-base.mdc` (campaigns, outbox, worker, eligibility, rollout).
-
-Passwordless OTP and lifecycle campaigns share `EmailService` + Jinja2 templates. **Auth never blocks on lifecycle failure** — signup/login/delete enqueue only; the ARQ worker sends asynchronously.
-
-| Campaign | ID | Trigger | Delay |
-|----------|-----|---------|-------|
-| Welcome | `welcome` | Signup complete | +5 min |
-| Getting started | `getting_started` | Signup complete | +10 min |
-| No API 72h | `no_api_72h` | Signup complete | +72h |
-| API, no events | `api_no_events` | First API key | +7d |
-| Inactive 7d | `inactive_7d` | Worker scan (every 15 min) | Rolling |
-| Active check-in | `active_checkin` | Worker scan (every 15 min) | Every 15d min |
-| Account deleted | `account_deleted` | Pre-delete hook | Immediate |
-| Newsletter welcome | `newsletter_welcome` | Popup subscribe | Immediate |
-
-**Worker:** `email_worker` service in `infra/docker-compose.yml` — ARQ cron drains `email_outbox` every 1 min and scans C5/C6 every 15 min. Idempotency via `UNIQUE(campaign_id, recipient_key, dedupe_key)`.
-
-**Env flags** (see `.env.example`): `EMAIL_LIFECYCLE_ENABLED` (default `false`), `NEXT_PUBLIC_NEWSLETTER_ENABLED` (default `false`; dashboard build-time), `EMAIL_DEV_REDIRECT`, `EMAIL_STAGING_COMPRESS_DELAYS` (dev/staging only), `EMAIL_LIFECYCLE_ALLOWLIST` (prod rollout). OTP uses `EMAIL_*` SMTP when set; otherwise codes print to API logs.
-
-**Churn recovery:** On production account delete, `churn_offers` stores `COMEBACK-{token}`; C7 email includes signup link with `?promo=`. Re-signup redeems and extends trial.
-
-**Newsletter:** `POST /v1/newsletter/subscribe`, `GET /v1/newsletter/unsubscribe?token=`; landing popup `NewsletterPopup.tsx` (15s delay, 7d dismiss). Admin monitor: `GET /v1/admin/email/stats`.
-
-**QA:** `docs/email-automation-qa.md`. Optional dev inbox: `docker compose --profile dev-mail up` → http://localhost:8025.
-
 ---
 
 ## 19. Per-Screen Functional Reference
@@ -814,10 +787,6 @@ Schema sources: `core/db/schema.sql` (base DDL, Docker init) + `core/db/migratio
 | `community_posts` | `post_id` (PK), `author_name`, `category`, `title`, `body`, `image_urls` (JSONB), `reply_count` | Public community board |
 | `community_replies` | `reply_id` (PK), `post_id` (FK cascade), `author_name`, `body` | Replies; bumps parent `reply_count` |
 | `demo_requests` | `request_id` (PK), `first_name`, `last_name`, `email`, `company_name`, `website`, `ip_address` | Landing "Book demo" submissions |
-| `email_outbox` | `outbox_id` (PK), `campaign_id`, `recipient_key`, `dedupe_key`, `to_email`, `payload` (JSONB), `scheduled_at`, `status`, `attempts` | Transactional outbox for lifecycle emails (worker drains) |
-| `email_send_log` | `log_id` (PK), `campaign_id`, `to_email`, `user_id`, `tenant_id`, `sent_at`, `metadata` (JSONB) | Audit log of sent lifecycle emails |
-| `churn_offers` | `offer_id` (PK), `email`, `promo_code`, `expires_at`, `redeemed_at` | Comeback promo codes issued on account deletion |
-| `newsletter_subscribers` | `subscriber_id` (PK), `email`, `subscribed_at`, `unsubscribed_at`, `unsubscribe_token_hash` | Marketing newsletter signups (landing popup) |
 | `sdk_telemetry` | `install_id` (PK), `sdk`, `sdk_version`, `runtime`, `os`, `mode` (`cloud`/`self-hosted`), `ping_count` | Anonymous SDK install pings (runtime-only table, not in `schema.sql`) |
 
 **Cascade:** `agents`, `api_keys`, `events`, `usage_daily` cascade from `tenants`. Account deletion explicitly deletes `users`, `auth_otps`, `tenants` and purges Qdrant vectors.
@@ -888,7 +857,6 @@ erDiagram
 | Agents home | `app/dashboard/page.tsx` |
 | Settings (keys/embeddings/account) | `app/dashboard/settings/page.tsx` |
 | Book-demo modal | `components/marketing/CalendlyBookModal.tsx` |
-| Newsletter popup | `components/marketing/NewsletterPopup.tsx` |
 | Operator admin | `app/admin/{layout,page}.tsx` |
 | Build config / rewrites / env | `next.config.mjs` |
 
@@ -902,7 +870,6 @@ erDiagram
 | Billing + trials (no payment) | `core/services/billing.py`, `core/api/billing_checkout.py` |
 | API key plan limits | `core/services/plan_limits.py`, `core/services/api_keys.py` |
 | Account (retention trial, delete) | `core/api/account.py`, `core/services/account.py` |
-| Email lifecycle (outbox, worker) | `core/services/email/`, `core/workers/email_worker.py`, `core/api/newsletter.py` |
 | Event write pipeline | `core/services/event_write.py`, `core/api/events.py` |
 | Memory (context/diff/forget) | `core/api/memory.py` |
 | Agents + baseline/drift | `core/api/agents.py` |

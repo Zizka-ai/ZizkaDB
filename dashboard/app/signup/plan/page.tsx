@@ -1,9 +1,9 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { BrandLogo } from '@/components/BrandLogo'
-import { SIGNUP_PLAN_KEY, SIGNUP_PROMO_KEY } from '@/lib/signup-funnel'
+import { SIGNUP_PLAN_KEY } from '@/lib/signup-funnel'
 
 const BRAND = '#f97316'
 
@@ -14,7 +14,7 @@ const PLANS = [
     price: '€39',
     price_sub: '/ month',
     highlight: true,
-    features: ['100M events', '90-day retention', '3 active API keys', 'Email support'],
+    features: ['100M events', '90-day retention', '3 projects', 'Email support'],
   },
   {
     id: 'team' as const,
@@ -22,29 +22,13 @@ const PLANS = [
     price: '€99',
     price_sub: '/ month',
     highlight: false,
-    features: ['Up to 1B events/mo', '1-year retention', '10 active API keys', 'Priority support'],
+    features: ['Up to 1B events/mo', '1-year retention', '10 seats', 'Priority support'],
   },
 ]
 
 export default function SignupPlanPage() {
-  return (
-    <Suspense fallback={null}>
-      <SignupPlanInner />
-    </Suspense>
-  )
-}
-
-function SignupPlanInner() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [selected, setSelected] = useState<'pro' | 'team'>('pro')
-
-  useEffect(() => {
-    const promo = searchParams.get('promo')
-    if (promo && typeof window !== 'undefined') {
-      sessionStorage.setItem(SIGNUP_PROMO_KEY, promo.trim())
-    }
-  }, [searchParams])
 
   function handleContinue() {
     if (typeof window !== 'undefined') {

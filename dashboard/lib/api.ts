@@ -298,7 +298,6 @@ export async function verifyOtp(
     intent?: 'signup' | 'login'
     gdprConsent?: boolean
     marketingConsent?: boolean
-    promoCode?: string
   },
 ) {
   const intent = opts?.intent ?? 'login'
@@ -311,7 +310,6 @@ export async function verifyOtp(
       intent,
       ...(opts?.gdprConsent ? { gdpr_consent: true } : {}),
       ...(opts?.marketingConsent ? { marketing_consent: true } : {}),
-      ...(opts?.promoCode ? { promo_code: opts.promoCode } : {}),
     }),
   })
   if (!res.ok) {
@@ -386,20 +384,4 @@ export async function grantRetentionTrial(token: string): Promise<{
 
 export async function deleteManagedAccount(token: string): Promise<{ message: string }> {
   return apiFetch('/v1/account', token, { method: 'DELETE' })
-}
-
-export async function subscribeNewsletter(email: string): Promise<{
-  message: string
-  already_subscribed?: boolean
-}> {
-  const res = await fetch(`${API}/v1/newsletter/subscribe`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.toLowerCase().trim(), botcheck: '' }),
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }))
-    throw new Error(formatApiError(err.detail, 'Could not subscribe'))
-  }
-  return res.json()
 }

@@ -256,58 +256,6 @@ class TestDemoRequestsRateLimiting:
             })
             assert response.status_code == 201
 
-    @patch("api.demo_requests.get_pool")
-    def test_demo_requests_accepts_position_and_source(self, mock_get_pool):
-        mock_pool = MagicMock()
-        mock_pool.fetchrow = AsyncMock(return_value={"request_id": "test-uuid", "created_at": datetime.now(timezone.utc)})
-        mock_get_pool.return_value = mock_pool
-
-        response = client.post("/v1/demo-requests", json={
-            "first_name": "Jane",
-            "last_name": "Doe",
-            "email": "jane@example.com",
-            "company_name": "Acme Corp",
-            "website": "acme.com",
-            "position": "Head of AI",
-            "source": "enterprise",
-        })
-        assert response.status_code == 201
-
-        args = mock_pool.fetchrow.call_args[0]
-        assert args[6] == "Head of AI"
-        assert args[7] == "enterprise"
-
-    @patch("api.demo_requests.get_pool")
-    def test_demo_requests_position_optional(self, mock_get_pool):
-        mock_pool = MagicMock()
-        mock_pool.fetchrow = AsyncMock(return_value={"request_id": "test-uuid", "created_at": datetime.now(timezone.utc)})
-        mock_get_pool.return_value = mock_pool
-
-        response = client.post("/v1/demo-requests", json={
-            "first_name": "Jane",
-            "last_name": "Doe",
-            "email": "jane@example.com",
-            "company_name": "Acme Corp",
-            "website": "acme.com",
-        })
-        assert response.status_code == 201
-
-        args = mock_pool.fetchrow.call_args[0]
-        assert args[6] is None
-        assert args[7] is None
-
-    def test_demo_requests_rejects_invalid_source(self):
-        response = client.post("/v1/demo-requests", json={
-            "first_name": "Jane",
-            "last_name": "Doe",
-            "email": "jane@example.com",
-            "company_name": "Acme Corp",
-            "website": "acme.com",
-            "source": "spam",
-        })
-        assert response.status_code == 422
-        assert response.json()["detail"] == "Invalid source"
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Community Upload/Post Rate Limiting Tests

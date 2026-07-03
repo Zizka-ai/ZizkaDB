@@ -1,14 +1,12 @@
 /** sessionStorage keys for the signup funnel (plan → consent → OTP). */
 
 export const SIGNUP_PLAN_KEY = 'signup_plan'
-export const SIGNUP_PROMO_KEY = 'signup_promo'
 export const SIGNUP_CONSENT_GDPR_KEY = 'signup_consent_gdpr'
 export const SIGNUP_CONSENT_MARKETING_KEY = 'signup_consent_marketing'
 
 export function clearSignupSession(): void {
   if (typeof window === 'undefined') return
   sessionStorage.removeItem(SIGNUP_PLAN_KEY)
-  sessionStorage.removeItem(SIGNUP_PROMO_KEY)
   sessionStorage.removeItem(SIGNUP_CONSENT_GDPR_KEY)
   sessionStorage.removeItem(SIGNUP_CONSENT_MARKETING_KEY)
 }

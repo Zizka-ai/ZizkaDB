@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Backend ↔ Dashboard Contract
 
-The dashboard (`dashboard/`) is a client of this FastAPI backend. Before changing these files, check how the dashboard consumes them: `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` — endpoint map (§17.3), auth model (§17.2), backend state machine (§18), data model (§21). **Auth OTP/intent flows:** `.cursor/rules/authentication-knowledge-base.mdc`. **Email/lifecycle:** `.cursor/rules/email-lifecycle-knowledge-base.mdc`.
+The dashboard (`dashboard/`) is a client of this FastAPI backend. Before changing these files, check how the dashboard consumes them: `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` — endpoint map (§17.3), auth model (§17.2), backend state machine (§18), data model (§21).
 
 ## Contracts the dashboard relies on (do not break silently)
 - **`verify-otp` response shape** (`core/api/auth.py`): `{access_token, token_type, requires_plan_selection, requires_checkout, has_access, plan}`. Signup/login always get `has_access: true`, `requires_checkout: false` (no payment gate).
@@ -18,7 +18,7 @@ The dashboard (`dashboard/`) is a client of this FastAPI backend. Before changin
 - **API key plan limits** (`core/services/plan_limits.py` = single source of truth; `core/services/api_keys.py::assert_and_reserve_api_key_slot`): active keys per tenant capped by plan (Pro 3 / Team 10; else unlimited). Guard runs in a per-tenant advisory-locked txn before insert. Behind kill switch `API_KEY_LIMITS_ENFORCED` (default OFF). Usage: `GET /v1/auth/api-keys/usage` → `{plan, limit, used, unlimited, at_limit}`.
 
 ## Data model
-Schema in `core/db/schema.sql` + `migrations/002-007` + runtime DDL in `core/db/connection.py`. Plan/trial state lives on `users` (`stripe_*` columns retained but unused). Qdrant `agent_events` is 1536-dim COSINE; embeddings are dual-written to Postgres `events.embedding` + Qdrant. See §21.
+Schema in `core/db/schema.sql` + `migrations/002-006` + runtime DDL in `core/db/connection.py`. Plan/trial state lives on `users` (`stripe_*` columns retained but unused). Qdrant `agent_events` is 1536-dim COSINE; embeddings are dual-written to Postgres `events.embedding` + Qdrant. See §21.
 
 ## Keep the KB in sync
 If you change any contract above, a route, the billing/auth logic, or the DB schema, update `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` (§17.3, §18, §21) in the same change — and the matching `dashboard/lib/api.ts` types/callers if the response shape changed.

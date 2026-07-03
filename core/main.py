@@ -20,7 +20,6 @@ from api.community import router as community_router
 from api.demo_requests import router as demo_requests_router
 from api.settings import router as settings_router
 from api.account import router as account_router
-from api.newsletter import router as newsletter_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -76,7 +75,6 @@ app.include_router(community_router, prefix="/v1/community", tags=["community"])
 app.include_router(demo_requests_router, prefix="/v1/demo-requests", tags=["demo"])
 app.include_router(settings_router,  prefix="/v1/settings",  tags=["settings"])
 app.include_router(account_router,   prefix="/v1/account",   tags=["account"])
-app.include_router(newsletter_router, prefix="/v1/newsletter", tags=["newsletter"])
 
 
 @app.get("/health")

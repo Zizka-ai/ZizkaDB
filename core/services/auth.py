@@ -6,10 +6,12 @@ import logging
 import jwt
 import bcrypt
 import random
+import smtplib
 from typing import Literal
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
 from db.connection import get_pool
-from services.billing import TRIAL_DAYS
 
 log = logging.getLogger(__name__)
 
@@ -40,24 +42,6 @@ JWT_SECRET = _required_secret("JWT_SECRET", "dev-secret")
 JWT_REFRESH_SECRET = _required_secret("JWT_REFRESH_SECRET", "dev-refresh-secret")
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 REFRESH_TOKEN_EXPIRE_DAYS = 30
-
-_PROMO_RATE_WINDOW_SEC = 15 * 60
-_PROMO_RATE_MAX = 10
-_promo_rate: dict[str, list[float]] = {}
-
-
-def _check_promo_rate_limit(email: str) -> None:
-    """Limit promo redeem attempts per email (anti brute-force)."""
-    key = email.lower().strip()
-    now = datetime.now(timezone.utc).timestamp()
-    window_start = now - _PROMO_RATE_WINDOW_SEC
-    hits = [t for t in _promo_rate.get(key, []) if t > window_start]
-    if len(hits) >= _PROMO_RATE_MAX:
-        raise ValueError(
-            "Too many promo attempts. Wait 15 minutes and try again."
-        )
-    hits.append(now)
-    _promo_rate[key] = hits
 
 
 # ─────────────────────────────────────────
@@ -139,12 +123,7 @@ async def request_otp(email: str) -> None:
         email, otp_hash, expires_at,
     )
 
-    from services.email.service import get_email_service
-
-    try:
-        await get_email_service().send_otp(email, otp)
-    except Exception as e:
-        log.warning("OTP email send failed for %s (code saved in DB): %s", email, e)
+    await _send_otp_email(email, otp)
 
 
 async def _save_signup_consent(
@@ -160,8 +139,7 @@ async def _save_signup_consent(
             """
             UPDATE users SET
                 gdpr_consent_at = $2,
-                marketing_consent = $3,
-                marketing_consent_at = CASE WHEN $3 THEN $2 ELSE marketing_consent_at END
+                marketing_consent = $3
             WHERE user_id = $1::uuid
             """,
             user_id,
@@ -184,8 +162,7 @@ async def _save_signup_consent(
         """
         UPDATE users SET
             gdpr_consent_at = $2,
-            marketing_consent = $3,
-            marketing_consent_at = CASE WHEN $3 THEN $2 ELSE marketing_consent_at END
+            marketing_consent = $3
         WHERE user_id = $1::uuid
         """,
         user_id,
@@ -212,7 +189,6 @@ async def verify_otp(
     intent: AuthIntent = "login",
     gdpr_consent: bool | None = None,
     marketing_consent: bool | None = None,
-    promo_code: str | None = None,
 ) -> dict:
     email = email.lower().strip()
     pool = get_pool()
@@ -293,12 +269,12 @@ async def verify_otp(
                         "consent persistence skipped for user %s: %s", user_id, e
                     )
                 await conn.execute(
-                    f"""
+                    """
                     UPDATE users
                     SET plan = COALESCE(plan, 'pro'),
                         subscription_status = COALESCE(subscription_status, 'trialing'),
                         trial_ends_at = COALESCE(
-                            trial_ends_at, NOW() + INTERVAL '{TRIAL_DAYS} days'
+                            trial_ends_at, NOW() + INTERVAL '30 days'
                         )
                     WHERE user_id = $1::uuid
                     """,
@@ -330,36 +306,7 @@ async def verify_otp(
             if not burned:
                 raise ValueError("OTP already used")
 
-    if intent == "signup":
-        try:
-            from services.email.newsletter_sync import sync_newsletter_on_signup
-
-            await sync_newsletter_on_signup(
-                email=email,
-                marketing_consent=bool(marketing_consent),
-            )
-        except Exception as e:
-            log.warning("newsletter sync skipped for %s: %s", user_id, e)
-
-        if promo_code:
-            _check_promo_rate_limit(email)
-            from services.email.churn import redeem_churn_promo
-
-            try:
-                await redeem_churn_promo(
-                    email=email,
-                    promo_code=promo_code,
-                    user_id=user_id,
-                )
-            except Exception as e:
-                log.warning("promo redeem skipped for %s: %s", user_id, e)
-
-    return {
-        **_issue_tokens(user_id, email, tenant_id),
-        "user_id": user_id,
-        "tenant_id": tenant_id,
-        "is_new_signup": intent == "signup",
-    }
+    return _issue_tokens(user_id, email, tenant_id)
 
 
 def _issue_tokens(user_id: str, email: str, tenant_id: str) -> dict:
@@ -396,3 +343,70 @@ def _issue_tokens(user_id: str, email: str, tenant_id: str) -> dict:
 
 def decode_access_token(token: str) -> dict:
     return jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+
+
+# ─────────────────────────────────────────
+# EMAIL
+# ─────────────────────────────────────────
+
+SMTP_TIMEOUT_SEC = int(os.getenv("EMAIL_SMTP_TIMEOUT", "15"))
+
+
+def _send_otp_email_sync(email: str, otp: str) -> None:
+    """Blocking SMTP — always call via asyncio.to_thread so the API stays responsive."""
+    host = os.getenv("EMAIL_HOST")
+    user = os.getenv("EMAIL_USER")
+    password = os.getenv("EMAIL_PASS")
+
+    if not host or not user or not password:
+        print(f"\n{'='*50}")
+        print(f"OTP FOR {email}: {otp}")
+        print(f"(Set EMAIL_HOST / EMAIL_USER / EMAIL_PASS to send real emails)")
+        print(f"{'='*50}\n", flush=True)
+        return
+
+    port = int(os.getenv("EMAIL_PORT", 587))
+    from_addr = os.getenv("EMAIL_FROM", f'"ZizkaDB" <{user}>')
+    is_ssl = port == 465
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"{otp} is your ZizkaDB login code"
+    msg["From"] = from_addr
+    msg["To"] = email
+
+    text = f"Your ZizkaDB login code: {otp}\n\nExpires in 15 minutes."
+    html = f"""
+    <div style="font-family:Arial,sans-serif;max-width:420px;margin:40px auto;padding:24px;background:#fff;border-radius:12px;">
+      <p style="font-size:14px;color:#555;margin:0 0 20px">Your ZizkaDB login code:</p>
+      <div style="font-size:38px;font-weight:700;letter-spacing:10px;
+                  background:#f5f5f5;padding:24px;text-align:center;
+                  border-radius:8px;color:#111;font-family:monospace">
+        {otp}
+      </div>
+      <p style="color:#aaa;font-size:12px;margin-top:20px;line-height:1.6">
+        Expires in 15 minutes.<br>
+        If you did not request this, ignore this email.
+      </p>
+    </div>
+    """
+
+    msg.attach(MIMEText(text, "plain"))
+    msg.attach(MIMEText(html, "html"))
+
+    if is_ssl:
+        import ssl
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL(
+            host, port, context=context, timeout=SMTP_TIMEOUT_SEC,
+        ) as server:
+            server.login(user, password)
+            server.sendmail(from_addr, email, msg.as_string())
+    else:
+        with smtplib.SMTP(host, port, timeout=SMTP_TIMEOUT_SEC) as server:
+            server.starttls()
+            server.login(user, password)
+            server.sendmail(from_addr, email, msg.as_string())
+
+
+async def _send_otp_email(email: str, otp: str) -> None:
+    await asyncio.to_thread(_send_otp_email_sync, email, otp)

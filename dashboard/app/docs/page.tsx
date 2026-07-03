@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { SiteNav } from '@/components/SiteNav'
-import { MarketingFooter } from '@/components/marketing/MarketingFooter'
 import {
   OverviewSection,
   PythonSection,
@@ -142,7 +141,6 @@ export default function DocsPage() {
           {section === 'concepts' && <ConceptsSection onNavigate={navigate} />}
         </main>
       </div>
-      <MarketingFooter />
     </div>
   )
 }

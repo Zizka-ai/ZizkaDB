@@ -1,9 +1,0 @@
-Getting started with ZizkaDB
-
-1. Create an agent in the dashboard
-2. Copy your API key
-3. Connect via SDK, MCP, or REST
-4. Log events with a consistent session_id
-
-Dashboard: {{ dashboard_url }}
-Docs: {{ docs_url }}

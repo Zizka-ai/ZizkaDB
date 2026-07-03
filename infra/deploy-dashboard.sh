@@ -5,7 +5,6 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 export NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-https://db.zizka.ai}"
 export NEXT_PUBLIC_DEV_MODE="${NEXT_PUBLIC_DEV_MODE:-false}"
-export NEXT_PUBLIC_NEWSLETTER_ENABLED="${NEXT_PUBLIC_NEWSLETTER_ENABLED:-false}"
 
 # Docker dashboard fights for ports — do not run it in production
 docker rm -f zizkadb_dashboard 2>/dev/null || true
@@ -15,9 +14,6 @@ npm ci
 
 # Stale .next causes blank site (HTML references missing webpack chunks → 400)
 rm -rf .next
-NEXT_PUBLIC_API_URL="$NEXT_PUBLIC_API_URL" \
-NEXT_PUBLIC_DEV_MODE="$NEXT_PUBLIC_DEV_MODE" \
-NEXT_PUBLIC_NEWSLETTER_ENABLED="$NEXT_PUBLIC_NEWSLETTER_ENABLED" \
 npm run build
 
 WEBPACK=$(ls .next/static/chunks/webpack-*.js 2>/dev/null | head -1 || true)

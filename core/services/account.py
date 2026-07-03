@@ -1,10 +1,9 @@
-"""Account deletion with churn recovery email."""
+"""Managed-cloud account lifecycle — delete account or one-time trial extension."""
 
 from __future__ import annotations
 
 import logging
 import os
-import uuid
 from datetime import datetime, timedelta, timezone
 
 from db.connection import get_pool, get_qdrant, QDRANT_COLLECTION
@@ -111,25 +110,6 @@ async def delete_managed_account(*, user_id: str, tenant_id: str) -> None:
 
     email = row["email"]
     tid = str(row["tenant_id"])
-
-    from services.email.config import lifecycle_enabled
-    from services.email.outbox import cancel_pending_for_tenant, cancel_pending_for_user
-
-    await cancel_pending_for_user(user_id)
-    await cancel_pending_for_tenant(tid)
-
-    if lifecycle_enabled():
-        from services.email.churn import create_churn_offer
-        from services.email.triggers import on_account_deleted_enqueue
-
-        delete_id = str(uuid.uuid4())
-        offer = await create_churn_offer(email)
-        await on_account_deleted_enqueue(
-            email=email,
-            promo_code=offer["promo_code"],
-            promo_expires_at=offer["expires_at"],
-            delete_id=delete_id,
-        )
 
     await _purge_tenant_vectors(tid)
 

@@ -62,9 +62,5 @@ else
   echo "  SDK:       use API key from Dashboard → Settings"
 fi
 echo "  API:       ensure infra/docker-compose.yml is up on :8000"
-echo "  Email:     docker compose -f infra/docker-compose.yml up -d email_worker"
-echo "             (set EMAIL_LIFECYCLE_ENABLED=true + EMAIL_* in infra/.env)"
-echo "  Mailhog:   docker compose -f infra/docker-compose.yml --profile dev-mail up -d"
-echo "             Web UI http://localhost:8025 (dev only)"
 echo "  Nginx:     see infra/nginx.conf for routing / → :3001, /v1/ → :8000"
 echo ""

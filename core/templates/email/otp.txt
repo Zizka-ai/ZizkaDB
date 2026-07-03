@@ -1,4 +1,0 @@
-Your ZizkaDB login code: {{ otp }}
-
-Expires in 15 minutes.
-If you did not request this, ignore this email.

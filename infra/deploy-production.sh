@@ -43,14 +43,7 @@ git pull origin main
 
 echo "→ Step 3/5: Rebuild & restart API stack (no -v)"
 "${COMPOSE[@]}" up -d --build
-"${COMPOSE[@]}" restart api email_worker
-
-echo "→ Step 3b: Email worker"
-if "${COMPOSE[@]}" ps --status running email_worker 2>/dev/null | grep -q email_worker; then
-  echo "   email_worker running"
-else
-  echo "   WARNING: email_worker not running — lifecycle emails will not send" >&2
-fi
+"${COMPOSE[@]}" restart api
 
 echo "→ Step 4/5: Wait for API health"
 for i in $(seq 1 30); do

@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import type { CSSProperties, ReactNode } from 'react'
 import { SiteNav } from '@/components/SiteNav'
-import { MarketingFooter } from '@/components/marketing/MarketingFooter'
 
 export const metadata = {
   title: 'Technical reference',
@@ -275,8 +274,7 @@ docker compose -f infra/docker-compose.yml up -d`}</Code>
               <li><strong>Telemetry:</strong> one anonymous SDK/MCP startup ping — opt out with <code style={codeInline}>ZIZKADB_TELEMETRY=false</code>.</li>
             </ul>
             <p style={p}>
-              <strong>Not claimed today:</strong> SOC 2, HIPAA, or formal DPAs. For enterprise security review and VPC deployment, see{' '}
-              <Link href="/enterprise" style={link}>/enterprise</Link> or contact{' '}
+              <strong>Not claimed today:</strong> SOC 2, HIPAA, or formal DPAs. For enterprise security review, contact{' '}
               <a href="mailto:founder@zizka.ai" style={link}>founder@zizka.ai</a>.
             </p>
           </Section>
@@ -379,7 +377,6 @@ chain = await db.why(tool.event_id)`}</Code>
                   ['Self-hosted', 'Free (AGPL core)', 'Your VPC / machine'],
                   ['Managed Pro', '€39/mo', 'Zizka cloud'],
                   ['Managed Team', '€99/mo', 'Zizka cloud + higher limits'],
-                  ['Enterprise', 'Contact sales', 'Customer VPC (Model A)'],
                 ].map(([m, c, d]) => (
                   <tr key={m}><td style={td}>{m}</td><td style={td}>{c}</td><td style={td}>{d}</td></tr>
                 ))}
@@ -387,7 +384,6 @@ chain = await db.why(tool.event_id)`}</Code>
             </table>
             <p style={p}>
               Onboarding: <Link href="/signup" style={link}>signup</Link> → email OTP → Settings → API key → SDK or MCP env.
-              For Enterprise VPC deployment, see <Link href="/enterprise" style={link}>/enterprise</Link>.
             </p>
           </Section>
 
@@ -448,7 +444,6 @@ chain = await db.why(tool.event_id)`}</Code>
             </table>
             <p style={p}>
               AGPL applies when you modify and distribute the server. MCP is MIT for IDE integration. Commercial embedding requires legal review.
-              Enterprise VPC deployments use a separate commercial license — see <Link href="/enterprise" style={link}>/enterprise</Link>.
             </p>
           </Section>
 
@@ -460,7 +455,6 @@ chain = await db.why(tool.event_id)`}</Code>
                   ['Self-hosted', 'Unlimited (your hardware)', 'Operator-defined'],
                   ['Pro (€39/mo)', '100M', '90 days'],
                   ['Team (€99/mo)', 'Up to 1B (plan cap)', '1 year'],
-                  ['Enterprise', 'Contact sales', 'Custom (VPC)'],
                 ].map(([plan, ev, ret]) => (
                   <tr key={plan}><td style={td}>{plan}</td><td style={td}>{ev}</td><td style={td}>{ret}</td></tr>
                 ))}
@@ -536,8 +530,6 @@ chain = await db.why(tool.event_id)`}</Code>
           </Section>
         </main>
       </div>
-
-      <MarketingFooter />
 
       <style>{`
         @media (min-width: 900px) {

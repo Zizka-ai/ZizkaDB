@@ -1,8 +1,0 @@
-Welcome to ZizkaDB!
-
-You're in. ZizkaDB is the operational database for AI agents.
-
-Plan: {{ plan_name }}
-{% if trial_ends_at %}Trial until: {{ trial_ends_at }}{% endif %}
-
-Open your dashboard: {{ dashboard_url }}

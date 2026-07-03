@@ -73,10 +73,6 @@ services:
       PUBLIC_API_URL: ${PUBLIC_API_URL:-https://db.zizka.ai}
       DASHBOARD_URL: ${DASHBOARD_URL:-https://db.zizka.ai}
       TRIAL_DAYS: ${TRIAL_DAYS:-30}
-      EMAIL_LIFECYCLE_ENABLED: ${EMAIL_LIFECYCLE_ENABLED:-false}
-      EMAIL_DEV_REDIRECT: ${EMAIL_DEV_REDIRECT:-}
-      EMAIL_STAGING_COMPRESS_DELAYS: ${EMAIL_STAGING_COMPRESS_DELAYS:-false}
-      EMAIL_LIFECYCLE_ALLOWLIST: ${EMAIL_LIFECYCLE_ALLOWLIST:-}
       COMMUNITY_UPLOAD_DIR: /data/community_uploads
     depends_on:
       postgres:
@@ -87,44 +83,6 @@ services:
       - ../core:/app
       - community_uploads:/data/community_uploads
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-
-  email_worker:
-    build:
-      context: ../core
-      dockerfile: Dockerfile
-    container_name: zizkadb_email_worker
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-zizkadb}:${POSTGRES_PASSWORD:-zizkadb}@postgres:5432/${POSTGRES_DB:-zizkadb}
-      REDIS_URL: redis://redis:6379
-      ENV: ${ENV:-development}
-      EMAIL_HOST: ${EMAIL_HOST}
-      EMAIL_PORT: ${EMAIL_PORT:-465}
-      EMAIL_USER: ${EMAIL_USER}
-      EMAIL_PASS: ${EMAIL_PASS}
-      EMAIL_FROM: "${EMAIL_FROM}"
-      DASHBOARD_URL: ${DASHBOARD_URL:-https://db.zizka.ai}
-      TRIAL_DAYS: ${TRIAL_DAYS:-30}
-      EMAIL_LIFECYCLE_ENABLED: ${EMAIL_LIFECYCLE_ENABLED:-false}
-      EMAIL_DEV_REDIRECT: ${EMAIL_DEV_REDIRECT:-}
-      EMAIL_STAGING_COMPRESS_DELAYS: ${EMAIL_STAGING_COMPRESS_DELAYS:-false}
-      EMAIL_LIFECYCLE_ALLOWLIST: ${EMAIL_LIFECYCLE_ALLOWLIST:-}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    volumes:
-      - ../core:/app
-    command: python -m workers.email_worker
-
-  # Optional local SMTP inbox — docker compose --profile dev-mail up
-  mailhog:
-    profiles: ["dev-mail"]
-    image: mailhog/mailhog:latest
-    container_name: zizkadb_mailhog
-    ports:
-      - "1025:1025"
-      - "8025:8025"
 
 volumes:
   postgres_data:

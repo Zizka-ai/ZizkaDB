@@ -6,8 +6,6 @@ export interface DemoRequestPayload {
   email: string
   company_name: string
   website: string
-  position?: string
-  source?: string
 }
 
 export async function submitDemoRequest(payload: DemoRequestPayload) {

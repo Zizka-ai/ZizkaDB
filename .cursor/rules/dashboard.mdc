@@ -6,7 +6,7 @@ alwaysApply: false
 
 # ZizkaDB Dashboard — Agent Guide
 
-**Read first:** `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` is the source of truth (has a Table of Contents). **Auth deep dive:** `.cursor/rules/authentication-knowledge-base.mdc` (OTP flows, intent model, security, edge cases). **Email/lifecycle:** `.cursor/rules/email-lifecycle-knowledge-base.mdc`. Consult before implementing features, fixing bugs, or reasoning about flows.
+**Read first:** `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` is the source of truth (has a Table of Contents). Consult it before implementing features, fixing bugs, or reasoning about flows. Section map: architecture (§1-3), funnel (§5), business rules (§7), API layer (§8), touch points (§17), backend state machine (§18), per-screen behavior (§19), marketing/community/docs/admin surfaces (§20), data model / DB schema (§21), glossary (§22).
 
 ## Conventions (match these)
 - Next.js 14 App Router. Interactive pages are Client Components (`'use client'`). TS `strict`, `@/*` alias. No Prettier — match surrounding style (2-space, single quotes, no semicolons).

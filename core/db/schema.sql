@@ -148,8 +148,6 @@ CREATE TABLE demo_requests (
     email         VARCHAR(255) NOT NULL,
     company_name  VARCHAR(255) NOT NULL,
     website       VARCHAR(500) NOT NULL,
-    position      VARCHAR(120),
-    source        VARCHAR(64),
     ip_address    VARCHAR(64),
     created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

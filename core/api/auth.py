@@ -55,7 +55,6 @@ class VerifyOTPBody(BaseModel):
     intent: Literal["signup", "login"] = "login"
     gdpr_consent: bool | None = None
     marketing_consent: bool | None = None
-    promo_code: str | None = None
 
 
 class CreateAPIKeyBody(BaseModel):
@@ -100,7 +99,6 @@ async def verify_otp_route(body: VerifyOTPBody, response: Response):
             intent=body.intent,
             gdpr_consent=body.gdpr_consent,
             marketing_consent=body.marketing_consent,
-            promo_code=body.promo_code,
         )
     except ValueError as e:
         raise HTTPException(status_code=401, detail=str(e))
@@ -119,18 +117,6 @@ async def verify_otp_route(body: VerifyOTPBody, response: Response):
         billing = billing_status_payload(billing_row)
     except Exception as e:
         log.warning("billing status lookup failed after verify for %s: %s", email, e)
-
-    if tokens.get("is_new_signup"):
-        from services.email.triggers import schedule_signup_lifecycle
-
-        try:
-            schedule_signup_lifecycle(
-                user_id=tokens["user_id"],
-                email=email,
-                tenant_id=tokens["tenant_id"],
-            )
-        except Exception as e:
-            log.warning("signup lifecycle schedule failed for %s: %s", email, e)
 
     response.set_cookie(
         key="refresh_token",

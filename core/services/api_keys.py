@@ -6,7 +6,6 @@ import logging
 
 from fastapi import HTTPException
 
-from db.connection import get_pool
 from services.auth import generate_api_key
 from services.billing import fetch_tenant_plan
 from services.plan_limits import api_key_limit_for_plan, limits_enforced
@@ -111,7 +110,7 @@ async def create_api_key_record(
         name,
         agent_id,
     )
-    result = {
+    return {
         "key_id": str(row["key_id"]),
         "key": raw_key,
         "prefix": prefix,
@@ -119,31 +118,6 @@ async def create_api_key_record(
         "agent_id": agent_id,
         "warning": "Save this key — it will not be shown again.",
     }
-    await _schedule_key_lifecycle_email(tenant_id)
-    return result
-
-
-async def _schedule_key_lifecycle_email(tenant_id: str) -> None:
-    try:
-        pool = get_pool()
-        owner = await pool.fetchrow(
-            """
-            SELECT user_id::text, email FROM users
-            WHERE tenant_id = $1::uuid
-            ORDER BY created_at ASC LIMIT 1
-            """,
-            tenant_id,
-        )
-        if owner:
-            from services.email.triggers import schedule_api_key_lifecycle
-
-            schedule_api_key_lifecycle(
-                tenant_id=tenant_id,
-                user_id=owner["user_id"],
-                email=owner["email"],
-            )
-    except Exception as e:
-        log.warning("api key lifecycle schedule skipped for tenant %s: %s", tenant_id, e)
 
 
 async def list_api_keys_for_agent(pool, tenant_id: str, agent_id: str) -> list[dict]:
