@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from services.exceptions import bad_request, forbidden, internal_error
 
 from api.deps import dashboard_session_dependency
 from services.account import account_options, delete_managed_account, grant_retention_trial
@@ -27,10 +28,10 @@ async def retention_trial(session: dict = Depends(require_dashboard_session)):
     try:
         return await grant_retention_trial(user_id=session["user_id"])
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise bad_request(str(e))
     except Exception as e:
         log.error("retention trial failed: %s", e)
-        raise HTTPException(status_code=500, detail="Could not extend trial")
+        raise internal_error("Could not extend trial")
 
 
 @router.delete("")
@@ -42,9 +43,9 @@ async def delete_account(session: dict = Depends(require_dashboard_session)):
         )
         return {"message": "Account deleted"}
     except PermissionError:
-        raise HTTPException(status_code=403, detail="Invalid session")
+        raise forbidden("Invalid session")
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise bad_request(str(e))
     except Exception as e:
         log.error("account delete failed: %s", e)
-        raise HTTPException(status_code=500, detail="Could not delete account")
+        raise internal_error("Could not delete account")

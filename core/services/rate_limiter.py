@@ -5,8 +5,9 @@ Rate Limiting for ZizkaDB
 import time
 import logging
 import threading
+import uuid
 from abc import ABC, abstractmethod
-from fastapi import HTTPException
+from services.exceptions import rate_limit_exceeded
 from db.connection import get_redis
 
 logger = logging.getLogger(__name__)
@@ -169,13 +170,21 @@ class RedisStorage(RateLimitStorage):
     async def record_hit(self, key: str, timestamp: float, window_sec: int) -> None:
         """
         Record a hit timestamp in Redis using a sorted set (ZSET).
-        Appends the thread identifier to make each entry unique.
+        Appends a UUID to make each entry unique.
         """
         redis_client = get_redis()
         rkey = self._get_redis_key(key)
         
-        # Add hit (use stringified timestamp as value to avoid duplication in same microsecond)
-        val = f"{timestamp}:{threading.get_ident()}"
+        # Add hit. A UUID is used (not e.g. threading.get_ident()) because this
+        # is async code: every concurrent request on a given worker runs on the
+        # same event loop thread, so thread-identity is constant and does not
+        # disambiguate concurrent hits. Two concurrent calls with an identical
+        # `val` string would collide as the same ZSET member, and ZADD treats a
+        # repeated member as an update rather than a new entry -- silently
+        # undercounting real hits and weakening the rate limit under concurrent
+        # load (verified: 50 concurrent hits collapsed to 1 stored entry before
+        # this fix).
+        val = f"{timestamp}:{uuid.uuid4().hex}"
         await redis_client.zadd(rkey, {val: timestamp})
         
         # Set expiry to prevent memory leak
@@ -232,7 +241,7 @@ class SlidingWindowStrategy(RateLimitStrategy):
         hits = await storage.get_hits(key, window_sec)
         if len(hits) >= limit:
             logger.warning(f"Rate limit exceeded (SlidingWindow) for key: {key} (limit={limit}, window={window_sec}s)")
-            raise HTTPException(status_code=429, detail=detail)
+            raise rate_limit_exceeded(detail=detail)
         
         await storage.record_hit(key, time.time(), window_sec)
 
@@ -262,7 +271,7 @@ class FixedWindowStrategy(RateLimitStrategy):
         hits = await storage.get_hits(fixed_key, window_sec)
         if len(hits) >= limit:
             logger.warning(f"Rate limit exceeded (FixedWindow) for key: {key} (limit={limit}, window={window_sec}s)")
-            raise HTTPException(status_code=429, detail=detail)
+            raise rate_limit_exceeded(detail=detail)
         
         await storage.record_hit(fixed_key, now, window_sec)
 

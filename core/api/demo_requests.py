@@ -5,7 +5,8 @@ Public demo request form — landing page "Book demo" submissions.
 from __future__ import annotations
 
 import logging
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request, status
+from services.exceptions import make_exception, bad_request
 from pydantic import BaseModel, EmailStr, Field
 
 from api.utils import client_ip
@@ -46,14 +47,14 @@ class CreateDemoRequestBody(BaseModel):
 @router.post("", status_code=201)
 async def create_demo_request(body: CreateDemoRequestBody, request: Request):
     if body.botcheck:
-        raise HTTPException(status_code=400, detail="Invalid submission")
+        raise bad_request("Invalid submission")
 
     ip = client_ip(request)
     await demo_limiter.check(ip)
 
     source = (body.source.strip() or None) if body.source else None
     if source and source not in VALID_SOURCES:
-        raise HTTPException(status_code=422, detail="Invalid source")
+        raise make_exception(status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid source")
 
     pool = get_pool()
     row = await pool.fetchrow(

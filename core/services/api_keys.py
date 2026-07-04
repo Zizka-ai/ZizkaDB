@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import HTTPException
+from services.exceptions import conflict
 
 from services.auth import generate_api_key
 from services.billing import fetch_effective_plan
@@ -62,8 +62,7 @@ async def assert_and_reserve_api_key_slot(conn, *, tenant_id: str) -> None:
 
     used = await count_active_api_keys(conn, tenant_id)
     if used >= limit:
-        raise HTTPException(
-            status_code=409,
+        raise conflict(
             detail={
                 "msg": (
                     "You've reached the maximum number of API keys allowed for your "

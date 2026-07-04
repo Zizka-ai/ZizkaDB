@@ -4,6 +4,8 @@ Tests cover OTP request limits, Demo request limits, and Community board limits.
 """
 
 import asyncio
+import time
+import fakeredis.aioredis
 from unittest.mock import patch, AsyncMock, MagicMock
 from datetime import datetime, timezone
 from fastapi.testclient import TestClient
@@ -422,4 +424,34 @@ class TestRateLimiterFeatures:
         assert hits == [1000.0]
         mock_redis.zremrangebyscore.assert_called_once()
         mock_redis.zrange.assert_called_once()
+
+    @patch("services.rate_limiter.get_redis")
+    def test_redis_storage_concurrency(self, mock_get_redis):
+        """
+        Verify that multiple concurrent calls to record_hit() do not generate
+        an identical member string, and ZADD silently treated the second
+        call as an update to the first rather than a new entry --
+        undercounting real request volume and letting far more requests
+        through than the configured limit.
+        """
+        fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+        mock_get_redis.return_value = fake_redis
+
+        storage = RedisStorage(key_prefix="ratelimit-concurrency-test")
+
+        async def fire_concurrent_hits(n: int, timestamp: float) -> int:
+            await asyncio.gather(*(
+                storage.record_hit("concurrent-key", timestamp, 60) for _ in range(n)
+            ))
+            hits = await storage.get_hits("concurrent-key", 60)
+            return len(hits)
+
+        n_requests = 50
+        recorded = asyncio.run(fire_concurrent_hits(n_requests, time.time()))
+        assert recorded == n_requests, (
+            f"expected all {n_requests} concurrent hits to be recorded distinctly, "
+            f"got {recorded} -- record_hit()'s member string is colliding under "
+            f"concurrency again"
+        )
+
 

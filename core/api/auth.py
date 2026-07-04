@@ -3,7 +3,14 @@ import time
 import logging
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Response, Depends
+from fastapi import APIRouter, Response, Depends
+from services.exceptions import (
+    conflict,
+    not_found,
+    internal_error,
+    unauthorized,
+    forbidden,
+)
 from pydantic import BaseModel, EmailStr
 from services.auth import request_otp, verify_otp, _issue_tokens, email_exists
 from services.api_keys import (
@@ -61,15 +68,13 @@ async def request_otp_route(body: RequestOTPBody):
     await otp_limiter.check(email)
 
     if body.intent == "signup" and await email_exists(email):
-        raise HTTPException(
-            status_code=409,
-            detail="This email is already registered. Please sign in instead.",
+        raise conflict(
+            "This email is already registered. Please sign in instead."
         )
 
     if body.intent == "login" and not await email_exists(email):
-        raise HTTPException(
-            status_code=404,
-            detail="No account found for this email. Create an account to get started.",
+        raise not_found(
+            "No account found for this email. Create an account to get started."
         )
 
     try:
@@ -77,7 +82,7 @@ async def request_otp_route(body: RequestOTPBody):
         return {"message": "Code sent"}
     except Exception as e:
         log.error(f"request_otp failed for {email}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to send code. Check server logs.")
+        raise internal_error("Failed to send code. Check server logs.")
 
 
 @router.post("/verify-otp")
@@ -92,12 +97,11 @@ async def verify_otp_route(body: VerifyOTPBody, response: Response):
             marketing_consent=body.marketing_consent,
         )
     except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        raise unauthorized(str(e))
     except Exception as e:
         log.exception("verify_otp failed for %s: %s", email, e)
-        raise HTTPException(
-            status_code=500,
-            detail="Could not complete account setup. Please request a new code and try again.",
+        raise internal_error(
+            "Could not complete account setup. Please request a new code and try again."
         )
 
     from services.billing import billing_status_payload, fetch_user_billing
@@ -190,7 +194,7 @@ async def revoke_api_key(
     """Revoke an API key. The key stops working immediately."""
     pool = get_pool()
     if not await revoke_api_key_record(pool, tenant["tenant_id"], key_id):
-        raise HTTPException(status_code=404, detail="API key not found")
+        raise not_found("API key not found")
     return {"revoked": True, "key_id": key_id}
 
 
@@ -202,7 +206,7 @@ async def dev_token_route():
     is accessible without email / signup.
     """
     if os.getenv("ENV", "development") != "development":
-        raise HTTPException(status_code=403, detail="Not available in production")
+        raise forbidden("Not available in production")
 
     pool = get_pool()
     await _ensure_dev_tenant(pool)

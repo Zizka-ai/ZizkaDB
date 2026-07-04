@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
+from services.exceptions import not_found
 from typing import Any
 from uuid import UUID
 from datetime import datetime
@@ -121,7 +122,7 @@ async def why(
     try:
         UUID(event_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise not_found("Event not found")
 
     rows = await pool.fetch(
         """
@@ -150,7 +151,7 @@ async def why(
     )
 
     if not rows:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise not_found("Event not found")
 
     return {
         "event_id": event_id,

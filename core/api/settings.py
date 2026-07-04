@@ -1,6 +1,7 @@
 """Dashboard settings — embedding provider/model (managed cloud)."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from services.exceptions import bad_request
 from pydantic import BaseModel, Field
 
 from api.deps import dashboard_session_dependency, get_tenant
@@ -52,12 +53,11 @@ async def put_embeddings(
             api_key=body.api_key,
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise bad_request(str(e))
 
     out = embedding_config_for_response(config)
     if not out["ready"]:
-        raise HTTPException(
-            status_code=400,
-            detail="Embedding not configured. Use platform key or provide a valid API key.",
+        raise bad_request(
+            "Embedding not configured. Use platform key or provide a valid API key."
         )
     return {**out, "message": "Embedding settings saved. New events will use this model."}
