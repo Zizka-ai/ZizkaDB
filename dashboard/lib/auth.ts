@@ -1,5 +1,6 @@
 'use client'
 
+import { decodeJwt } from 'jose'
 import {
   USER_TOKEN_COOKIE,
   ADMIN_TOKEN_COOKIE,
@@ -50,6 +51,17 @@ export function setAdminToken(token: string) {
 export function clearAdminToken() {
   localStorage.removeItem(ADMIN_TOKEN_COOKIE)
   eraseCookie(ADMIN_TOKEN_COOKIE)
+}
+
+export function getSessionEmail(): string | null {
+  const token = getToken()
+  if (!token) return null
+  try {
+    const payload = decodeJwt(token)
+    return typeof payload.email === 'string' ? payload.email : null
+  } catch {
+    return null
+  }
 }
 
 export function requireAuth(): string {

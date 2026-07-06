@@ -32,7 +32,7 @@ SOC 2, HIPAA, SSO/SAML/SCIM **as shipped**, Slack/PagerDuty alerts, SLA guarante
 ## Cross-page consistency
 
 - Trust `#deployment`, `#limits`, `#licensing`: Enterprise row + links to `/enterprise`
-- Landing `#pricing`: "Enterprise — Contact sales →" link
+- Landing `#pricing`: fourth **Enterprise** card (`Growth VPC` / Let's Connect → `/enterprise#contact`); config in `pricing-plans.ts`
 - `MarketingFooter` includes Enterprise on landing, trust, enterprise (docs/community when wired)
 
 ## Before merge

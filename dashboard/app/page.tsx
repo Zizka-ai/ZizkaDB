@@ -10,6 +10,8 @@ import { ConversationCompare } from '@/components/marketing/ConversationCompare'
 import { TrustBar } from '@/components/marketing/TrustBar'
 import { MarketingFooter } from '@/components/marketing/MarketingFooter'
 import { MarketingPageStyles } from '@/components/marketing/MarketingPageStyles'
+import { PricingCard } from '@/components/marketing/PricingCard'
+import { LANDING_PRICING_PLANS } from '@/components/marketing/pricing-plans'
 import { BRAND } from '@/components/brand'
 import { M, container, h2, lead, sectionTitle, primaryBtn, blueBtn, violetBtn, ghostBtn, outlineBtn } from '@/components/marketing/marketing-theme'
 
@@ -257,91 +259,16 @@ export default function LandingPage() {
 
       {/* Pricing */}
       <section id="pricing" className="zdb-section" style={{ padding: '88px 40px', background: '#fff' }}>
-        <div style={container(900)}>
+        <div style={container(1120)}>
           <p style={sectionTitle}>Pricing</p>
           <h2 style={h2}>Start free. Scale when you need to.</h2>
           <p style={lead}>Full monitoring and session replay on every plan.</p>
 
-          <div className="zdb-price-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
-            {([
-              {
-                name: 'Self-Hosted',
-                price: 'Free',
-                sub: 'forever',
-                features: ['1 API key', 'Your infrastructure', 'Docker Compose', 'Community support'],
-                cta: 'Setup guide',
-                href: '/docs',
-                highlight: false,
-                note: '',
-              },
-              {
-                name: 'Pro',
-                price: '\u20ac39',
-                sub: '/ month',
-                features: ['1 million events / month', '2 projects', '30-day free trial', 'Email support'],
-                cta: 'Start free trial',
-                href: '/signup?plan=pro',
-                highlight: true,
-                note: '30-day free trial, no card required',
-              },
-              {
-                name: 'Team',
-                price: '\u20ac99',
-                sub: '/ month',
-                features: ['5 million events / month', '5 projects', '30-day free trial', 'Priority support'],
-                cta: 'Start free trial',
-                href: '/signup?plan=team',
-                highlight: false,
-                note: '30-day free trial, no card required',
-              },
-            ] as const).map(plan => (
-              <div key={plan.name} style={{
-                background: '#fff', borderRadius: 16, padding: '28px 24px',
-                border: plan.highlight ? `2px solid ${BRAND}` : `1px solid ${M.line}`,
-                position: 'relative',
-                boxShadow: plan.highlight ? '0 12px 40px rgba(249,115,22,0.1)' : 'none',
-              }}>
-                {plan.highlight && (
-                  <div style={{
-                    position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)',
-                    background: BRAND, color: '#fff', fontSize: 10, fontWeight: 700,
-                    padding: '3px 12px', borderRadius: 100,
-                  }}>
-                    POPULAR
-                  </div>
-                )}
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#000', marginBottom: 8 }}>{plan.name}</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 16 }}>
-                  <span style={{ fontSize: 32, fontWeight: 700, color: '#000' }}>{plan.price}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#000' }}>{plan.sub}</span>
-                </div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {plan.features.map(f => (
-                    <li key={f} style={{ fontSize: 13.5, color: '#000', display: 'flex', gap: 8, fontWeight: 500 }}>
-                      <span style={{ color: '#000', fontWeight: 800 }}>✓</span> {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href={plan.href} style={{
-                  display: 'block', textAlign: 'center', padding: '11px', borderRadius: 10,
-                  textDecoration: 'none', fontWeight: 600, fontSize: 14,
-                  background: plan.highlight ? BRAND : '#fff',
-                  color: plan.highlight ? '#fff' : '#000',
-                  border: plan.highlight ? 'none' : `1px solid ${M.line}`,
-                }}>
-                  {plan.cta}
-                </Link>
-                {plan.note ? (
-                  <p style={{ textAlign: 'center', fontSize: 11, color: '#555', marginTop: 8, marginBottom: 0, fontWeight: 600 }}>{plan.note}</p>
-                ) : null}
-              </div>
+          <div className="zdb-price-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+            {LANDING_PRICING_PLANS.map(plan => (
+              <PricingCard key={plan.name} plan={plan} />
             ))}
           </div>
-          <p style={{ textAlign: 'center', marginTop: 28, marginBottom: 0, fontSize: 15, fontWeight: 600, color: '#000' }}>
-            <Link href="/enterprise" style={{ color: BRAND, textDecoration: 'none' }}>
-              Enterprise - Contact sales
-            </Link>
-          </p>
         </div>
       </section>
 

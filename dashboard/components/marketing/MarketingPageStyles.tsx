@@ -18,6 +18,7 @@ export function MarketingPageStyles() {
       @media (max-width: 1024px) {
         .zdb-connect-grid { grid-template-columns: 1fr !important; }
         .zdb-feature-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        .zdb-price-grid { grid-template-columns: repeat(2, 1fr) !important; }
       }
       @media (max-width: 768px) {
         .site-nav-links { display: none !important; }

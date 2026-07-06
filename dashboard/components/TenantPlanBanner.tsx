@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { getToken } from '@/lib/auth'
 import { getBillingStatus, type BillingStatus } from '@/lib/api'
+import { getSessionEmail, getToken } from '@/lib/auth'
+import { useEffect, useState } from 'react'
 
 const PLAN_LABELS: Record<string, string> = {
   pro: 'Pro',
@@ -23,6 +23,7 @@ function formatTrialEnd(iso: string): string {
 
 export function TenantPlanBanner() {
   const [status, setStatus] = useState<BillingStatus | null>(null)
+  const email = getSessionEmail()
 
   useEffect(() => {
     const token = getToken()
@@ -35,17 +36,20 @@ export function TenantPlanBanner() {
     return () => { cancelled = true }
   }, [])
 
-  if (!status?.plan) return null
+  if (!status?.plan && !email) return null
 
-  const label = PLAN_LABELS[status.plan] ?? status.plan.toUpperCase()
-  const trialing = status.subscription_status === 'trialing'
+  const label = status?.plan
+    ? (PLAN_LABELS[status.plan] ?? status.plan.toUpperCase())
+    : null
+  const trialing = status?.subscription_status === 'trialing'
 
   return (
     <div
-      className="px-4 sm:px-6 py-2.5 border-b flex flex-wrap items-center justify-between gap-2"
+      className="px-4 sm:px-6 py-2.5 border-b"
       style={{ background: '#111', borderColor: '#1f1f1f' }}
     >
-      <div className="flex items-center gap-2 text-sm">
+    {status?.plan && label && (
+      <div className="flex items-center gap-2 text-sm flex-wrap">
         <span style={{ color: '#a3a3a3' }}>Plan</span>
         <span
           className="font-semibold px-2.5 py-0.5 rounded-full"
@@ -65,6 +69,16 @@ export function TenantPlanBanner() {
           <span style={{ color: '#86efac' }}>· Active</span>
         )}
       </div>
+    )}
+    {email && (
+      <p
+        className="truncate max-w-full sm:max-w-xs md:max-w-md text-xs sm:text-sm mt-1 mb-0"
+        style={{ color: '#a3a3a3' }}
+        title={email}
+      >
+        {email}
+      </p>
+    )}
     </div>
   )
 }

@@ -176,14 +176,15 @@ flowchart TD
 | 3 | Landing engineering card "Start free trial" | `app/page.tsx:155` | `/signup` |
 | 4 | Landing **Pricing** Pro card | `app/page.tsx:189` | `/signup?plan=pro` |
 | 5 | Landing **Pricing** Team card | `app/page.tsx:195` | `/signup?plan=team` |
-| 6 | Landing Self-Hosted card "Setup guide" | `app/page.tsx:184` | `/docs` (not trial) |
-| 7 | Landing final CTA "Start free trial" | `app/page.tsx:259` | `/signup` |
-| 8 | Footer "Start free" | `app/page.tsx:286` | `/signup` |
-| 9 | `ThreeWaysConnectSection` "Sign up" | `ThreeWaysConnectSection.tsx:135` | `/signup` |
-| 10 | Login "Create one free" | `login/page.tsx:258` | `/signup` |
-| 11 | Docs sections (several) | `docs/sections.tsx` | `/signup` |
-| 12 | Trust page onboarding | `trust/page.tsx:386` | `/signup` |
-| 13 | **Retention trial** (settings, on delete) | `settings/page.tsx:404-431` | `grantRetentionTrial` (in-place) |
+| 6 | Landing Self-Hosted card "Setup guide" | `pricing-plans.ts` / `PricingCard` | `/docs` (not trial) |
+| 7 | Landing **Pricing** Enterprise card | `pricing-plans.ts` / `PricingCard` | `/enterprise#contact` |
+| 8 | Landing final CTA "Start free trial" | `app/page.tsx:259` | `/signup` |
+| 9 | Footer "Start free" | `app/page.tsx:286` | `/signup` |
+| 10 | `ThreeWaysConnectSection` "Sign up" | `ThreeWaysConnectSection.tsx:135` | `/signup` |
+| 11 | Login "Create one free" | `login/page.tsx:258` | `/signup` |
+| 12 | Docs sections (several) | `docs/sections.tsx` | `/signup` |
+| 13 | Trust page onboarding | `trust/page.tsx:386` | `/signup` |
+| 14 | **Retention trial** (settings, on delete) | `settings/page.tsx:404-431` | `grantRetentionTrial` (in-place) |
 
 There is **no shared "StartTrialButton" component** — every CTA is an inline `<Link href="/signup...">`. Plan is passed only via the `?plan=` query param, persisted to `sessionStorage.signup_plan`.
 
@@ -435,12 +436,12 @@ There is **no `.env.example`** in the repo — env vars are documented only here
 | Component | Role |
 |-----------|------|
 | `DashboardShell` | sidebar / mobile nav / sign-out frame |
-| `TenantPlanBanner` | plan pill + trial / active state (informational) |
+| `TenantPlanBanner` | plan pill + trial / active state + signed-in email (informational) |
 | `ApiKeyUsage` | quota indicator (used/limit from `/v1/auth/api-keys/usage`) |
 | `ConnectionStatus` (+ `GettingStartedChecklist`) | `/health` poll + empty-state onboarding |
 | `AgentApiKeys` | key create / reveal-once / revoke (uses `useApiKeyQuota`) |
 | `SiteNav`, `BrandLogo`, `brand.ts` | marketing nav + branding tokens |
-| `marketing/*` | `CalendlyBookModal`, `CompetitorCompare`, `ConversationCompare`, `ThreeWaysConnectSection`, `TrustBar`, `IntegrationStrip`, `ProductPreview`, `SessionReplayDemo` |
+| `marketing/*` | `CalendlyBookModal`, `CompetitorCompare`, `ConversationCompare`, `PricingCard`, `pricing-plans.ts`, `ThreeWaysConnectSection`, `TrustBar`, `IntegrationStrip`, `ProductPreview`, `SessionReplayDemo` |
 
 **Key types (`lib/api.ts`) — the funnel branches on these:**
 - `BillingStatus` — `enforced`, `has_access`, `requires_plan_selection`, `requires_checkout`, `subscription_status`, `trial_ends_at`, `plan`, `trial_days?` (always access-granted today; fields kept for compatibility).
@@ -695,7 +696,7 @@ Server component; `metadata.robots` = noindex/nofollow (`:5-7`); wraps children 
 ### 19.9 Components
 
 - **`DashboardShell.tsx`** — no state; `usePathname`/`useRouter`. Nav items Agents/Search/Settings (`:11-15`); active = exact/prefix match (`:40`); sign out `clearToken()` → `router.push('/login')` (`:21-24`). Renders `TenantPlanBanner` (`:84`) + `ConnectionStatus` (`:85`) + children.
-- **`TenantPlanBanner.tsx`** — state `status` (`:27`); effect once, no token → return, `getBillingStatus` with `cancelled` cleanup (`:29-36`, errors swallowed). Returns `null` if `!status?.plan` (`:38`); shows trial end date if `trialing` (`:59-63`), "Active" if `active` (`:64-66`). Informational only.
+- **`TenantPlanBanner.tsx`** — state `status`; effect once, no token → return, `getBillingStatus` with `cancelled` cleanup (errors swallowed). Email from `getSessionEmail()` (JWT decode via `jose`, sync on render). Returns `null` if neither plan nor email; plan row when `status.plan`; email row below plan with truncate + `title` tooltip. Shows trial end date if `trialing`, "Active" if `active`. Informational only.
 - **`ConnectionStatus.tsx`** — state `health: 'checking'|'ok'|'error'` (`:11`); effect mount + **30s `/health` poll** (`:14-30`, `cache:'no-store'`, `cancelled`+`clearInterval` cleanup). Empty `API` → label "same-origin (nginx)" (`:12`); dev label + setup hint on error. Also exports `GettingStartedChecklist` (static; Python snippet + step 1 copy differ by `IS_DEV`).
 - **`AgentApiKeys.tsx`** — state keys/loading/creating/revokingId/newKey/copied/err/testBusy/testMsg (`:24-32`); `load` useCallback → `getAgentApiKeys` (normalizes to array, `:34-44`); effect re-loads when `agentId` changes (`:46-48`). `createAgentApiKey` (`:55`) → reload; `revokeAgentApiKey` (`:72`, confirm first `:66-67`); `sendAgentTestEvent` (`:110`) → `onTestSuccess?.()` (`:112`). One-time key display; copy resets 2s (`:84`).
 
@@ -704,6 +705,7 @@ Server component; `metadata.robots` = noindex/nofollow (`:5-7`); wraps children 
 | Concern | Behavior |
 |---------|----------|
 | `getToken()` | read-only, no redirect |
+| `getSessionEmail()` | JWT decode; returns `email` claim or `null` |
 | `requireAuth()` | no token → `window.location.href='/login'`, throws |
 | Agents home | explicit `router.replace('/login')` on missing/invalid token |
 | Edge auth | middleware cookie check on `/dashboard/*` |
@@ -737,10 +739,10 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 
 ### 20.1 Landing — `app/page.tsx`
 
-- **Client Component**, static marketing. Sections: `SiteNav` → Hero (+ `CalendlyBookModal`, `IntegrationStrip`) → `ThreeWaysConnectSection` → `ConversationCompare` → engineering cards → `TrustBar` → **Pricing grid** (Self-Hosted / Pro / Team) → `CompetitorCompare` → final CTA → footer.
+- **Client Component**, static marketing. Sections: `SiteNav` → Hero (+ `CalendlyBookModal`, `IntegrationStrip`) → `ThreeWaysConnectSection` → `ConversationCompare` → engineering cards → `TrustBar` → **Pricing grid** (Self-Hosted / Pro / Team / Enterprise via `PricingCard` + `LANDING_PRICING_PLANS`) → `CompetitorCompare` → final CTA → footer.
 - **State:** `copied` (which copy button, 2s reset) and `demoOpen` (Calendly modal). **No `useEffect`, no API calls.**
-- **CTAs / nav:** `/signup` (hero, cards, final, footer), `/signup?plan=pro`, `/signup?plan=team`, `/docs`, `/trust`, `/login`, `#pricing`, GitHub. "Book demo" opens `CalendlyBookModal` (`demoOpen`); "Copy MCP config" copies `MCP_CONFIG` JSON.
-- **Rules:** `plan.highlight` → "POPULAR" badge; footer external `http` links → `<a>`, internal → `<Link>`. Responsive via inline `<style>`. No honeypot here (demo capture is the Calendly modal).
+- **CTAs / nav:** `/signup` (hero, cards, final, footer), `/signup?plan=pro`, `/signup?plan=team`, `/enterprise#contact` (Enterprise pricing card), `/docs`, `/trust`, `/login`, `#pricing`, GitHub. "Book demo" opens `CalendlyBookModal` (`demoOpen`); "Copy MCP config" copies `MCP_CONFIG` JSON.
+- **Rules:** `plan.highlight` → "POPULAR" badge; `ctaPrimary` → filled orange CTA (Pro, Enterprise). Pricing grid: 4-col desktop, 2-col tablet (≤1024px), 1-col mobile (≤768px) via `MarketingPageStyles`. Footer external `http` links → `<a>`, internal → `<Link>`. No honeypot here (demo capture is the Calendly modal).
 
 ### 20.2 Community — `app/community/page.tsx` + `app/community/[id]/page.tsx`
 
@@ -774,7 +776,7 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 - **Copy:** single source `components/marketing/enterprise/enterprise-copy.ts` — no false SOC 2 / SSO-as-shipped / hallucination-detection claims.
 - **Lead capture:** `EnterpriseConnectForm` → `submitDemoRequest` (`lib/demo.ts`) with `source: 'enterprise'`, optional `position`; honeypot `botcheck`.
 - **Shared marketing shell:** `SiteNav active="enterprise"`, `MarketingPageStyles`, `MarketingFooter`, `CalendlyBookModal` for Book demo.
-- **Cross-links:** landing `#pricing` → `/enterprise`; trust `#deployment`, `#limits`, `#licensing` → `/enterprise`.
+- **Cross-links:** landing `#pricing` Enterprise card → `/enterprise#contact`; trust `#deployment`, `#limits`, `#licensing` → `/enterprise`.
 - **QA:** `docs/enterprise-page-qa.md` · agent rule `.cursor/rules/enterprise-page-knowledge-base.mdc`.
 
 ---
@@ -860,7 +862,7 @@ erDiagram
 | Edge auth guard | `middleware.ts` |
 | API + redirect helpers | `lib/api.ts` |
 | Token storage | `lib/auth.ts`, `lib/session-cookies.ts` |
-| Landing + pricing section | `app/page.tsx` |
+| Landing + pricing section | `app/page.tsx`, `components/marketing/{PricingCard,pricing-plans}.ts` |
 | Signup funnel | `app/signup/{plan,start,page,checkout,success}` |
 | Login | `app/login/page.tsx` |
 | Dashboard shell | `components/{DashboardShell,TenantPlanBanner,ApiKeyUsage}.tsx`, `hooks/useApiKeyQuota.ts` |

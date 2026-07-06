@@ -59,7 +59,6 @@ const SECURITY_ROWS = [
 const PRICING_TIERS = [
   {
     name: 'Starter VPC',
-    price: 'Contact us',
     period: '',
     highlight: false,
     features: [
@@ -75,7 +74,6 @@ const PRICING_TIERS = [
   },
   {
     name: 'Growth VPC',
-    price: 'Contact us',
     period: '',
     highlight: true,
     features: [
@@ -91,7 +89,6 @@ const PRICING_TIERS = [
   },
   {
     name: 'Scale VPC',
-    price: 'Contact us',
     period: '',
     highlight: false,
     features: [
@@ -485,7 +482,6 @@ export default function EnterprisePage() {
                   </div>
                 )}
                 <div style={{ fontSize: 13, fontWeight: 800, color: '#000', marginBottom: 8 }}>{tier.name}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#000', marginBottom: 4 }}>{tier.price}</div>
                 <div style={{ fontSize: 12, color: '#555', marginBottom: 20, fontWeight: 500 }}>Annual license</div>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {tier.features.map((f) => (
@@ -640,9 +636,6 @@ export default function EnterprisePage() {
             >
               Book demo
             </button>
-            <Link href="/signup" style={{ ...blueBtn, fontSize: 14, textDecoration: 'none' }}>
-              ZizkaDB Cloud
-            </Link>
           </div>
         </div>
       </section>
