@@ -4,8 +4,10 @@ Tests cover OTP request limits, Demo request limits, and Community board limits.
 """
 
 import asyncio
+import time
 from unittest.mock import patch, AsyncMock, MagicMock
 from datetime import datetime, timezone
+import fakeredis.aioredis
 from fastapi.testclient import TestClient
 from main import app
 from api.auth import otp_limiter, _OTP_RATE_MAX, _OTP_RATE_WINDOW_SEC
@@ -422,4 +424,42 @@ class TestRateLimiterFeatures:
         assert hits == [1000.0]
         mock_redis.zremrangebyscore.assert_called_once()
         mock_redis.zrange.assert_called_once()
+
+    @patch("services.rate_limiter.get_redis")
+    def test_redis_storage_concurrent_hits_not_collided(self, mock_get_redis):
+        """Regression test: RedisStorage.record_hit() must give each
+        concurrent call a genuinely unique ZSET member. Uses fakeredis
+        (a real ZADD implementation, not a MagicMock) because a plain mock
+        can't reproduce the collision this bug depended on -- it only
+        shows up when duplicate member strings actually collapse in a
+        real sorted set.
+
+        Regression coverage for a bug where record_hit() built the
+        member string from `threading.get_ident()`, which is constant
+        for every request on the same asyncio event loop thread. Two
+        concurrent hits at (nearly) the same timestamp therefore produced
+        an identical member string, and ZADD silently treated the second
+        call as an update to the first rather than a new entry --
+        undercounting real request volume and letting far more requests
+        through than the configured limit.
+        """
+        fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+        mock_get_redis.return_value = fake_redis
+
+        storage = RedisStorage(key_prefix="ratelimit-concurrency-test")
+
+        async def fire_concurrent_hits(n: int, timestamp: float) -> int:
+            await asyncio.gather(*(
+                storage.record_hit("concurrent-key", timestamp, 60) for _ in range(n)
+            ))
+            hits = await storage.get_hits("concurrent-key", 60)
+            return len(hits)
+
+        n_requests = 50
+        recorded = asyncio.run(fire_concurrent_hits(n_requests, time.time()))
+        assert recorded == n_requests, (
+            f"expected all {n_requests} concurrent hits to be recorded distinctly, "
+            f"got {recorded} -- record_hit()'s member string is colliding under "
+            f"concurrency again"
+        )
 
