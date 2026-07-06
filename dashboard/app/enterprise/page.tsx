@@ -1,22 +1,22 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { SiteNav } from '@/components/SiteNav'
+import { BRAND } from '@/components/brand'
 import { BrandLogo } from '@/components/BrandLogo'
 import { CalendlyBookModal } from '@/components/marketing/CalendlyBookModal'
-import { BRAND } from '@/components/brand'
+import { EnterpriseConnectForm } from '@/components/marketing/enterprise/EnterpriseConnectForm'
 import {
   M,
   container,
   h2,
   lead,
-  sectionTitle,
-  primaryBtn,
-  blueBtn,
-  ghostBtn,
   outlineBtn,
+  primaryBtn,
+  sectionTitle,
 } from '@/components/marketing/marketing-theme'
+import { MarketingPageStyles } from '@/components/marketing/MarketingPageStyles'
+import { SiteNav } from '@/components/SiteNav'
+import Link from 'next/link'
+import { useState } from 'react'
 
 const GITHUB_URL = 'https://github.com/Zizka-ai/ZizkaDB'
 
@@ -31,7 +31,7 @@ const CAPABILITY_ROWS = [
   { cap: 'Fleet ranking', api: 'Enterprise UI', oss: false, ent: true },
   { cap: 'Audit export', api: 'CSV / JSON + checksums', oss: false, ent: true },
   { cap: 'Commercial license', api: 'Named org + expiry', oss: false, ent: true },
-  { cap: 'Supported Week-1 install', api: 'Zizka + your team', oss: false, ent: true },
+  { cap: 'Supported install', api: 'Zizka + your team', oss: false, ent: true },
 ]
 
 const WHY_ROWS = [
@@ -40,7 +40,7 @@ const WHY_ROWS = [
   { item: 'Behavioral drift', detail: 'Per-agent baseline with fleet-wide ranking' },
   { item: 'Audit trail', detail: 'On-demand export with per-event checksums' },
   { item: 'Commercial license', detail: 'Named org, defined expiry, no AGPL obligations' },
-  { item: 'Integration support', detail: 'Week-1 install workshop with your dev team' },
+  { item: 'Integration support', detail: 'Install workshop with your dev team' },
   { item: 'Framework agnostic', detail: 'Python, TypeScript, MCP, REST. No framework lock-in.' },
   { item: 'Open core engine', detail: 'Same engine on GitHub, cloud, and Enterprise VPC' },
 ]
@@ -51,7 +51,7 @@ const SECURITY_ROWS = [
   { feature: 'Tenant isolation', detail: 'Single-tenant stack, no shared database with other customers' },
   { feature: 'GDPR erasure', detail: 'forget() deletes events by metadata filter on request' },
   { feature: 'Event checksums', detail: 'Per-event SHA-256 for audit integrity' },
-  { feature: 'Access revocation', detail: 'Zizka access removed at handoff on Day 7' },
+  { feature: 'Access revocation', detail: 'Zizka access removed at handoff on Day 28' },
   { feature: 'Secrets management', detail: 'License key and API keys stored in your secrets manager' },
   { feature: 'Backup and restore', detail: 'Postgres dump scripts included in integration kit' },
 ]
@@ -67,7 +67,7 @@ const PRICING_TIERS = [
       'Fleet dashboard',
       'Audit export',
       'Commercial license (1 year)',
-      'Week-1 install included',
+      'Install included',
     ],
     cta: 'Lets connect',
     href: '#contact',
@@ -82,7 +82,7 @@ const PRICING_TIERS = [
       'Fleet dashboard and ranking',
       'Audit export with checksums',
       'Commercial license (1 year)',
-      'Week-1 install + integration workshop',
+      'Install + integration workshop',
     ],
     cta: 'Lets connect',
     href: '#contact',
@@ -97,7 +97,7 @@ const PRICING_TIERS = [
       'Fleet dashboard and ranking',
       'Audit export with checksums',
       'Commercial license (1 year)',
-      'Dedicated install sprint',
+      'Dedicated Install sprint',
     ],
     cta: 'Lets connect',
     href: '#contact',
@@ -115,7 +115,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'How is this different from self-hosting from GitHub?',
-    a: 'AGPL open core versus commercial license, fleet dashboard, audit export, and a supported Week-1 install in your VPC.',
+    a: 'AGPL open core versus commercial license, fleet dashboard, audit export, and a supported install in your VPC.',
   },
   {
     q: 'How is Enterprise different from Pro or Team cloud?',
@@ -133,19 +133,11 @@ const FAQ_ITEMS = [
 
 export default function EnterprisePage() {
   const [demoOpen, setDemoOpen] = useState(false)
-  const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '', company: '', role: '', website: '',
-  })
-  const [submitted, setSubmitted] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitted(true)
-  }
 
   return (
     <div style={{ fontFamily: 'Inter, system-ui, sans-serif', color: M.ink, background: '#fff' }}>
+      <MarketingPageStyles />
       <style>{`
         @media (max-width: 768px) {
           .ent-section { padding-left: 20px !important; padding-right: 20px !important; padding-top: 52px !important; padding-bottom: 52px !important; }
@@ -165,7 +157,7 @@ export default function EnterprisePage() {
         .faq-item:last-child { border-bottom: none; }
       `}</style>
 
-      <SiteNav />
+      <SiteNav active="enterprise" suffix="Enterprise" />
 
       {/* Hero */}
       <section className="ent-section" style={{
@@ -299,7 +291,7 @@ export default function EnterprisePage() {
           <h2 style={h2}>Open core today. Enterprise VPC adds fleet operations.</h2>
           <p style={{ ...lead, marginBottom: 36 }}>
             The same ZizkaDB engine runs on GitHub (AGPL), managed cloud, and Enterprise VPC.
-            Enterprise adds commercial license, fleet UI, audit export, and supported Week-1 install.
+            Enterprise adds commercial license, fleet UI, audit export, and supported install.
           </p>
 
           <div style={{ overflowX: 'auto' as const }}>
@@ -393,7 +385,7 @@ export default function EnterprisePage() {
             marginTop: 20, padding: '14px 18px', borderRadius: 10,
             background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: 13, color: '#166534', fontWeight: 500,
           }}>
-            SSO, SAML, and automated alerting are on the roadmap. Week-1 pilots use dashboard OTP plus VPN access.
+            SSO, SAML, and automated alerting are on the roadmap. Pilots use dashboard OTP plus VPN access.
           </div>
         </div>
       </section>
@@ -402,7 +394,7 @@ export default function EnterprisePage() {
       <section className="ent-section" style={{ padding: '80px 40px', background: '#fff' }}>
         <div style={container(960)}>
           <p style={sectionTitle}>Deployment</p>
-          <h2 style={h2}>Production-ready in your cloud within one week</h2>
+          <h2 style={h2}>Production-ready in your cloud within 28 days</h2>
           <p style={{ ...lead, marginBottom: 40 }}>
             Same install package every customer. Only variables: region, sizing, DNS, secrets, and license tier.
           </p>
@@ -439,9 +431,9 @@ export default function EnterprisePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             {[
               { day: 'Day 0', label: 'Discovery and checklist' },
-              { day: 'Day 1', label: 'Stack live in staging' },
-              { day: 'Day 3', label: 'Integration workshop' },
-              { day: 'Day 7', label: 'Handoff and access revoked' },
+              { day: 'Day 7', label: 'Stack live in staging' },
+              { day: 'Day 14', label: 'Integration workshop' },
+              { day: 'Day 28', label: 'Handoff and access revoked' },
             ].map((step) => (
               <div key={step.day} style={{
                 padding: '20px', borderRadius: 12, background: M.wash,
@@ -459,18 +451,21 @@ export default function EnterprisePage() {
       <section id="pricing" className="ent-section" style={{ padding: '80px 40px', background: M.wash }}>
         <div style={container(960)}>
           <p style={sectionTitle}>Pricing</p>
-          <h2 style={h2}>Annual VPC license. All tiers include the Week-1 install.</h2>
+          <h2 style={h2}>Annual VPC license. All tiers include the install.</h2>
           <p style={{ ...lead, marginBottom: 40 }}>
             Contact us for exact pricing. All tiers are annual licenses with commercial rights included.
           </p>
 
-          <div className="ent-price-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          <div className="ent-price-grid zdb-price-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, alignItems: 'stretch' }}>
             {PRICING_TIERS.map((tier) => (
-              <div key={tier.name} style={{
+              <div key={tier.name} className="zdb-pricing-card" style={{
                 background: '#fff', borderRadius: 16, padding: '28px 24px',
                 border: tier.highlight ? `2px solid ${BRAND}` : `1px solid ${M.line}`,
                 position: 'relative',
                 boxShadow: tier.highlight ? '0 12px 40px rgba(249,115,22,0.1)' : 'none',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
               }}>
                 {tier.highlight && (
                   <div style={{
@@ -481,24 +476,32 @@ export default function EnterprisePage() {
                     MOST COMMON
                   </div>
                 )}
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#000', marginBottom: 8 }}>{tier.name}</div>
-                <div style={{ fontSize: 12, color: '#555', marginBottom: 20, fontWeight: 500 }}>Annual license</div>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="zdb-pricing-card-header">
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#000', marginBottom: 8 }}>{tier.name}</div>
+                  <div style={{ fontSize: 12, color: '#555', marginBottom: 20, fontWeight: 500 }}>Annual license</div>
+                </div>
+                <ul className="zdb-pricing-card-body" style={{
+                  listStyle: 'none', padding: 0, margin: 0,
+                  display: 'flex', flexDirection: 'column', gap: 10, flex: 1,
+                }}>
                   {tier.features.map((f) => (
                     <li key={f} style={{ fontSize: 13.5, color: '#000', display: 'flex', gap: 8, fontWeight: 500 }}>
-                      <span style={{ color: '#16a34a', fontWeight: 800 }}>✓</span> {f}
+                      <span style={{ color: '#16a34a', fontWeight: 800, flexShrink: 0 }}>✓</span> {f}
                     </li>
                   ))}
                 </ul>
-                <a href={tier.href} style={{
-                  display: 'block', textAlign: 'center' as const, padding: '11px', borderRadius: 10,
-                  textDecoration: 'none', fontWeight: 600, fontSize: 14,
-                  background: tier.highlight ? BRAND : '#fff',
-                  color: tier.highlight ? '#fff' : '#000',
-                  border: tier.highlight ? 'none' : `1px solid ${M.line}`,
-                }}>
-                  {tier.cta}
-                </a>
+                <div className="zdb-pricing-card-footer" style={{ marginTop: 'auto', paddingTop: 20 }}>
+                  <a href={tier.href} style={{
+                    display: 'block', textAlign: 'center' as const, padding: '11px', borderRadius: 10,
+                    textDecoration: 'none', fontWeight: 600, fontSize: 14,
+                    background: tier.highlight ? BRAND : '#fff',
+                    color: tier.highlight ? '#fff' : '#000',
+                    border: tier.highlight ? 'none' : `1px solid ${M.line}`,
+                  }}>
+                    {tier.cta}
+                  </a>
+                  <div style={{ minHeight: 40, marginTop: 8 }} aria-hidden="true" />
+                </div>
               </div>
             ))}
           </div>
@@ -544,95 +547,24 @@ export default function EnterprisePage() {
       </section>
 
       {/* Contact form */}
-      <section id="contact" className="ent-section" style={{ padding: '80px 40px', background: M.wash }}>
+      <section id="contact" className="ent-section" style={{ padding: '80px 40px', background: M.wash, scrollMarginTop: 72 }}>
         <div style={container(600)}>
           <p style={sectionTitle}>Get started</p>
           <h2 style={h2}>Ready to deploy in your VPC?</h2>
           <p style={{ ...lead, marginBottom: 36 }}>
-            Tell us about your agent fleet. We will map a Week-1 path or point you to managed cloud.
+            Tell us about your agent fleet. We will map a 4 week install path or point you to managed cloud.
           </p>
 
-          {submitted ? (
-            <div style={{
-              padding: '32px', borderRadius: 16, background: '#f0fdf4',
-              border: '1px solid #bbf7d0', textAlign: 'center' as const,
-            }}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>✓</div>
-              <p style={{ fontSize: 16, fontWeight: 700, color: '#166534', margin: '0 0 8px' }}>
-                Message received
-              </p>
-              <p style={{ fontSize: 14, color: '#166534', margin: 0, fontWeight: 500 }}>
-                We will be in touch within one business day.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: '#000', display: 'block', marginBottom: 6 }}>
-                    First name
-                  </label>
-                  <input
-                    required
-                    value={form.firstName}
-                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                    style={{
-                      width: '100%', padding: '10px 12px', borderRadius: 8,
-                      border: `1px solid ${M.line}`, fontSize: 14, outline: 'none',
-                      boxSizing: 'border-box' as const,
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: '#000', display: 'block', marginBottom: 6 }}>
-                    Last name
-                  </label>
-                  <input
-                    required
-                    value={form.lastName}
-                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                    style={{
-                      width: '100%', padding: '10px 12px', borderRadius: 8,
-                      border: `1px solid ${M.line}`, fontSize: 14, outline: 'none',
-                      boxSizing: 'border-box' as const,
-                    }}
-                  />
-                </div>
-              </div>
-              {[
-                { label: 'Work email', key: 'email', type: 'email' },
-                { label: 'Company', key: 'company', type: 'text' },
-                { label: 'Role / title (optional)', key: 'role', type: 'text' },
-                { label: 'Company website', key: 'website', type: 'url' },
-              ].map(({ label, key, type }) => (
-                <div key={key}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: '#000', display: 'block', marginBottom: 6 }}>
-                    {label}
-                  </label>
-                  <input
-                    type={type}
-                    required={key !== 'role'}
-                    value={(form as Record<string, string>)[key]}
-                    onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                    style={{
-                      width: '100%', padding: '10px 12px', borderRadius: 8,
-                      border: `1px solid ${M.line}`, fontSize: 14, outline: 'none',
-                      boxSizing: 'border-box' as const,
-                    }}
-                  />
-                </div>
-              ))}
-              <button type="submit" style={{ ...primaryBtn, cursor: 'pointer', marginTop: 4 }}>
-                Lets connect
-              </button>
-            </form>
-          )}
+          <EnterpriseConnectForm />
 
-          <div style={{ display: 'flex', gap: 12, marginTop: 20, justifyContent: 'center', flexWrap: 'wrap' as const }}>
+          <div className="ent-hero-btns" style={{
+            display: 'flex', gap: 12, marginTop: 20,
+            justifyContent: 'center', flexWrap: 'wrap',
+          }}>
             <button
               type="button"
               onClick={() => setDemoOpen(true)}
-              style={{ ...outlineBtn, cursor: 'pointer', fontSize: 14 }}
+              style={{ ...outlineBtn, cursor: 'pointer' }}
             >
               Book demo
             </button>

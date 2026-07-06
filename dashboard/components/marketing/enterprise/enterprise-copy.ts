@@ -62,7 +62,7 @@ export const COPY = {
     sectionTitle: 'Capabilities',
     h2: 'Open core today. Enterprise VPC adds fleet operations.',
     lead:
-      'The same ZizkaDB engine runs on GitHub (AGPL), managed cloud, and Enterprise VPC. Enterprise adds commercial license, fleet UI, audit export, and supported Week-1 install.',
+      'The same ZizkaDB engine runs on GitHub (AGPL), managed cloud, and Enterprise VPC. Enterprise adds commercial license, fleet UI, audit export, and supported install.',
     openCore: {
       title: 'Open core — available today',
       subtitle: 'Works on self-host and managed cloud (db.zizka.ai)',
@@ -83,7 +83,7 @@ export const COPY = {
         'Fleet ranking',
         'Audit export (CSV/JSON + checksums)',
         'Commercial license',
-        'Supported Week-1 install',
+        'Supported install',
       ],
     },
     footnote:
@@ -113,7 +113,7 @@ export const COPY = {
         'Single-tenant in your cloud',
         'Fleet dashboard',
         'Audit export',
-        'Week-1 install + integration workshop',
+        'Install + integration workshop',
       ],
       cta: "Let's connect",
     },
@@ -131,22 +131,22 @@ export const COPY = {
         title: 'Your CI/CD',
         body: 'You merge and redeploy through your pipeline. Optional Launch Sprint can help instrument one or two services via pull requests.',
       },
-      {
+    {
         title: 'Private network',
         body: 'Agent subnets reach ZizkaDB via same VPC, VPC peering, or PrivateLink.',
       },
     ],
     timeline: [
       { day: 'Day 0', label: 'Discovery + checklist' },
-      { day: 'Day 1', label: 'Stack live in staging' },
-      { day: 'Day 3', label: 'Integration workshop' },
-      { day: 'Day 7', label: 'Handoff + access revoked' },
+      { day: 'Day 7', label: 'Stack live in staging' },
+      { day: 'Day 14', label: 'Integration workshop' },
+      { day: 'Day 28', label: 'Handoff + access revoked' },
     ],
     trustLink: 'Read deployment details',
   },
   platform: {
     sectionTitle: 'Platform',
-    h2: 'Everything in the Week-1 package',
+    h2: 'Everything in the install package',
     lead: 'Private images, license key, full stack, and integration kit — delivered in your VPC.',
     features: [
       {
@@ -175,7 +175,7 @@ export const COPY = {
       },
     ],
     footnote:
-      'SSO, SAML, and automated alerting are on the roadmap. Week-1 pilots use dashboard OTP plus VPN access.',
+      'SSO, SAML, and automated alerting are on the roadmap. Pilots use dashboard OTP plus VPN access.',
   },
   faq: {
     sectionTitle: 'FAQ',
@@ -191,7 +191,7 @@ export const COPY = {
       },
       {
         q: 'How is this different from self-hosting from GitHub?',
-        a: 'AGPL open core vs commercial license, enterprise features, fleet dashboard, audit export, and a supported Week-1 install.',
+        a: 'AGPL open core vs commercial license, enterprise features, fleet dashboard, audit export, and a supported install.',
       },
       {
         q: 'How is Enterprise different from Pro or Team cloud?',
@@ -215,7 +215,7 @@ export const COPY = {
   },
   footerCta: {
     h2: 'Ready to deploy in your VPC?',
-    subhead: 'Tell us about your agent fleet. We will map a Week-1 path or point you to managed cloud.',
+    subhead: 'Tell us about your agent fleet. We will map a 4 week install path or point you to managed cloud.',
     demoCta: 'Book demo',
     cloudCta: 'ZizkaDB Cloud →',
   },

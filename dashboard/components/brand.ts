@@ -16,6 +16,21 @@ export const brandLogoStyle = {
   justifyContent: 'center' as const,
 }
 
+export const enterpriseNavLinkStyle = (active: boolean) => ({
+  fontSize: 13,
+  fontWeight: 700,
+  letterSpacing: 0.25,
+  color: active ? '#fff' : '#9a3412',
+  textDecoration: 'none',
+  padding: '7px 14px',
+  borderRadius: 8,
+  border: `1px solid ${active ? BRAND : BRAND_PALE}`,
+  background: active
+    ? `linear-gradient(135deg, ${BRAND} 0%, ${BRAND_DARK} 100%)`
+    : `linear-gradient(135deg, #fff 0%, ${BRAND_PALE}40 100%)`,
+  boxShadow: active ? '0 2px 10px rgba(249,115,22,0.3)' : '0 1px 4px rgba(249,115,22,0.08)',
+} as const)
+
 export const brandCtaStyle = {
   fontSize: 14,
   fontWeight: 600,

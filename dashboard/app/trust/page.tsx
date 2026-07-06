@@ -377,8 +377,8 @@ chain = await db.why(tool.event_id)`}</Code>
               <tbody>
                 {[
                   ['Self-hosted', 'Free (AGPL core)', 'Your VPC / machine'],
-                  ['Managed Pro', '€39/mo', 'Zizka cloud'],
-                  ['Managed Team', '€99/mo', 'Zizka cloud + higher limits'],
+                  ['Managed Pro', '€29/mo', 'Zizka cloud'],
+                  ['Managed Team', '€69/mo', 'Zizka cloud + higher limits'],
                   ['Enterprise', 'Contact sales', 'Customer VPC (Model A)'],
                 ].map(([m, c, d]) => (
                   <tr key={m}><td style={td}>{m}</td><td style={td}>{c}</td><td style={td}>{d}</td></tr>
@@ -458,8 +458,8 @@ chain = await db.why(tool.event_id)`}</Code>
               <tbody>
                 {[
                   ['Self-hosted', 'Unlimited (your hardware)', 'Operator-defined'],
-                  ['Pro (€39/mo)', '100M', '90 days'],
-                  ['Team (€99/mo)', 'Up to 1B (plan cap)', '1 year'],
+                  ['Pro (€29/mo)', '50k', '90 days'],
+                  ['Team (€69/mo)', '100k', '1 year'],
                   ['Enterprise', 'Contact sales', 'Custom (VPC)'],
                 ].map(([plan, ev, ret]) => (
                   <tr key={plan}><td style={td}>{plan}</td><td style={td}>{ev}</td><td style={td}>{ret}</td></tr>

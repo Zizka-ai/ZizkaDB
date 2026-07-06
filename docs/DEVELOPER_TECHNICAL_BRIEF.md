@@ -288,8 +288,8 @@ Stack: postgres (pgvector), qdrant, redis, api. Dashboard optional (`npm run dev
 | Plan | Price | Highlights |
 |------|-------|------------|
 | **Self-Hosted** | Free forever | Full feature set, your infra, Docker, community support |
-| **Pro** | €39/mo | 100M events, 90-day retention, 3 projects, email support, **1-month free trial**, no credit card to start |
-| **Team** | €99/mo | 1B events, 1-year retention, 10 seats, priority support, 1-month free trial |
+| **Pro** | €29/mo | 50k events/mo, 2 projects, 90-day retention, email support, **30-day free trial**, no credit card to start |
+| **Team** | €69/mo | 100k events/mo, 5 projects, 1-year retention, priority support, 30-day free trial |
 
 **Line for developers:** “Free if you self-host; paid if you don’t want to run Postgres/Qdrant yourself.”
 

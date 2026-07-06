@@ -142,3 +142,27 @@ export const outlineBtn = {
   fontSize: 14,
   border: `1px solid ${M.line}`,
 }
+
+export const pricingCardShell = {
+  background: '#fff',
+  borderRadius: 16,
+  padding: '28px 24px',
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+} as const
+
+export function pricingCtaStyle(filled: boolean) {
+  return {
+    padding: '11px 16px',
+    borderRadius: 10,
+    textDecoration: 'none',
+    fontWeight: 600,
+    fontSize: 14,
+    background: filled ? BRAND : '#fff',
+    color: filled ? '#fff' : M.ink,
+    border: filled ? 'none' : `1px solid ${M.line}`,
+    transition: 'opacity 0.15s ease, box-shadow 0.15s ease',
+    boxShadow: filled ? '0 4px 14px rgba(249,115,22,0.25)' : 'none',
+  } as const
+}

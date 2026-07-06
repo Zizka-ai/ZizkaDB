@@ -15,6 +15,19 @@ export function MarketingPageStyles() {
         outline: 2px solid #f97316;
         outline-offset: 2px;
       }
+      .zdb-price-grid {
+        align-items: stretch !important;
+      }
+      .zdb-pricing-card {
+        height: 100%;
+      }
+      .zdb-pricing-card-footer a:hover {
+        opacity: 0.92;
+      }
+      .zdb-pricing-card-footer a:focus-visible {
+        outline: 2px solid #f97316;
+        outline-offset: 2px;
+      }
       @media (max-width: 1024px) {
         .zdb-connect-grid { grid-template-columns: 1fr !important; }
         .zdb-feature-grid { grid-template-columns: repeat(2, 1fr) !important; }

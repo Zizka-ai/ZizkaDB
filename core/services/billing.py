@@ -15,18 +15,18 @@ PLAN_CATALOG: list[dict[str, Any]] = [
     {
         "id": "pro",
         "name": "Pro",
-        "price": "€39",
+        "price": "€29",
         "price_sub": "/ month",
         "highlight": True,
-        "features": ["100M events", "90-day retention", "3 active API keys", "Email support"],
+        "features": ["50k events / month", "2 projects", "3 active API keys", "30-day free trial", "Email support"],
     },
     {
         "id": "team",
         "name": "Team",
-        "price": "€99",
+        "price": "€69",
         "price_sub": "/ month",
         "highlight": False,
-        "features": ["Up to 1B events/mo", "1-year retention", "10 active API keys", "Priority support"],
+        "features": ["100k events / month", "5 projects", "10 active API keys", "30-day free trial", "Priority support"],
     },
 ]
 

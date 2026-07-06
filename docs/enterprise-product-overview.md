@@ -4,7 +4,7 @@ Internal reference for the `/enterprise` marketing page. **This is marketing + l
 
 ## What we sell
 
-**Model A — Licensed VPC deployment:** ZizkaDB Core + Postgres + Qdrant + Redis run in the customer's cloud (single-tenant). Commercial license replaces AGPL obligations for internal use. Week-1 install package includes supported docker-compose, env template, and onboarding call.
+**Model A — Licensed VPC deployment:** ZizkaDB Core + Postgres + Qdrant + Redis run in the customer's cloud (single-tenant). Commercial license replaces AGPL obligations for internal use. 28-day install package includes supported docker-compose, env template, and onboarding call.
 
 ## What exists today (honest)
 

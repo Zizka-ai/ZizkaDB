@@ -568,7 +568,7 @@ The logic that drives every dashboard gate and funnel branch. Routers are thin; 
 
 **No payment provider.** Billing endpoints exist for plan persistence and informational status only.
 
-**Plans** (`PLAN_CATALOG`, `billing.py`): `pro` = €39/mo, `team` = €99/mo. Trial length = `TRIAL_DAYS` env (default **30**).
+**Plans** (`PLAN_CATALOG`, `billing.py`): `pro` = €29/mo (50k events/mo, 2 projects), `team` = €69/mo (100k events/mo, 5 projects). Trial length = `TRIAL_DAYS` env (default **30**).
 
 **Access:** `billing_status_payload` always returns `has_access: true`, `enforced: false`, `requires_plan_selection: false`, `requires_checkout: false`. Used by `TenantPlanBanner` and verify-otp response for compatibility.
 
@@ -742,7 +742,7 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 - **Client Component**, static marketing. Sections: `SiteNav` → Hero (+ `CalendlyBookModal`, `IntegrationStrip`) → `ThreeWaysConnectSection` → `ConversationCompare` → engineering cards → `TrustBar` → **Pricing grid** (Self-Hosted / Pro / Team / Enterprise via `PricingCard` + `LANDING_PRICING_PLANS`) → `CompetitorCompare` → final CTA → footer.
 - **State:** `copied` (which copy button, 2s reset) and `demoOpen` (Calendly modal). **No `useEffect`, no API calls.**
 - **CTAs / nav:** `/signup` (hero, cards, final, footer), `/signup?plan=pro`, `/signup?plan=team`, `/enterprise#contact` (Enterprise pricing card), `/docs`, `/trust`, `/login`, `#pricing`, GitHub. "Book demo" opens `CalendlyBookModal` (`demoOpen`); "Copy MCP config" copies `MCP_CONFIG` JSON.
-- **Rules:** `plan.highlight` → "POPULAR" badge; `ctaPrimary` → filled orange CTA (Pro, Enterprise). Pricing grid: 4-col desktop, 2-col tablet (≤1024px), 1-col mobile (≤768px) via `MarketingPageStyles`. Footer external `http` links → `<a>`, internal → `<Link>`. No honeypot here (demo capture is the Calendly modal).
+- **Rules:** `plan.highlight` → "POPULAR" badge; `ctaPrimary` → filled orange CTA (Pro, Enterprise). **Pro** €29/mo (50k events, 2 projects); **Team** €69/mo (100k events, 5 projects); both include 30-day free trial. Enterprise card: **Annual License / 1 Year**, four VPC features (Install + integration workshop; no audit/commercial bullets on landing). Pricing grid: 4-col desktop, 2-col tablet (≤1024px), 1-col mobile (≤768px); cards use flex column so CTAs align at bottom. `SiteNav` Enterprise link uses premium outlined style (`enterpriseNavLinkStyle` in `brand.ts`).
 
 ### 20.2 Community — `app/community/page.tsx` + `app/community/[id]/page.tsx`
 
@@ -771,11 +771,10 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 
 ### 20.6 Enterprise marketing — `app/enterprise/page.tsx`
 
-- **Server shell** with SEO `metadata`; client body in `EnterprisePageClient`.
-- **10 sections** (order): Hero → What is → Fleet (drift) → Capabilities → Tier compare → VPC deploy → Platform → FAQ → Footer CTA (`#connect`) → Resources strip.
-- **Copy:** single source `components/marketing/enterprise/enterprise-copy.ts` — no false SOC 2 / SSO-as-shipped / hallucination-detection claims.
-- **Lead capture:** `EnterpriseConnectForm` → `submitDemoRequest` (`lib/demo.ts`) with `source: 'enterprise'`, optional `position`; honeypot `botcheck`.
-- **Shared marketing shell:** `SiteNav active="enterprise"`, `MarketingPageStyles`, `MarketingFooter`, `CalendlyBookModal` for Book demo.
+- **Client Component** monolithic page (706 lines); modular `EnterprisePageClient` + section components exist but are not the live route.
+- **Sections** (order): Hero → What is → Fleet → Capabilities → Why enterprises choose → Security → Deployment (28-day timeline) → Pricing → FAQ → **Contact form** (`#contact`) → Technical resources → footer.
+- **Lead capture:** `#contact` section renders `EnterpriseConnectForm` → `submitDemoRequest` (`lib/demo.ts`) → `POST /v1/demo-requests` with `source: 'enterprise'`, optional `position`; honeypot `botcheck`. Submissions appear in admin **Demo requests** tab (Role + Source columns).
+- **Shell:** `SiteNav active="enterprise"`, `MarketingPageStyles` (responsive form/pricing grids), `CalendlyBookModal` from hero and contact section.
 - **Cross-links:** landing `#pricing` Enterprise card → `/enterprise#contact`; trust `#deployment`, `#limits`, `#licensing` → `/enterprise`.
 - **QA:** `docs/enterprise-page-qa.md` · agent rule `.cursor/rules/enterprise-page-knowledge-base.mdc`.
 

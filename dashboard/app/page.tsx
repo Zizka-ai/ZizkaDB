@@ -264,7 +264,7 @@ export default function LandingPage() {
           <h2 style={h2}>Start free. Scale when you need to.</h2>
           <p style={lead}>Full monitoring and session replay on every plan.</p>
 
-          <div className="zdb-price-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+          <div className="zdb-price-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20, alignItems: 'stretch' }}>
             {LANDING_PRICING_PLANS.map(plan => (
               <PricingCard key={plan.name} plan={plan} />
             ))}

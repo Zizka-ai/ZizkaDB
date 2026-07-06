@@ -20,15 +20,15 @@ rg -i 'SOC 2|HIPAA|SAML|SCIM|PagerDuty|Slack alert|SLA guarantee|detects halluci
 
 ## Manual smoke (~5 min)
 
-- [ ] `/enterprise` — all sections render in order: Hero → What is → Fleet → Capabilities → Tier compare → VPC deploy → Platform → FAQ → Connect form → Resources
+- [ ] `/enterprise` — sections in order: Hero → What is → Fleet → Capabilities → Why enterprises choose → Security → Deployment → Pricing → FAQ → Contact form (`#contact`) → Technical resources → footer
 - [ ] Nav highlights **Enterprise** on desktop and mobile
-- [ ] **Let's connect** scrolls to `#connect` and focuses first name field
+- [ ] **Let's connect** (hero) scrolls to `#contact`; first name field is focusable (`id="ent-first"`)
 - [ ] Submit connect form → **201**; admin demo requests tab shows `source=enterprise` and role when filled
 - [ ] Invalid `source` rejected server-side (422) — covered by pytest
 - [ ] **Book demo** opens Calendly modal; **ESC** closes
 - [ ] Mobile **375px**: nav CTA row visible, no horizontal overflow
 - [ ] All `TECHNICAL_LINKS` in resources strip resolve (no 404)
-- [ ] Trust `#limits` shows Enterprise row; landing `#pricing` links to `/enterprise`
+- [ ] Trust `#limits` shows Enterprise row; landing `#pricing` Enterprise card links to `/enterprise#contact`
 - [ ] `/trust`, `/docs`, `/community` show shared marketing footer with Enterprise link
 
 ## Rate limiting note

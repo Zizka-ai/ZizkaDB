@@ -10,9 +10,11 @@ alwaysApply: false
 
 ## Page composition (order)
 
-Hero → What ZizkaDB is → Multi-agent fleets (drift bands) → Capabilities (open core vs VPC) → Tier compare → VPC deploy → Platform → FAQ → Footer CTA (`#connect`) → Resources strip.
+Live route (`app/enterprise/page.tsx`): Hero → What is → Fleet → Capabilities → Why enterprises choose → Security → Deployment → Pricing → FAQ → Contact form (`#contact`) → Technical resources → footer.
 
-Shared shell: `SiteNav active="enterprise"`, `MarketingPageStyles`, `MarketingFooter`, `CalendlyBookModal`.
+Modular shell (`EnterprisePageClient`, not live): Hero → What is → Fleet → Capabilities → Tier compare → VPC deploy → Platform → FAQ → Footer CTA (`#connect`) → Resources strip.
+
+Shared shell: `SiteNav active="enterprise"`, `MarketingPageStyles`, `CalendlyBookModal`.
 
 ## Lead capture
 
@@ -27,12 +29,12 @@ Shared shell: `SiteNav active="enterprise"`, `MarketingPageStyles`, `MarketingFo
 
 SOC 2, HIPAA, SSO/SAML/SCIM **as shipped**, Slack/PagerDuty alerts, SLA guarantees, hallucination **detection** (negation OK).
 
-**Must stay honest:** behavioral drift (not hallucination detection), VPC deployment (Model A), commercial license, Week-1 install package, fleet UI + audit export **in customer VPC** (not on public cloud today). SSO/SAML only as **roadmap** footnote in platform section.
+**Must stay honest:** behavioral drift (not hallucination detection), VPC deployment (Model A), commercial license, install package, fleet UI + audit export **in customer VPC** (not on public cloud today). SSO/SAML only as **roadmap** footnote in platform section.
 
 ## Cross-page consistency
 
 - Trust `#deployment`, `#limits`, `#licensing`: Enterprise row + links to `/enterprise`
-- Landing `#pricing`: fourth **Enterprise** card (`Growth VPC` / Let's Connect → `/enterprise#contact`); config in `pricing-plans.ts`
+- Landing `#pricing`: fourth **Enterprise** card (`Annual License` / `1 Year`, Let's Connect → `/enterprise#contact`); config in `pricing-plans.ts`
 - `MarketingFooter` includes Enterprise on landing, trust, enterprise (docs/community when wired)
 
 ## Before merge
