@@ -1,5 +1,5 @@
-import Link from 'next/link'
 import { BRAND } from '@/components/brand'
+import Link from 'next/link'
 import { M, pricingCardShell, pricingCtaStyle } from './marketing-theme'
 import type { PricingPlan } from './pricing-plans'
 
