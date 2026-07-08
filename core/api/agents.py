@@ -692,12 +692,12 @@ async def agent_behavior_change(
         win_end   = now
     else:
         if not from_ts or not to_ts:
-            raise HTTPException(status_code=400, detail="from_ts and to_ts are required for custom window")
+            raise bad_request(detail="from_ts and to_ts are required for custom window")
         try:
             win_start = datetime.fromisoformat(from_ts.replace("Z", "+00:00")).replace(tzinfo=None)
             win_end   = datetime.fromisoformat(to_ts.replace("Z", "+00:00")).replace(tzinfo=None)
         except ValueError:
-            raise HTTPException(status_code=400, detail="from_ts / to_ts must be ISO 8601 timestamps")
+            raise bad_request(detail="from_ts / to_ts must be ISO 8601 timestamps")
 
     baseline_count = await pool.fetchval(
         "SELECT COUNT(*) FROM events WHERE tenant_id = $1 AND agent_id = $2 AND timestamp < $3",
