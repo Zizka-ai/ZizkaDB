@@ -10,9 +10,7 @@ alwaysApply: false
 
 ## Page composition (order)
 
-Live route (`app/enterprise/page.tsx`): Hero → What is → Fleet → Capabilities → Why enterprises choose → Security → Deployment → Pricing → FAQ → Contact form (`#contact`) → Technical resources → footer.
-
-Modular shell (`EnterprisePageClient`, not live): Hero → What is → Fleet → Capabilities → Tier compare → VPC deploy → Platform → FAQ → Footer CTA (`#connect`) → Resources strip.
+Live route (`app/enterprise/page.tsx`): Hero → What is → Fleet → Capabilities → Why enterprises choose → Security → Deployment → Pricing → FAQ → Contact form (`#contact`) → Technical resources → footer. This is a single monolithic client component — there is no componentized alternative build; a previously-unused modular shell (`EnterprisePageClient` + 9 section components) was confirmed dead (zero live referrers) and deleted 2026-07-08. Do not resurrect those files from history as a starting point — if a componentized rebuild is wanted later, start fresh against the copy/QA rules below, since the live page has since diverged from what that shell had.
 
 Shared shell: `SiteNav active="enterprise"`, `MarketingPageStyles`, `CalendlyBookModal`.
 

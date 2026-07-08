@@ -2,22 +2,13 @@
 
 import { ApiKeyUsage } from '@/components/ApiKeyUsage'
 import { useApiKeyQuota } from '@/hooks/useApiKeyQuota'
-import { createApiKey, deleteManagedAccount, getAccountOptions, getApiKeys, getEmbeddingCatalog, getEmbeddingSettings, grantRetentionTrial, revokeApiKey, sendTestEvent, updateEmbeddingSettings, type AccountOptions } from '@/lib/api'
+import { createApiKey, deleteManagedAccount, getAccountOptions, getApiKeys, getEmbeddingCatalog, getEmbeddingSettings, grantRetentionTrial, revokeApiKey, sendTestEvent, updateEmbeddingSettings, type AccountOptions, type ApiKey } from '@/lib/api'
 import { clearToken, requireAuth } from '@/lib/auth'
 import { clearSignupSession } from '@/lib/signup-funnel'
 import { AlertTriangle, Check, Copy, Key, Plus, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-
-interface ApiKey {
-  key_id: string
-  prefix: string
-  name: string | null
-  agent_id: string | null
-  created_at: string
-  last_used: string | null
-}
 
 export default function SettingsPage() {
   const [keys, setKeys] = useState<ApiKey[]>([])

@@ -2,7 +2,7 @@
 
 > Single source of truth for the Dashboard module. Reverse-engineered directly from the codebase.
 >
-> **Last verified:** 2026-07-02 · **No payment provider:** signup is plan → consent → OTP → `/dashboard` with a 30-day trial. Legacy `/signup/checkout` redirects to `/signup/plan`; `/signup/success` redirects to `/dashboard`. API key limits: Self-Hosted 1 / Pro 3 / Team 10 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`).
+> **Last verified:** 2026-07-08 · **No payment provider:** signup is plan → consent → OTP → `/dashboard` with a 30-day trial. Legacy `/signup/checkout` redirects to `/signup/plan`; `/signup/success` redirects to `/dashboard`. API key limits: Self-Hosted 1 / Pro 3 / Team 10 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`).
 >
 > **Important finding:** There is **no "Pricing Modal"** in this codebase. Pricing is a static section on the landing page (`app/page.tsx`, `#pricing`). The only actual modal is the **Calendly "Book demo" modal** (`components/marketing/CalendlyBookModal.tsx`).
 >
@@ -38,7 +38,7 @@
 
 ## 1. Dashboard Architecture
 
-**Framework:** Next.js 14.2.3 App Router, React 18, TypeScript. Styling is a mix of **Tailwind** (dashboard app, `className`) and **inline styles** (marketing/landing + signup). Charts via `recharts`, icons via `lucide-react`, JWT decode via `jose`.
+**Framework:** Next.js 14.2.35 App Router (bumped from 14.2.3 2026-07-08 to clear a critical middleware auth-bypass advisory; `npm audit` still reports 4 high/1 moderate advisories on 14.2.35 that only a Next.js 16.x major bump would clear — not taken, tracked as a follow-up, not a regression), React 18, TypeScript. Styling is a mix of **Tailwind** (dashboard app, `className`) and **inline styles** (marketing/landing + signup). Charts via `recharts`, icons via `lucide-react`, JWT decode via `jose`.
 
 **No global state library.** No Redux/Zustand/React Query/SWR/Context. State is:
 - **Local** via `useState`/`useEffect` per page.
@@ -368,7 +368,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 
 ## 12.5 Coding Conventions & Practices
 
-- **TypeScript:** `strict: true`, `isolatedModules`, `skipLibCheck`, `noEmit` (`tsconfig.json`). Import via the `@/*` alias (root-relative). Prefer explicit return types on `lib/` functions; `apiFetch` currently returns untyped JSON — annotate new endpoints.
+- **TypeScript:** `strict: true`, `isolatedModules`, `skipLibCheck`, `noEmit` (`tsconfig.json`). Import via the `@/*` alias (root-relative). Prefer explicit return types on `lib/` functions; `apiFetch<T>()` is generic and every endpoint has an explicit interface (see §13 item 9) — annotate new endpoints the same way rather than letting them fall back to the default `any`.
 - **Linting/formatting:** ESLint `next` + `next/core-web-vitals` only (`package.json`). **No Prettier** — match surrounding style manually (2-space indent, single quotes, no semicolons in TS files).
 - **Components:** all interactive pages are Client Components (`'use client'`). PascalCase component files; route files are `page.tsx`; shared logic lives in `lib/`.
 - **Data fetching:** always via `lib/api.ts` (`apiFetch` injects auth + normalizes errors). No React Query/SWR — manual `useEffect` + `useState`.
@@ -390,7 +390,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 6. **No React Query/SWR** → manual polling + no dedupe/caching; billing status fetched on mount by `TenantPlanBanner`.
 7. **Inconsistent styling systems** (Tailwind vs inline).
 8. **No frontend tests** — no `*.test.tsx`, no test runner, no `test` script (`package.json`); CI only runs `lint` + `build`. Highest-value first tests: `postAuthRedirect`, signup funnel guards, API key quota hook.
-9. **`apiFetch` is effectively untyped** (returns `any` from `res.json()`), so agents/events endpoints lose type safety despite `strict: true` → add response interfaces + a generic `apiFetch<T>()`.
+9. ~~**`apiFetch` is effectively untyped**~~ — **done 2026-07-08:** `apiFetch<T>()` is now generic (defaults to `any` only where a call site's shape is intentionally left flexible, e.g. `searchEvents`'s dual array/`{results}` response) and every endpoint has an explicit interface (`Agent`, `ApiKey`, `AgentEvent`, `AgentStats`, `WhyChain`, `AgentSession`, `AgentBaseline`, the admin analytics types, etc. — see `lib/api.ts`). Compile-time only; no runtime behavior changed. **Follow-up done the same day:** the page-level local duplicates of these types in `app/dashboard/page.tsx` (`Agent`), `app/dashboard/settings/page.tsx` + `components/AgentApiKeys.tsx` (`ApiKey`/`AgentApiKey`), and all 9 in `app/admin/page.tsx` were removed and replaced with `import { type X } from '@/lib/api'` — a code-review pass flagged these as hand-copied duplicates that would silently drift, and each was confirmed structurally identical before consolidating (verified via a clean `npm run build` with unchanged route/bundle sizes). **Deliberately left alone:** `app/dashboard/agents/[id]/page.tsx`'s local `Event`/`Session`/`Stats`/`WhyChain`/`BaselineWindow`/`BaselineChange`/`BaselineResponse` cluster (→ `AgentEvent`/`AgentSession`/`AgentStats`/`WhyChain`/`AgentBaseline` in `lib/api.ts`) is the same kind of duplicate but sits in the single largest, most stateful file in the app (1,361 lines) where a bare `Event` rename touches many call sites and risks colliding with the global DOM `Event` type — treat as a separate, explicitly-approved change, not a drive-by.
 
 ---
 
@@ -427,7 +427,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 - Redirect: `/api-explorer` and `/api-explorer/*` → `/swagger` (temporary).
 - Rewrite: `/swagger`, `/swagger/*`, `/openapi.json` → `${API_REWRITE_TARGET}/...`.
 
-There is **no `.env.example`** in the repo — env vars are documented only here.
+A root-level `.env.example` exists (repo root, not `dashboard/`) and documents the client-safe vars above (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_DEV_MODE`) alongside backend env vars; this table remains the more complete reference for dashboard-specific behavior.
 
 ---
 
@@ -435,7 +435,7 @@ There is **no `.env.example`** in the repo — env vars are documented only here
 
 **Admin (`app/admin/`):** `layout.tsx` + `page.tsx` only. Separate auth via the `zizkadb_admin_token` cookie/localStorage (`lib/auth.ts` admin helpers; `adminRequestOtp`/`adminVerifyOtp` in `lib/api.ts`). Middleware permits the bare `/admin` (OTP login UI) but redirects `/admin/*` subpaths to `/admin` without a token. Backend locks admin to a single founder email.
 
-**Reusable components (`components/`, 15 total):**
+**Reusable components (`components/`, 21 files, last swept for dead code 2026-07-08):**
 
 | Component | Role |
 |-----------|------|
@@ -445,7 +445,8 @@ There is **no `.env.example`** in the repo — env vars are documented only here
 | `ConnectionStatus` (+ `GettingStartedChecklist`) | `/health` poll + empty-state onboarding |
 | `AgentApiKeys` | key create / reveal-once / revoke (uses `useApiKeyQuota`) |
 | `SiteNav`, `BrandLogo`, `brand.ts` | marketing nav + branding tokens |
-| `marketing/*` | `CalendlyBookModal`, `CompetitorCompare`, `ConversationCompare`, `PricingCard`, `pricing-plans.ts`, `ThreeWaysConnectSection`, `TrustBar`, `IntegrationStrip`, `ProductPreview`, `SessionReplayDemo` |
+| `marketing/*` | `CalendlyBookModal`, `CompetitorCompare`, `ConversationCompare`, `PricingCard`, `pricing-plans.ts`, `ThreeWaysConnectSection`, `TrustBar`, `IntegrationStrip`, `MarketingFooter`, `MarketingPageStyles`, `marketing-theme.ts` |
+| `marketing/enterprise/*` | `EnterpriseConnectForm` (lead-capture form, live on `/enterprise`), `enterprise-copy.ts` (copy source) |
 
 **Key types (`lib/api.ts`) — the funnel branches on these:**
 - `BillingStatus` — `enforced`, `has_access`, `requires_plan_selection`, `requires_checkout`, `subscription_status`, `trial_ends_at`, `plan`, `trial_days?` (always access-granted today; fields kept for compatibility).
@@ -775,7 +776,7 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 
 ### 20.6 Enterprise marketing — `app/enterprise/page.tsx`
 
-- **Client Component** monolithic page (706 lines); modular `EnterprisePageClient` + section components exist but are not the live route.
+- **Client Component** monolithic page (637 lines). A modular `EnterprisePageClient` + 9 section components previously existed alongside this as an unused, never-wired-up alternate build — confirmed fully dead (zero live referrers) and removed 2026-07-08, along with the `ProductPreview` and `SessionReplayDemo` components that were only reachable through it. A future componentized rebuild of this page should start fresh against the copy/QA rules in `enterprise-page-knowledge-base.mdc` rather than resurrect the deleted files.
 - **Sections** (order): Hero → What is → Fleet → Capabilities → Why enterprises choose → Security → Deployment (28-day timeline) → Pricing → FAQ → **Contact form** (`#contact`) → Technical resources → footer.
 - **Lead capture:** `#contact` section renders `EnterpriseConnectForm` → `submitDemoRequest` (`lib/demo.ts`) → `POST /v1/demo-requests` with `source: 'enterprise'`, optional `position`; honeypot `botcheck`. Submissions appear in admin **Demo requests** tab (Role + Source columns).
 - **Shell:** `SiteNav active="enterprise"`, `MarketingPageStyles` (responsive form/pricing grids), `CalendlyBookModal` from hero and contact section.

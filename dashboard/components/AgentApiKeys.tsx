@@ -2,19 +2,10 @@
 
 import { ApiKeyUsage } from '@/components/ApiKeyUsage'
 import { useApiKeyQuota } from '@/hooks/useApiKeyQuota'
-import { createAgentApiKey, getAgentApiKeys, revokeAgentApiKey, sendAgentTestEvent } from '@/lib/api'
+import { createAgentApiKey, getAgentApiKeys, revokeAgentApiKey, sendAgentTestEvent, type ApiKey } from '@/lib/api'
 import { requireAuth } from '@/lib/auth'
 import { Check, Copy, Key, Plus, Trash2, Zap } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-
-export interface AgentApiKey {
-  key_id: string
-  prefix: string
-  name: string | null
-  agent_id: string | null
-  created_at: string
-  last_used: string | null
-}
 
 export function AgentApiKeys({
   agentId,
@@ -23,7 +14,7 @@ export function AgentApiKeys({
   agentId: string
   onTestSuccess?: () => void
 }) {
-  const [keys, setKeys] = useState<AgentApiKey[]>([])
+  const [keys, setKeys] = useState<ApiKey[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
@@ -66,7 +57,7 @@ export function AgentApiKeys({
     }
   }
 
-  async function handleRevoke(key: AgentApiKey) {
+  async function handleRevoke(key: ApiKey) {
     if (!window.confirm(`Revoke key "${key.name ?? key.prefix}"? Apps using it will stop working.`)) {
       return
     }

@@ -12,10 +12,13 @@
     "lint": "next lint"
   },
   "eslintConfig": {
-    "extends": ["next", "next/core-web-vitals"]
+    "extends": [
+      "next",
+      "next/core-web-vitals"
+    ]
   },
   "dependencies": {
-    "next": "14.2.3",
+    "next": "14.2.35",
     "react": "^18",
     "react-dom": "^18",
     "recharts": "^2.12.7",
@@ -34,6 +37,6 @@
     "postcss": "^8",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
-    "eslint-config-next": "14.2.3"
+    "eslint-config-next": "14.2.35"
   }
 }
