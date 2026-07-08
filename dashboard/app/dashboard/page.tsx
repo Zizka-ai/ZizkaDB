@@ -3,8 +3,10 @@
 import { ApiKeyUsage } from "@/components/ApiKeyUsage";
 import { GettingStartedChecklist } from "@/components/ConnectionStatus";
 import { useApiKeyQuota } from "@/hooks/useApiKeyQuota";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import { createAgent, deleteAgent, getAgents, type Agent } from "@/lib/api";
 import { getToken, requireAuth } from "@/lib/auth";
+import { POLL_INTERVAL_MS } from "@/lib/constants";
 import { formatDistanceToNow } from "date-fns";
 import { Check, Copy, Plus, Trash2, Zap } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -22,7 +24,7 @@ export default function DashboardPage() {
   const [deletingAgent, setDeletingAgent] = useState<string | null>(null);
   const [newAgentKey, setNewAgentKey] = useState<string | null>(null);
   const [newAgentName, setNewAgentName] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
   const quota = useApiKeyQuota();
 
   useEffect(() => {
@@ -62,7 +64,7 @@ export default function DashboardPage() {
     };
 
     loadAgents(true);
-    const interval = setInterval(() => loadAgents(false), 10_000);
+    const interval = setInterval(() => loadAgents(false), POLL_INTERVAL_MS);
 
     return () => {
       cancelled = true;
@@ -210,11 +212,7 @@ export default function DashboardPage() {
               </code>
               <button
                 type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(newAgentKey);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
+                onClick={() => copy(newAgentKey)}
                 className="p-2 rounded-lg shrink-0"
                 style={{ background: "#1a1a1a" }}
               >

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { BrandLogo } from '@/components/BrandLogo'
-import { SIGNUP_CONSENT_GDPR_KEY, SIGNUP_CONSENT_MARKETING_KEY, SIGNUP_PLAN_KEY } from '@/lib/signup-funnel'
+import { SIGNUP_CONSENT_GDPR_KEY, SIGNUP_CONSENT_MARKETING_KEY, SIGNUP_PLAN_KEY, getStoredSignupPlan } from '@/lib/signup-funnel'
 
 const GUIDELINES = [
   {
@@ -52,9 +52,7 @@ function SignupStartInner() {
     const resolved =
       planParam === 'pro' || planParam === 'team'
         ? planParam
-        : (sessionStorage.getItem(SIGNUP_PLAN_KEY) === 'pro' || sessionStorage.getItem(SIGNUP_PLAN_KEY) === 'team'
-          ? (sessionStorage.getItem(SIGNUP_PLAN_KEY) as 'pro' | 'team')
-          : null)
+        : getStoredSignupPlan()
     if (!resolved) {
       router.replace('/signup/plan')
       return
@@ -124,7 +122,6 @@ function SignupStartInner() {
                 checked={gdprConsent}
                 onChange={(e) => setGdprConsent(e.target.checked)}
                 style={{ marginTop: 3, flexShrink: 0 }}
-                required
               />
               <span>
                 I agree that my data will be processed in accordance with{' '}

@@ -1,156 +1,395 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useState, type ReactNode } from 'react'
+import Link from "next/link";
+import { type ReactNode } from "react";
+import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
 // ── Shared UI (matches docs page) ───────────────────────────────────────────
 
 export const S = {
-  h1:   { fontSize: 32, fontWeight: 700, margin: '0 0 8px', letterSpacing: -0.5 } as const,
-  h2:   { fontSize: 22, fontWeight: 700, margin: '48px 0 6px', letterSpacing: -0.3 } as const,
-  h3:   { fontSize: 15, fontWeight: 600, margin: '28px 0 8px', color: '#222' } as const,
-  lead: { fontSize: 16, color: '#444', lineHeight: 1.7, margin: '0 0 32px' } as const,
-  p:    { fontSize: 14.5, color: '#444', lineHeight: 1.7, margin: '0 0 14px' } as const,
-}
+  h1: {
+    fontSize: 32,
+    fontWeight: 700,
+    margin: "0 0 8px",
+    letterSpacing: -0.5,
+  } as const,
+  h2: {
+    fontSize: 22,
+    fontWeight: 700,
+    margin: "48px 0 6px",
+    letterSpacing: -0.3,
+  } as const,
+  h3: {
+    fontSize: 15,
+    fontWeight: 600,
+    margin: "28px 0 8px",
+    color: "#222",
+  } as const,
+  lead: {
+    fontSize: 16,
+    color: "#444",
+    lineHeight: 1.7,
+    margin: "0 0 32px",
+  } as const,
+  p: {
+    fontSize: 14.5,
+    color: "#444",
+    lineHeight: 1.7,
+    margin: "0 0 14px",
+  } as const,
+};
 
-export function Code({ children, lang = '' }: { children: string; lang?: string }) {
-  const [copied, setCopied] = useState(false)
+export function Code({
+  children,
+  lang = "",
+}: {
+  children: string;
+  lang?: string;
+}) {
+  const { copied, copy } = useCopyToClipboard();
   return (
-    <div style={{ position: 'relative', margin: '10px 0 20px' }}>
-      <pre style={{
-        background: '#f6f6f6', border: '1px solid #e5e5e5', borderRadius: 10,
-        padding: '18px 20px', fontSize: 13, lineHeight: 1.75, overflowX: 'auto',
-        fontFamily: 'JetBrains Mono, Fira Code, Menlo, monospace', color: '#222', margin: 0,
-      }}>
-        {lang && <span style={{ position: 'absolute', top: 10, left: 16, fontSize: 10, color: '#bbb', fontFamily: 'sans-serif', textTransform: 'uppercase', letterSpacing: 1 }}>{lang}</span>}
-        <span style={{ display: lang ? 'block' : undefined, marginTop: lang ? 12 : 0 }}>{children}</span>
+    <div style={{ position: "relative", margin: "10px 0 20px" }}>
+      <pre
+        style={{
+          background: "#f6f6f6",
+          border: "1px solid #e5e5e5",
+          borderRadius: 10,
+          padding: "18px 20px",
+          fontSize: 13,
+          lineHeight: 1.75,
+          overflowX: "auto",
+          fontFamily: "JetBrains Mono, Fira Code, Menlo, monospace",
+          color: "#222",
+          margin: 0,
+        }}
+      >
+        {lang && (
+          <span
+            style={{
+              position: "absolute",
+              top: 10,
+              left: 16,
+              fontSize: 10,
+              color: "#bbb",
+              fontFamily: "sans-serif",
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            {lang}
+          </span>
+        )}
+        <span
+          style={{
+            display: lang ? "block" : undefined,
+            marginTop: lang ? 12 : 0,
+          }}
+        >
+          {children}
+        </span>
       </pre>
-      <button type="button" onClick={() => { navigator.clipboard.writeText(children); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
-        style={{ position: 'absolute', top: 10, right: 12, background: copied ? '#22c55e' : '#ebebeb', border: 'none', borderRadius: 6, padding: '3px 10px', fontSize: 11, cursor: 'pointer', color: copied ? '#fff' : '#666' }}>
-        {copied ? '✓ Copied' : 'Copy'}
+      <button
+        type="button"
+        onClick={() => copy(children)}
+        style={{
+          position: "absolute",
+          top: 10,
+          right: 12,
+          background: copied ? "#22c55e" : "#ebebeb",
+          border: "none",
+          borderRadius: 6,
+          padding: "3px 10px",
+          fontSize: 11,
+          cursor: "pointer",
+          color: copied ? "#fff" : "#666",
+        }}
+      >
+        {copied ? "✓ Copied" : "Copy"}
       </button>
     </div>
-  )
+  );
 }
 
-export function Step({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+export function Step({
+  n,
+  title,
+  children,
+}: {
+  n: number;
+  title: string;
+  children: ReactNode;
+}) {
   return (
-    <div style={{ display: 'flex', gap: 16, marginBottom: 32 }}>
-      <div style={{ flexShrink: 0, width: 28, height: 28, borderRadius: '50%', background: '#111', color: '#fff', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
+    <div style={{ display: "flex", gap: 16, marginBottom: 32 }}>
+      <div
+        style={{
+          flexShrink: 0,
+          width: 28,
+          height: 28,
+          borderRadius: "50%",
+          background: "#111",
+          color: "#fff",
+          fontSize: 13,
+          fontWeight: 700,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: 2,
+        }}
+      >
         {n}
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 8 }}>{title}</div>
+        <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 8 }}>
+          {title}
+        </div>
         {children}
       </div>
     </div>
-  )
+  );
 }
 
-export function Callout({ type, children }: { type: 'tip' | 'warning' | 'info'; children: ReactNode }) {
+export function Callout({
+  type,
+  children,
+}: {
+  type: "tip" | "warning" | "info";
+  children: ReactNode;
+}) {
   const styles = {
-    tip:     { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534' },
-    warning: { bg: '#fffbeb', border: '#fde68a', text: '#92400e' },
-    info:    { bg: '#eff6ff', border: '#bfdbfe', text: '#1e40af' },
-  }
-  const s = styles[type]
+    tip: { bg: "#f0fdf4", border: "#bbf7d0", text: "#166534" },
+    warning: { bg: "#fffbeb", border: "#fde68a", text: "#92400e" },
+    info: { bg: "#eff6ff", border: "#bfdbfe", text: "#1e40af" },
+  };
+  const s = styles[type];
   return (
-    <div style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 10, padding: '12px 16px', fontSize: 13.5, color: s.text, margin: '0 0 20px', lineHeight: 1.6 }}>
+    <div
+      style={{
+        background: s.bg,
+        border: `1px solid ${s.border}`,
+        borderRadius: 10,
+        padding: "12px 16px",
+        fontSize: 13.5,
+        color: s.text,
+        margin: "0 0 20px",
+        lineHeight: 1.6,
+      }}
+    >
       {children}
     </div>
-  )
+  );
 }
 
 function MethodRow({ method, desc }: { method: string; desc: string }) {
   return (
-    <div style={{ display: 'flex', gap: 16, padding: '12px 16px', background: '#fafafa', borderRadius: 10, border: '1px solid #ebebeb' }}>
-      <code style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 600, color: '#111', minWidth: 200, flexShrink: 0 }}>{method}</code>
-      <span style={{ fontSize: 13.5, color: '#444', lineHeight: 1.5 }}>{desc}</span>
+    <div
+      style={{
+        display: "flex",
+        gap: 16,
+        padding: "12px 16px",
+        background: "#fafafa",
+        borderRadius: 10,
+        border: "1px solid #ebebeb",
+      }}
+    >
+      <code
+        style={{
+          fontFamily: "monospace",
+          fontSize: 13,
+          fontWeight: 600,
+          color: "#111",
+          minWidth: 200,
+          flexShrink: 0,
+        }}
+      >
+        {method}
+      </code>
+      <span style={{ fontSize: 13.5, color: "#444", lineHeight: 1.5 }}>
+        {desc}
+      </span>
     </div>
-  )
+  );
 }
 
 const SDK_METHODS = [
-  { method: 'log()', desc: 'Log any event. Use parent_id / parentId for causal links.' },
-  { method: 'why(event_id)', desc: 'Walk the causal chain from an event to its root.' },
-  { method: 'search(query)', desc: 'Semantic search over agent history in plain English.' },
-  { method: 'at(agent, timestamp)', desc: 'Reconstruct logged state at a past timestamp.' },
-  { method: 'query(agent)', desc: 'List recent events, optionally filtered by event type.' },
-  { method: 'context_for(agent, task)', desc: 'Memory block formatted for system prompt injection.' },
-  { method: 'baseline(agent)', desc: 'Behavioral baseline and drift score vs historical sessions.' },
-  { method: 'memory_diff(session_id)', desc: 'Summary of what happened in one session.' },
-  { method: 'forget(key, value)', desc: 'GDPR erasure by metadata filter.' },
-  { method: 'agents()', desc: 'List all agents for your tenant.' },
-]
+  {
+    method: "log()",
+    desc: "Log any event. Use parent_id / parentId for causal links.",
+  },
+  {
+    method: "why(event_id)",
+    desc: "Walk the causal chain from an event to its root.",
+  },
+  {
+    method: "search(query)",
+    desc: "Semantic search over agent history in plain English.",
+  },
+  {
+    method: "at(agent, timestamp)",
+    desc: "Reconstruct logged state at a past timestamp.",
+  },
+  {
+    method: "query(agent)",
+    desc: "List recent events, optionally filtered by event type.",
+  },
+  {
+    method: "context_for(agent, task)",
+    desc: "Memory block formatted for system prompt injection.",
+  },
+  {
+    method: "baseline(agent)",
+    desc: "Behavioral baseline and drift score vs historical sessions.",
+  },
+  {
+    method: "memory_diff(session_id)",
+    desc: "Summary of what happened in one session.",
+  },
+  { method: "forget(key, value)", desc: "GDPR erasure by metadata filter." },
+  { method: "agents()", desc: "List all agents for your tenant." },
+];
 
 // ── Overview ────────────────────────────────────────────────────────────────
 
-export function OverviewSection({ onNavigate }: { onNavigate: (s: string) => void }) {
+export function OverviewSection({
+  onNavigate,
+}: {
+  onNavigate: (s: string) => void;
+}) {
   return (
     <div>
       <h1 style={S.h1}>Documentation</h1>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+      <div
+        style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}
+      >
         {[
-          { label: 'Python SDK', pkg: 'zizkadb-sdk' },
-          { label: 'MCP', pkg: 'zizkadb-mcp' },
-          { label: 'LangChain', pkg: 'zizkadb-langchain' },
-          { label: 'CrewAI', pkg: 'zizkadb-crewai' },
+          { label: "Python SDK", pkg: "zizkadb-sdk" },
+          { label: "MCP", pkg: "zizkadb-mcp" },
+          { label: "LangChain", pkg: "zizkadb-langchain" },
+          { label: "CrewAI", pkg: "zizkadb-crewai" },
         ].map(({ label, pkg }) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <a key={pkg} href={`https://pypi.org/project/${pkg}/`} target="_blank" rel="noreferrer">
+          <a
+            key={pkg}
+            href={`https://pypi.org/project/${pkg}/`}
+            target="_blank"
+            rel="noreferrer"
+          >
             <img
               src={`https://img.shields.io/pypi/v/${pkg}?label=${encodeURIComponent(label)}`}
               alt={`${label} on PyPI`}
-              style={{ display: 'block', height: 20 }}
+              style={{ display: "block", height: 20 }}
             />
           </a>
         ))}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <a href="https://www.npmjs.com/package/zizkadb-sdk" target="_blank" rel="noreferrer">
+        <a
+          href="https://www.npmjs.com/package/zizkadb-sdk"
+          target="_blank"
+          rel="noreferrer"
+        >
           <img
             src="https://img.shields.io/npm/v/zizkadb-sdk?label=TypeScript%20SDK"
             alt="TypeScript SDK on npm"
-            style={{ display: 'block', height: 20 }}
+            style={{ display: "block", height: 20 }}
           />
         </a>
       </div>
       <p style={S.lead}>
-        Complete guides for every way to integrate ZizkaDB — managed cloud or self-hosted.
-        Pick the path that matches your stack.
+        Complete guides for every way to integrate ZizkaDB — managed cloud or
+        self-hosted. Pick the path that matches your stack.
       </p>
 
       <Callout type="info">
-        <strong>Managed cloud (recommended):</strong> Sign up at{' '}
-        <Link href="/signup" style={{ color: '#1e40af', fontWeight: 500 }}>db.zizka.ai/signup</Link>
-        , create an API key in Settings, and connect via SDK, MCP, or REST. We run Postgres, Qdrant, embeddings, and the dashboard.
+        <strong>Managed cloud (recommended):</strong> Sign up at{" "}
+        <Link href="/signup" style={{ color: "#1e40af", fontWeight: 500 }}>
+          db.zizka.ai/signup
+        </Link>
+        , create an API key in Settings, and connect via SDK, MCP, or REST. We
+        run Postgres, Qdrant, embeddings, and the dashboard.
       </Callout>
 
       <Callout type="tip">
-        SDKs are <strong>stateless</strong> — pass <code style={{ fontFamily: 'monospace' }}>agent</code>,{' '}
-        <code style={{ fontFamily: 'monospace' }}>session_id</code>, and <code style={{ fontFamily: 'monospace' }}>event_id</code> explicitly.
-        See <Link href="/trust#performance" style={{ color: '#166534' }}>performance</Link> and{' '}
-        <Link href="/trust#security" style={{ color: '#166534' }}>security</Link> on the technical reference.
+        SDKs are <strong>stateless</strong> — pass{" "}
+        <code style={{ fontFamily: "monospace" }}>agent</code>,{" "}
+        <code style={{ fontFamily: "monospace" }}>session_id</code>, and{" "}
+        <code style={{ fontFamily: "monospace" }}>event_id</code> explicitly.
+        See{" "}
+        <Link href="/trust#performance" style={{ color: "#166534" }}>
+          performance
+        </Link>{" "}
+        and{" "}
+        <Link href="/trust#security" style={{ color: "#166534" }}>
+          security
+        </Link>{" "}
+        on the technical reference.
       </Callout>
 
       <h2 style={{ ...S.h2, marginTop: 24 }}>Choose your integration</h2>
-      <div style={{ display: 'grid', gap: 12, marginBottom: 40 }}>
+      <div style={{ display: "grid", gap: 12, marginBottom: 40 }}>
         {[
-          { id: 'frameworks', title: 'Framework starters', desc: 'zizkadb init — LangChain, CrewAI, OpenAI, MCP templates', time: '~2 min' },
-          { id: 'python', title: 'Python SDK', desc: 'FastAPI, LangChain, notebooks, batch jobs. pip install zizkadb-sdk', time: '~5 min' },
-          { id: 'typescript', title: 'TypeScript SDK', desc: 'Node, Bun, Deno, edge workers. npm install zizkadb-sdk', time: '~5 min' },
-          { id: 'mcp', title: 'MCP server', desc: 'Claude Desktop, Cursor, Windsurf — no app code changes', time: '~2 min' },
-          { id: 'rest', title: 'REST API', desc: 'Any language via HTTP. curl, Go, Rust, Java, Ruby', time: '~3 min' },
-          { id: 'selfhost', title: 'Self-host', desc: 'Docker Compose on your VPS. Free, full features, AGPL', time: '~10 min' },
-        ].map(item => (
-          <button key={item.id} type="button" onClick={() => onNavigate(item.id)} style={{
-            textAlign: 'left', padding: '18px 20px', borderRadius: 12, border: '1px solid #e5e5e5',
-            background: '#fff', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
-          }}>
+          {
+            id: "frameworks",
+            title: "Framework starters",
+            desc: "zizkadb init — LangChain, CrewAI, OpenAI, MCP templates",
+            time: "~2 min",
+          },
+          {
+            id: "python",
+            title: "Python SDK",
+            desc: "FastAPI, LangChain, notebooks, batch jobs. pip install zizkadb-sdk",
+            time: "~5 min",
+          },
+          {
+            id: "typescript",
+            title: "TypeScript SDK",
+            desc: "Node, Bun, Deno, edge workers. npm install zizkadb-sdk",
+            time: "~5 min",
+          },
+          {
+            id: "mcp",
+            title: "MCP server",
+            desc: "Claude Desktop, Cursor, Windsurf — no app code changes",
+            time: "~2 min",
+          },
+          {
+            id: "rest",
+            title: "REST API",
+            desc: "Any language via HTTP. curl, Go, Rust, Java, Ruby",
+            time: "~3 min",
+          },
+          {
+            id: "selfhost",
+            title: "Self-host",
+            desc: "Docker Compose on your VPS. Free, full features, AGPL",
+            time: "~10 min",
+          },
+        ].map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onNavigate(item.id)}
+            style={{
+              textAlign: "left",
+              padding: "18px 20px",
+              borderRadius: 12,
+              border: "1px solid #e5e5e5",
+              background: "#fff",
+              cursor: "pointer",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 16,
+            }}
+          >
             <div>
-              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{item.title}</div>
-              <div style={{ fontSize: 13.5, color: '#666' }}>{item.desc}</div>
+              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
+                {item.title}
+              </div>
+              <div style={{ fontSize: 13.5, color: "#666" }}>{item.desc}</div>
             </div>
-            <span style={{ fontSize: 12, color: '#999', flexShrink: 0 }}>{item.time}</span>
+            <span style={{ fontSize: 12, color: "#999", flexShrink: 0 }}>
+              {item.time}
+            </span>
           </button>
         ))}
       </div>
@@ -158,38 +397,89 @@ export function OverviewSection({ onNavigate }: { onNavigate: (s: string) => voi
       <h2 style={{ ...S.h2, marginTop: 0 }}>Two paths — pick one</h2>
 
       <h3 style={S.h3}>Path A — Managed cloud (easiest)</h3>
-      <p style={S.p}>Best if you don&apos;t want to run servers. Everything at <strong>db.zizka.ai</strong>.</p>
+      <p style={S.p}>
+        Best if you don&apos;t want to run servers. Everything at{" "}
+        <strong>db.zizka.ai</strong>.
+      </p>
       <Step n={1} title="Sign up & create an agent">
         <p style={S.p}>
-          <Link href="/signup" style={{ color: '#111', fontWeight: 500 }}>Sign up</Link> with email OTP →{' '}
-          <Link href="/dashboard" style={{ color: '#111', fontWeight: 500 }}>Dashboard → Create agent</Link> → copy the API key (
-          <code style={{ fontFamily: 'monospace', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>zizkadb_live_…</code>).
+          <Link href="/signup" style={{ color: "#111", fontWeight: 500 }}>
+            Sign up
+          </Link>{" "}
+          with email OTP →{" "}
+          <Link href="/dashboard" style={{ color: "#111", fontWeight: 500 }}>
+            Dashboard → Create agent
+          </Link>{" "}
+          → copy the API key (
+          <code
+            style={{
+              fontFamily: "monospace",
+              background: "#f0f0f0",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            zizkadb_live_…
+          </code>
+          ).
         </p>
       </Step>
       <Step n={2} title="Connect SDK, MCP, or REST">
         <p style={S.p}>
-          Use your API key and the <strong>same agent name</strong> in every <code style={{ fontFamily: 'monospace' }}>db.log(agent=…)</code> call.
+          Use your API key and the <strong>same agent name</strong> in every{" "}
+          <code style={{ fontFamily: "monospace" }}>db.log(agent=…)</code> call.
           Multi-agent apps: Settings → <strong>Tenant-wide API key</strong>.
         </p>
       </Step>
       <Step n={3} title="Open your dashboard">
         <p style={S.p}>
-          <Link href="/dashboard" style={{ color: '#111', fontWeight: 500 }}>db.zizka.ai/dashboard</Link> shows the same agents and events your code logs. No extra setup.
+          <Link href="/dashboard" style={{ color: "#111", fontWeight: 500 }}>
+            db.zizka.ai/dashboard
+          </Link>{" "}
+          shows the same agents and events your code logs. No extra setup.
         </p>
       </Step>
 
-      <h3 style={{ ...S.h3, marginTop: 40 }}>Path B — Self-host (open source)</h3>
-      <p style={S.p}>Run Docker on your laptop or VPS. Full guide in <button type="button" onClick={() => onNavigate('selfhost')} style={{ background: 'none', border: 'none', color: '#1e40af', fontWeight: 500, cursor: 'pointer', padding: 0, fontSize: 'inherit' }}>Self-host →</button>.</p>
+      <h3 style={{ ...S.h3, marginTop: 40 }}>
+        Path B — Self-host (open source)
+      </h3>
+      <p style={S.p}>
+        Run Docker on your laptop or VPS. Full guide in{" "}
+        <button
+          type="button"
+          onClick={() => onNavigate("selfhost")}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#1e40af",
+            fontWeight: 500,
+            cursor: "pointer",
+            padding: 0,
+            fontSize: "inherit",
+          }}
+        >
+          Self-host →
+        </button>
+        .
+      </p>
       <Step n={1} title="Start API + dashboard">
         <Code lang="bash">{`git clone https://github.com/Zizka-ai/ZizkaDB
 cd ZizkaDB
 bash scripts/setup-local.sh`}</Code>
-        <p style={S.p}>Starts API + dashboard on port <strong>3001</strong> (PM2). API at <code style={{ fontFamily: 'monospace' }}>http://localhost:8000</code>.</p>
+        <p style={S.p}>
+          Starts API + dashboard on port <strong>3001</strong> (PM2). API at{" "}
+          <code style={{ fontFamily: "monospace" }}>http://localhost:8000</code>
+          .
+        </p>
       </Step>
       <Step n={2} title="Open dashboard (no email)">
         <p style={S.p}>
-          Go to <code style={{ fontFamily: 'monospace' }}>http://localhost:3001/login</code> → click{' '}
-          <strong>Open my dashboard →</strong>. This is your local workspace.
+          Go to{" "}
+          <code style={{ fontFamily: "monospace" }}>
+            http://localhost:3001/login
+          </code>{" "}
+          → click <strong>Open my dashboard →</strong>. This is your local
+          workspace.
         </p>
       </Step>
       <Step n={3} title="Log events from your agent">
@@ -197,38 +487,102 @@ bash scripts/setup-local.sh`}</Code>
 db = ZizkaDB(host="http://localhost:8000")  # auto-uses local dev key
 await db.log(agent="my-bot", event="started", data={})`}</Code>
         <Callout type="warning">
-          <strong>Important:</strong> Your SDK and dashboard must use the <strong>same tenant</strong>.
-          Local dev: use the green dashboard button + <code style={{ fontFamily: 'monospace' }}>host=</code> SDK (same dev tenant).
-          Production self-host: sign in with email OTP, create an API key in Settings, paste that key into your SDK.
+          <strong>Important:</strong> Your SDK and dashboard must use the{" "}
+          <strong>same tenant</strong>. Local dev: use the green dashboard
+          button + <code style={{ fontFamily: "monospace" }}>host=</code> SDK
+          (same dev tenant). Production self-host: sign in with email OTP,
+          create an API key in Settings, paste that key into your SDK.
         </Callout>
       </Step>
       <Step n={4} title="See your data in the dashboard">
-        <p style={S.p}>Refresh <Link href="/dashboard" style={{ color: '#111', fontWeight: 500 }}>/dashboard</Link> — agents appear as soon as you log events with a matching key/tenant.</p>
+        <p style={S.p}>
+          Refresh{" "}
+          <Link href="/dashboard" style={{ color: "#111", fontWeight: 500 }}>
+            /dashboard
+          </Link>{" "}
+          — agents appear as soon as you log events with a matching key/tenant.
+        </p>
       </Step>
 
       <h2 style={{ ...S.h2, marginTop: 48 }}>After connecting (both paths)</h2>
       <Step n={1} title="Log events with session_id">
         <p style={S.p}>
-          Log <code style={{ fontFamily: 'monospace', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>user_message</code>, each{' '}
-          <code style={{ fontFamily: 'monospace', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>tool_call</code>, and{' '}
-          <code style={{ fontFamily: 'monospace', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>assistant_response</code> with{' '}
-          <code style={{ fontFamily: 'monospace', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>parent_id</code> links.
-          Use the same <code style={{ fontFamily: 'monospace', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>session_id</code> for one conversation so baselines and diffs work.
+          Log{" "}
+          <code
+            style={{
+              fontFamily: "monospace",
+              background: "#f0f0f0",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            user_message
+          </code>
+          , each{" "}
+          <code
+            style={{
+              fontFamily: "monospace",
+              background: "#f0f0f0",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            tool_call
+          </code>
+          , and{" "}
+          <code
+            style={{
+              fontFamily: "monospace",
+              background: "#f0f0f0",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            assistant_response
+          </code>{" "}
+          with{" "}
+          <code
+            style={{
+              fontFamily: "monospace",
+              background: "#f0f0f0",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            parent_id
+          </code>{" "}
+          links. Use the same{" "}
+          <code
+            style={{
+              fontFamily: "monospace",
+              background: "#f0f0f0",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            session_id
+          </code>{" "}
+          for one conversation so baselines and diffs work.
         </p>
       </Step>
       <Step n={2} title="Configure embeddings (managed)">
         <p style={S.p}>
-          In Settings → <strong>Embeddings</strong>, pick your OpenAI model (platform-hosted or your own key).
-          Required for semantic search and <code style={{ fontFamily: 'monospace' }}>context_for()</code>. Logging and <code style={{ fontFamily: 'monospace' }}>why()</code> work without embeddings.
+          In Settings → <strong>Embeddings</strong>, pick your OpenAI model
+          (platform-hosted or your own key). Required for semantic search and{" "}
+          <code style={{ fontFamily: "monospace" }}>context_for()</code>.
+          Logging and <code style={{ fontFamily: "monospace" }}>why()</code>{" "}
+          work without embeddings.
         </p>
       </Step>
       <Step n={3} title="Use drift & search">
         <p style={S.p}>
-          Once you have enough sessions, use <code style={{ fontFamily: 'monospace' }}>baseline()</code> and semantic search in the dashboard or SDK.
+          Once you have enough sessions, use{" "}
+          <code style={{ fontFamily: "monospace" }}>baseline()</code> and
+          semantic search in the dashboard or SDK.
         </p>
       </Step>
     </div>
-  )
+  );
 }
 
 // ── Python SDK ────────────────────────────────────────────────────────────────
@@ -238,23 +592,44 @@ export function PythonSection() {
     <div>
       <h1 style={S.h1}>Python SDK</h1>
       <p style={S.lead}>
-        Full guide for integrating ZizkaDB in Python agents — FastAPI services, LangChain, CrewAI, notebooks, or scripts.
+        Full guide for integrating ZizkaDB in Python agents — FastAPI services,
+        LangChain, CrewAI, notebooks, or scripts.
       </p>
 
       <Step n={1} title="Prerequisites">
-        <p style={S.p}>Python <strong>3.10+</strong>. Works in venv, conda, or system Python.</p>
-        <Code lang="bash">python3 --version   # 3.10 or higher</Code>
+        <p style={S.p}>
+          Python <strong>3.10+</strong>. Works in venv, conda, or system Python.
+        </p>
+        <Code lang="bash">python3 --version # 3.10 or higher</Code>
       </Step>
 
       <Step n={2} title="Choose your environment">
-        <p style={S.p}><strong>Managed cloud:</strong> <Link href="/signup" style={{ color: '#111', fontWeight: 500 }}>Sign up</Link> → Settings → Create API key (<code style={{ fontFamily: 'monospace' }}>zizkadb_live_…</code>).</p>
-        <p style={S.p}><strong>Self-host:</strong> use <code style={{ fontFamily: 'monospace' }}>host=&quot;http://localhost:8000&quot;</code> (dev key auto-sent). See <Link href="/docs" style={{ color: '#1e40af' }}>Self-host docs</Link> → click <strong>Open my dashboard →</strong> on the login page.</p>
+        <p style={S.p}>
+          <strong>Managed cloud:</strong>{" "}
+          <Link href="/signup" style={{ color: "#111", fontWeight: 500 }}>
+            Sign up
+          </Link>{" "}
+          → Settings → Create API key (
+          <code style={{ fontFamily: "monospace" }}>zizkadb_live_…</code>).
+        </p>
+        <p style={S.p}>
+          <strong>Self-host:</strong> use{" "}
+          <code style={{ fontFamily: "monospace" }}>
+            host=&quot;http://localhost:8000&quot;
+          </code>{" "}
+          (dev key auto-sent). See{" "}
+          <Link href="/docs" style={{ color: "#1e40af" }}>
+            Self-host docs
+          </Link>{" "}
+          → click <strong>Open my dashboard →</strong> on the login page.
+        </p>
       </Step>
 
       <Step n={3} title="Install">
         <Code lang="bash">pip install zizkadb-sdk</Code>
         <Callout type="warning">
-          Install <strong>zizkadb-sdk</strong> on PyPI — not the unrelated <code style={{ fontFamily: 'monospace' }}>agentdb</code> package.
+          Install <strong>zizkadb-sdk</strong> on PyPI — not the unrelated{" "}
+          <code style={{ fontFamily: "monospace" }}>agentdb</code> package.
         </Callout>
       </Step>
 
@@ -269,7 +644,12 @@ db = ZizkaDB("zizkadb_live_xxxx")
       </Step>
 
       <Step n={5} title="Log your first event">
-        <p style={S.p}>The SDK is async-first. Wrap calls in <code style={{ fontFamily: 'monospace' }}>async def main()</code> and run with <code style={{ fontFamily: 'monospace' }}>asyncio.run(main())</code>.</p>
+        <p style={S.p}>
+          The SDK is async-first. Wrap calls in{" "}
+          <code style={{ fontFamily: "monospace" }}>async def main()</code> and
+          run with{" "}
+          <code style={{ fontFamily: "monospace" }}>asyncio.run(main())</code>.
+        </p>
         <Code lang="python">{`import asyncio
 from zizkadb import ZizkaDB
 
@@ -288,7 +668,10 @@ asyncio.run(main())`}</Code>
       </Step>
 
       <Step n={6} title="Link events causally">
-        <p style={S.p}>Pass <code style={{ fontFamily: 'monospace' }}>parent_id</code> so you can call <code style={{ fontFamily: 'monospace' }}>why()</code> later.</p>
+        <p style={S.p}>
+          Pass <code style={{ fontFamily: "monospace" }}>parent_id</code> so you
+          can call <code style={{ fontFamily: "monospace" }}>why()</code> later.
+        </p>
         <Code lang="python">{`async def main():
     msg = await db.log(
         agent="support-bot", event="user_message",
@@ -336,7 +719,9 @@ asyncio.run(main())`}</Code>
 asyncio.run(main())`}</Code>
       </Step>
 
-      <h2 style={{ ...S.h2, marginTop: 16 }}>Framework example: OpenAI tool loop</h2>
+      <h2 style={{ ...S.h2, marginTop: 16 }}>
+        Framework example: OpenAI tool loop
+      </h2>
       <Code lang="python">{`import asyncio
 from openai import AsyncOpenAI
 from zizkadb import ZizkaDB
@@ -365,28 +750,58 @@ async def run_turn(user_text: str, session_id: str):
 asyncio.run(run_turn("Hello", "sess_001"))`}</Code>
 
       <h2 style={S.h2}>All Python methods</h2>
-      <div style={{ display: 'grid', gap: 10 }}>
-        {SDK_METHODS.map(m => <MethodRow key={m.method} method={`db.${m.method}`} desc={m.desc} />)}
+      <div style={{ display: "grid", gap: 10 }}>
+        {SDK_METHODS.map((m) => (
+          <MethodRow key={m.method} method={`db.${m.method}`} desc={m.desc} />
+        ))}
       </div>
 
       <h2 style={S.h2}>Troubleshooting</h2>
-      <div style={{ display: 'grid', gap: 12 }}>
+      <div style={{ display: "grid", gap: 12 }}>
         {[
-          { q: 'SyntaxError: await outside async function', a: 'Wrap code in async def main() and asyncio.run(main()).' },
-          { q: '401 Invalid API key', a: 'Copy the full key from Dashboard → Agents (no spaces). Use ZIZKADB_API_KEY or AGENTDB_API_KEY in your env.' },
-          { q: '403 Agent mismatch', a: 'Your key is scoped to one agent (e.g. my-bot) but code logged to a different agent name. Use the same name in db.log(), or create a tenant-wide key in Settings.' },
-          { q: 'Dashboard empty but SDK works', a: 'Check you are viewing the same agent name your code logs to. Click Test agent on the agent page. Settings test event goes to dashboard-connection-test, not your app agent.' },
-          { q: 'Search returns nothing', a: 'Configure embeddings in Settings. Log a few events first so there is history to search.' },
-          { q: 'baseline shows warming_up', a: 'Log more sessions with session_id on each event. Drift needs volume.' },
-        ].map(item => (
-          <div key={item.q} style={{ padding: '14px 18px', background: '#fafafa', borderRadius: 10, border: '1px solid #ebebeb' }}>
-            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{item.q}</div>
-            <div style={{ fontSize: 13.5, color: '#555' }}>{item.a}</div>
+          {
+            q: "SyntaxError: await outside async function",
+            a: "Wrap code in async def main() and asyncio.run(main()).",
+          },
+          {
+            q: "401 Invalid API key",
+            a: "Copy the full key from Dashboard → Agents (no spaces). Use ZIZKADB_API_KEY or AGENTDB_API_KEY in your env.",
+          },
+          {
+            q: "403 Agent mismatch",
+            a: "Your key is scoped to one agent (e.g. my-bot) but code logged to a different agent name. Use the same name in db.log(), or create a tenant-wide key in Settings.",
+          },
+          {
+            q: "Dashboard empty but SDK works",
+            a: "Check you are viewing the same agent name your code logs to. Click Test agent on the agent page. Settings test event goes to dashboard-connection-test, not your app agent.",
+          },
+          {
+            q: "Search returns nothing",
+            a: "Configure embeddings in Settings. Log a few events first so there is history to search.",
+          },
+          {
+            q: "baseline shows warming_up",
+            a: "Log more sessions with session_id on each event. Drift needs volume.",
+          },
+        ].map((item) => (
+          <div
+            key={item.q}
+            style={{
+              padding: "14px 18px",
+              background: "#fafafa",
+              borderRadius: 10,
+              border: "1px solid #ebebeb",
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+              {item.q}
+            </div>
+            <div style={{ fontSize: 13.5, color: "#555" }}>{item.a}</div>
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ── TypeScript SDK ────────────────────────────────────────────────────────────
@@ -396,22 +811,44 @@ export function TypeScriptSection() {
     <div>
       <h1 style={S.h1}>TypeScript SDK</h1>
       <p style={S.lead}>
-        Integrate ZizkaDB in Node.js, Bun, Deno, or edge runtimes. Same API surface as Python.
+        Integrate ZizkaDB in Node.js, Bun, Deno, or edge runtimes. Same API
+        surface as Python.
       </p>
 
       <Step n={1} title="Prerequisites">
-        <p style={S.p}>Node.js <strong>18+</strong> (or Bun / Deno). TypeScript optional but recommended.</p>
-        <Code lang="bash">node --version   # v18+</Code>
+        <p style={S.p}>
+          Node.js <strong>18+</strong> (or Bun / Deno). TypeScript optional but
+          recommended.
+        </p>
+        <Code lang="bash">node --version # v18+</Code>
       </Step>
 
       <Step n={2} title="Choose your environment">
-        <p style={S.p}><strong>Managed cloud:</strong> <Link href="/signup" style={{ color: '#111', fontWeight: 500 }}>Sign up</Link> → Settings → Create API key.</p>
-        <p style={S.p}><strong>Self-host:</strong> <code style={{ fontFamily: 'monospace' }}>{`new ZizkaDB({ host: 'http://localhost:8000' })`}</code> — see <Link href="/docs" style={{ color: '#1e40af' }}>Self-host docs</Link> for dashboard setup.</p>
+        <p style={S.p}>
+          <strong>Managed cloud:</strong>{" "}
+          <Link href="/signup" style={{ color: "#111", fontWeight: 500 }}>
+            Sign up
+          </Link>{" "}
+          → Settings → Create API key.
+        </p>
+        <p style={S.p}>
+          <strong>Self-host:</strong>{" "}
+          <code
+            style={{ fontFamily: "monospace" }}
+          >{`new ZizkaDB({ host: 'http://localhost:8000' })`}</code>{" "}
+          — see{" "}
+          <Link href="/docs" style={{ color: "#1e40af" }}>
+            Self-host docs
+          </Link>{" "}
+          for dashboard setup.
+        </p>
       </Step>
 
       <Step n={3} title="Install">
-        <Code lang="bash">npm install zizkadb-sdk
-# or: pnpm add zizkadb-sdk / yarn add zizkadb-sdk / bun add zizkadb-sdk</Code>
+        <Code lang="bash">
+          npm install zizkadb-sdk # or: pnpm add zizkadb-sdk / yarn add
+          zizkadb-sdk / bun add zizkadb-sdk
+        </Code>
       </Step>
 
       <Step n={4} title="Initialize the client">
@@ -479,7 +916,9 @@ const context = await db.contextFor({
 const baseline = await db.baseline({ agent: 'support-bot', recentWindow: 50 })`}</Code>
       </Step>
 
-      <h2 style={{ ...S.h2, marginTop: 16 }}>Framework example: Express + OpenAI</h2>
+      <h2 style={{ ...S.h2, marginTop: 16 }}>
+        Framework example: Express + OpenAI
+      </h2>
       <Code lang="typescript">{`import express from 'express'
 import OpenAI from 'openai'
 import { ZizkaDB } from 'zizkadb-sdk'
@@ -510,15 +949,22 @@ app.post('/chat', async (req, res) => {
 app.listen(3000)`}</Code>
 
       <Callout type="tip">
-        Opt out of anonymous SDK telemetry: <code style={{ fontFamily: 'monospace' }}>ZIZKADB_TELEMETRY=false</code>
+        Opt out of anonymous SDK telemetry:{" "}
+        <code style={{ fontFamily: "monospace" }}>ZIZKADB_TELEMETRY=false</code>
       </Callout>
 
       <h2 style={S.h2}>All TypeScript methods</h2>
-      <div style={{ display: 'grid', gap: 10 }}>
-        {SDK_METHODS.map(m => <MethodRow key={m.method} method={`db.${m.method.replace('_', '')}`} desc={m.desc} />)}
+      <div style={{ display: "grid", gap: 10 }}>
+        {SDK_METHODS.map((m) => (
+          <MethodRow
+            key={m.method}
+            method={`db.${m.method.replace("_", "")}`}
+            desc={m.desc}
+          />
+        ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ── REST API ────────────────────────────────────────────────────────────────
@@ -528,20 +974,50 @@ export function RestSection() {
     <div>
       <h1 style={S.h1}>REST API</h1>
       <p style={S.lead}>
-        Call ZizkaDB from any language with HTTP. Use this for Go, Rust, Java, Ruby, mobile, or custom integrations.
+        Call ZizkaDB from any language with HTTP. Use this for Go, Rust, Java,
+        Ruby, mobile, or custom integrations.
       </p>
 
       <Step n={1} title="Base URL & auth">
         <p style={S.p}>
-          <strong>Managed:</strong> <code style={{ fontFamily: 'monospace', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>https://db.zizka.ai</code><br />
-          <strong>Self-host:</strong> <code style={{ fontFamily: 'monospace', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>http://localhost:8000</code>
+          <strong>Managed:</strong>{" "}
+          <code
+            style={{
+              fontFamily: "monospace",
+              background: "#f0f0f0",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            https://db.zizka.ai
+          </code>
+          <br />
+          <strong>Self-host:</strong>{" "}
+          <code
+            style={{
+              fontFamily: "monospace",
+              background: "#f0f0f0",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            http://localhost:8000
+          </code>
         </p>
-        <p style={S.p}>Every request (except <code style={{ fontFamily: 'monospace' }}>/health</code>) needs:</p>
-        <Code lang="http">Authorization: Bearer zizkadb_live_xxxx
-Content-Type: application/json</Code>
+        <p style={S.p}>
+          Every request (except{" "}
+          <code style={{ fontFamily: "monospace" }}>/health</code>) needs:
+        </p>
+        <Code lang="http">
+          Authorization: Bearer zizkadb_live_xxxx Content-Type: application/json
+        </Code>
         <Callout type="warning">
-          API routes are under <strong>/v1/</strong> — not <code style={{ fontFamily: 'monospace' }}>/api/v1/</code> when calling directly.
-          Interactive reference: <a href="/swagger" style={{ color: '#92400e', fontWeight: 500 }}>/swagger</a>
+          API routes are under <strong>/v1/</strong> — not{" "}
+          <code style={{ fontFamily: "monospace" }}>/api/v1/</code> when calling
+          directly. Interactive reference:{" "}
+          <a href="/swagger" style={{ color: "#92400e", fontWeight: 500 }}>
+            /swagger
+          </a>
         </Callout>
       </Step>
 
@@ -621,35 +1097,63 @@ curl -X DELETE https://db.zizka.ai/v1/memory/forget \\
       </Step>
 
       <h2 style={S.h2}>Endpoint reference</h2>
-      <div style={{ overflowX: 'auto', border: '1px solid #e5e5e5', borderRadius: 10 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      <div
+        style={{
+          overflowX: "auto",
+          border: "1px solid #e5e5e5",
+          borderRadius: 10,
+        }}
+      >
+        <table
+          style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}
+        >
           <thead>
-            <tr style={{ background: '#f7f7f7' }}>
-              <th style={{ padding: '10px 14px', textAlign: 'left' }}>Method</th>
-              <th style={{ padding: '10px 14px', textAlign: 'left' }}>Path</th>
-              <th style={{ padding: '10px 14px', textAlign: 'left' }}>Purpose</th>
+            <tr style={{ background: "#f7f7f7" }}>
+              <th style={{ padding: "10px 14px", textAlign: "left" }}>
+                Method
+              </th>
+              <th style={{ padding: "10px 14px", textAlign: "left" }}>Path</th>
+              <th style={{ padding: "10px 14px", textAlign: "left" }}>
+                Purpose
+              </th>
             </tr>
           </thead>
           <tbody>
             {[
-              ['POST', '/v1/events', 'Log event'],
-              ['GET', '/v1/events', 'Query events'],
-              ['GET', '/v1/events/{id}/why', 'Causal chain'],
-              ['GET', '/v1/events/at', 'State at timestamp'],
-              ['POST', '/v1/search', 'Semantic search'],
-              ['POST', '/v1/memory/context', 'Prompt context'],
-              ['GET', '/v1/memory/diff/{session_id}', 'Session diff'],
-              ['DELETE', '/v1/memory/forget', 'GDPR erasure'],
-              ['GET', '/v1/agents', 'List agents'],
-              ['GET', '/v1/agents/{id}/baseline', 'Drift baseline'],
-              ['GET', '/v1/agents/{id}/sessions', 'List sessions'],
-              ['GET', '/v1/settings/embeddings', 'Embedding config'],
-              ['PUT', '/v1/settings/embeddings', 'Update embeddings (JWT)'],
+              ["POST", "/v1/events", "Log event"],
+              ["GET", "/v1/events", "Query events"],
+              ["GET", "/v1/events/{id}/why", "Causal chain"],
+              ["GET", "/v1/events/at", "State at timestamp"],
+              ["POST", "/v1/search", "Semantic search"],
+              ["POST", "/v1/memory/context", "Prompt context"],
+              ["GET", "/v1/memory/diff/{session_id}", "Session diff"],
+              ["DELETE", "/v1/memory/forget", "GDPR erasure"],
+              ["GET", "/v1/agents", "List agents"],
+              ["GET", "/v1/agents/{id}/baseline", "Drift baseline"],
+              ["GET", "/v1/agents/{id}/sessions", "List sessions"],
+              ["GET", "/v1/settings/embeddings", "Embedding config"],
+              ["PUT", "/v1/settings/embeddings", "Update embeddings (JWT)"],
             ].map(([m, p, d]) => (
-              <tr key={p} style={{ borderTop: '1px solid #f0f0f0' }}>
-                <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12 }}>{m}</td>
-                <td style={{ padding: '10px 14px', fontFamily: 'monospace', fontSize: 12 }}>{p}</td>
-                <td style={{ padding: '10px 14px', color: '#555' }}>{d}</td>
+              <tr key={p} style={{ borderTop: "1px solid #f0f0f0" }}>
+                <td
+                  style={{
+                    padding: "10px 14px",
+                    fontFamily: "monospace",
+                    fontSize: 12,
+                  }}
+                >
+                  {m}
+                </td>
+                <td
+                  style={{
+                    padding: "10px 14px",
+                    fontFamily: "monospace",
+                    fontSize: 12,
+                  }}
+                >
+                  {p}
+                </td>
+                <td style={{ padding: "10px 14px", color: "#555" }}>{d}</td>
               </tr>
             ))}
           </tbody>
@@ -657,20 +1161,39 @@ curl -X DELETE https://db.zizka.ai/v1/memory/forget \\
       </div>
 
       <h2 style={S.h2}>Common errors</h2>
-      <div style={{ display: 'grid', gap: 12 }}>
+      <div style={{ display: "grid", gap: 12 }}>
         {[
-          { q: '401 Unauthorized', a: 'Missing or invalid Bearer token. Use zizkadb_live_ key from Settings.' },
-          { q: '404 on /api/v1/...', a: 'Use /v1/ directly: https://db.zizka.ai/v1/events' },
-          { q: '400 on /v1/search', a: 'Embeddings not configured. Set up in Dashboard → Settings → Embeddings.' },
-        ].map(item => (
-          <div key={item.q} style={{ padding: '14px 18px', background: '#fafafa', borderRadius: 10, border: '1px solid #ebebeb' }}>
-            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{item.q}</div>
-            <div style={{ fontSize: 13.5, color: '#555' }}>{item.a}</div>
+          {
+            q: "401 Unauthorized",
+            a: "Missing or invalid Bearer token. Use zizkadb_live_ key from Settings.",
+          },
+          {
+            q: "404 on /api/v1/...",
+            a: "Use /v1/ directly: https://db.zizka.ai/v1/events",
+          },
+          {
+            q: "400 on /v1/search",
+            a: "Embeddings not configured. Set up in Dashboard → Settings → Embeddings.",
+          },
+        ].map((item) => (
+          <div
+            key={item.q}
+            style={{
+              padding: "14px 18px",
+              background: "#fafafa",
+              borderRadius: 10,
+              border: "1px solid #ebebeb",
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+              {item.q}
+            </div>
+            <div style={{ fontSize: 13.5, color: "#555" }}>{item.a}</div>
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ── MCP ─────────────────────────────────────────────────────────────────────
@@ -680,12 +1203,15 @@ export function McpSection() {
     <div>
       <h1 style={S.h1}>MCP Server</h1>
       <p style={S.lead}>
-        Connect ZizkaDB to Claude Desktop, Cursor, or Windsurf in minutes — no SDK and no changes to your app code.
-        The AI calls ZizkaDB tools directly during conversations.
+        Connect ZizkaDB to Claude Desktop, Cursor, or Windsurf in minutes — no
+        SDK and no changes to your app code. The AI calls ZizkaDB tools directly
+        during conversations.
       </p>
 
       <Callout type="info">
-        <strong>Fastest start — Cursor:</strong> paste this into <code style={{ fontFamily: 'monospace' }}>~/.cursor/mcp.json</code>, reload MCP, done.
+        <strong>Fastest start — Cursor:</strong> paste this into{" "}
+        <code style={{ fontFamily: "monospace" }}>~/.cursor/mcp.json</code>,
+        reload MCP, done.
       </Callout>
       <Code lang="json">{`{
   "mcpServers": {
@@ -697,37 +1223,72 @@ export function McpSection() {
   }
 }`}</Code>
       <p style={{ ...S.p, marginTop: -8, marginBottom: 24 }}>
-        Self-host: use the full block in <strong>Self-hosted API</strong> below (only <code style={{ fontFamily: 'monospace' }}>ZIZKADB_HOST</code> — dev key auto-injected). Requires <code style={{ fontFamily: 'monospace' }}>uvx</code> — install <a href="https://docs.astral.sh/uv/" target="_blank" rel="noreferrer" style={{ color: '#111' }}>uv</a> first.
+        Self-host: use the full block in <strong>Self-hosted API</strong> below
+        (only <code style={{ fontFamily: "monospace" }}>ZIZKADB_HOST</code> —
+        dev key auto-injected). Requires{" "}
+        <code style={{ fontFamily: "monospace" }}>uvx</code> — install{" "}
+        <a
+          href="https://docs.astral.sh/uv/"
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: "#111" }}
+        >
+          uv
+        </a>{" "}
+        first.
       </p>
 
       <Callout type="info">
-        <strong>MCP</strong> (Model Context Protocol) lets AI apps use external tools. ZizkaDB exposes log, search, why, time travel, and more as native MCP tools.
+        <strong>MCP</strong> (Model Context Protocol) lets AI apps use external
+        tools. ZizkaDB exposes log, search, why, time travel, and more as native
+        MCP tools.
       </Callout>
 
       <Step n={1} title="Prerequisites">
         <p style={S.p}>
-          <strong>uvx</strong> (recommended) — comes with <a href="https://docs.astral.sh/uv/" target="_blank" rel="noreferrer" style={{ color: '#111' }}>uv</a> install.
-          Or: <code style={{ fontFamily: 'monospace' }}>pip install zizkadb-mcp</code>
+          <strong>uvx</strong> (recommended) — comes with{" "}
+          <a
+            href="https://docs.astral.sh/uv/"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "#111" }}
+          >
+            uv
+          </a>{" "}
+          install. Or:{" "}
+          <code style={{ fontFamily: "monospace" }}>
+            pip install zizkadb-mcp
+          </code>
         </p>
-        <Code lang="bash"># macOS / Linux
-curl -LsSf https://astral.sh/uv/install.sh | sh
-uvx --version</Code>
+        <Code lang="bash">
+          # macOS / Linux curl -LsSf https://astral.sh/uv/install.sh | sh uvx
+          --version
+        </Code>
       </Step>
 
       <Step n={2} title="Create an agent & copy key">
         <p style={S.p}>
-          <Link href="/signup" style={{ color: '#111', fontWeight: 500 }}>Sign up</Link> → Dashboard → Create agent → copy key.
-          Use the same agent name when calling <code style={{ fontFamily: 'monospace' }}>log_event</code>.
+          <Link href="/signup" style={{ color: "#111", fontWeight: 500 }}>
+            Sign up
+          </Link>{" "}
+          → Dashboard → Create agent → copy key. Use the same agent name when
+          calling <code style={{ fontFamily: "monospace" }}>log_event</code>.
         </p>
       </Step>
 
       <h2 style={{ ...S.h2, marginTop: 32 }}>Claude Desktop</h2>
       <Step n={3} title="Edit Claude config">
         <p style={S.p}>Mac:</p>
-        <Code>~/Library/Application Support/Claude/claude_desktop_config.json</Code>
+        <Code>
+          ~/Library/Application Support/Claude/claude_desktop_config.json
+        </Code>
         <p style={S.p}>Windows:</p>
         <Code>%APPDATA%\\Claude\\claude_desktop_config.json</Code>
-        <p style={S.p}>Add ZizkaDB (merge into existing <code style={{ fontFamily: 'monospace' }}>mcpServers</code> if you have other servers):</p>
+        <p style={S.p}>
+          Add ZizkaDB (merge into existing{" "}
+          <code style={{ fontFamily: "monospace" }}>mcpServers</code> if you
+          have other servers):
+        </p>
         <Code lang="json">{`{
   "mcpServers": {
     "zizkadb": {
@@ -741,12 +1302,39 @@ uvx --version</Code>
 }`}</Code>
       </Step>
       <Step n={4} title="Restart Claude Desktop">
-        <p style={S.p}>Quit completely and reopen. ZizkaDB tools appear in the tool list (hammer icon). Claude can call them during any chat.</p>
+        <p style={S.p}>
+          Quit completely and reopen. ZizkaDB tools appear in the tool list
+          (hammer icon). Claude can call them during any chat.
+        </p>
       </Step>
 
       <h2 style={S.h2}>Cursor</h2>
       <Step n={5} title="Edit Cursor MCP config">
-        <p style={S.p}>Create or edit <code style={{ fontFamily: 'monospace', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>~/.cursor/mcp.json</code> (global) or <code style={{ fontFamily: 'monospace', background: '#f0f0f0', padding: '2px 6px', borderRadius: 4 }}>.cursor/mcp.json</code> in your project:</p>
+        <p style={S.p}>
+          Create or edit{" "}
+          <code
+            style={{
+              fontFamily: "monospace",
+              background: "#f0f0f0",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            ~/.cursor/mcp.json
+          </code>{" "}
+          (global) or{" "}
+          <code
+            style={{
+              fontFamily: "monospace",
+              background: "#f0f0f0",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            .cursor/mcp.json
+          </code>{" "}
+          in your project:
+        </p>
         <Code lang="json">{`{
   "mcpServers": {
     "zizkadb": {
@@ -760,14 +1348,31 @@ uvx --version</Code>
 }`}</Code>
       </Step>
       <Step n={6} title="Reload MCP in Cursor">
-        <p style={S.p}>Quit Cursor completely (<code style={{ fontFamily: 'monospace' }}>Cmd+Q</code>) and reopen, or use Command Palette → <strong>MCP: Reload servers</strong>. Open <code style={{ fontFamily: 'monospace' }}>Cmd+Shift+J</code> → <strong>Tools &amp; MCP</strong> to confirm <code style={{ fontFamily: 'monospace' }}>zizkadb</code> is connected.</p>
+        <p style={S.p}>
+          Quit Cursor completely (
+          <code style={{ fontFamily: "monospace" }}>Cmd+Q</code>) and reopen, or
+          use Command Palette → <strong>MCP: Reload servers</strong>. Open{" "}
+          <code style={{ fontFamily: "monospace" }}>Cmd+Shift+J</code> →{" "}
+          <strong>Tools &amp; MCP</strong> to confirm{" "}
+          <code style={{ fontFamily: "monospace" }}>zizkadb</code> is connected.
+        </p>
       </Step>
 
       <h2 style={S.h2}>Windsurf & other MCP clients</h2>
-      <p style={S.p}>Same JSON block — point your client&apos;s MCP config at <code style={{ fontFamily: 'monospace' }}>uvx zizkadb-mcp</code> with <code style={{ fontFamily: 'monospace' }}>ZIZKADB_API_KEY</code> in env.</p>
+      <p style={S.p}>
+        Same JSON block — point your client&apos;s MCP config at{" "}
+        <code style={{ fontFamily: "monospace" }}>uvx zizkadb-mcp</code> with{" "}
+        <code style={{ fontFamily: "monospace" }}>ZIZKADB_API_KEY</code> in env.
+      </p>
 
       <h2 style={S.h2}>Self-hosted API</h2>
-      <p style={S.p}>After <code style={{ fontFamily: 'monospace' }}>bash scripts/setup-local.sh</code>, paste this (no API key needed on localhost):</p>
+      <p style={S.p}>
+        After{" "}
+        <code style={{ fontFamily: "monospace" }}>
+          bash scripts/setup-local.sh
+        </code>
+        , paste this (no API key needed on localhost):
+      </p>
       <Code lang="json">{`{
   "mcpServers": {
     "zizkadb": {
@@ -781,55 +1386,125 @@ uvx --version</Code>
 }`}</Code>
 
       <h2 style={S.h2}>Using MCP in practice</h2>
-      <p style={S.p}>Once connected, ask the AI naturally — it will call tools when needed:</p>
-      <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
+      <p style={S.p}>
+        Once connected, ask the AI naturally — it will call tools when needed:
+      </p>
+      <div style={{ display: "grid", gap: 10, marginBottom: 24 }}>
         {[
-          { say: '"Log that we decided to use Postgres for the billing service"', tool: 'log_event' },
-          { say: '"What did we log about billing last week?"', tool: 'search_memory' },
-          { say: '"Why did the agent call get_billing in event X?"', tool: 'why' },
-          { say: '"What was the agent state on May 1 at 3pm?"', tool: 'time_travel' },
-        ].map(item => (
-          <div key={item.tool} style={{ padding: '12px 16px', background: '#fafafa', borderRadius: 8, border: '1px solid #ebebeb' }}>
-            <div style={{ fontSize: 13.5, color: '#333', marginBottom: 4 }}>{item.say}</div>
-            <code style={{ fontSize: 12, color: '#666' }}>→ {item.tool}</code>
+          {
+            say: '"Log that we decided to use Postgres for the billing service"',
+            tool: "log_event",
+          },
+          {
+            say: '"What did we log about billing last week?"',
+            tool: "search_memory",
+          },
+          {
+            say: '"Why did the agent call get_billing in event X?"',
+            tool: "why",
+          },
+          {
+            say: '"What was the agent state on May 1 at 3pm?"',
+            tool: "time_travel",
+          },
+        ].map((item) => (
+          <div
+            key={item.tool}
+            style={{
+              padding: "12px 16px",
+              background: "#fafafa",
+              borderRadius: 8,
+              border: "1px solid #ebebeb",
+            }}
+          >
+            <div style={{ fontSize: 13.5, color: "#333", marginBottom: 4 }}>
+              {item.say}
+            </div>
+            <code style={{ fontSize: 12, color: "#666" }}>→ {item.tool}</code>
           </div>
         ))}
       </div>
 
       <h2 style={S.h2}>All MCP tools</h2>
-      <div style={{ display: 'grid', gap: 8 }}>
+      <div style={{ display: "grid", gap: 8 }}>
         {[
-          { tool: 'log_event', desc: 'Log action with optional causal parent_id' },
-          { tool: 'search_memory', desc: 'Semantic search over agent history' },
-          { tool: 'get_context', desc: 'Formatted memory block for system prompts' },
-          { tool: 'why', desc: 'Causal chain for an event_id' },
-          { tool: 'query_events', desc: 'List/filter recent events' },
-          { tool: 'time_travel', desc: 'Logged state at a past timestamp' },
-          { tool: 'memory_diff', desc: 'Session summary' },
-          { tool: 'forget', desc: 'GDPR delete by metadata filter' },
-        ].map(item => (
-          <div key={item.tool} style={{ display: 'flex', gap: 16, padding: '11px 16px', background: '#fafafa', borderRadius: 8, border: '1px solid #ebebeb' }}>
-            <code style={{ fontFamily: 'monospace', fontSize: 12.5, fontWeight: 600, color: '#111', minWidth: 140, flexShrink: 0 }}>{item.tool}</code>
-            <span style={{ fontSize: 13.5, color: '#444' }}>{item.desc}</span>
+          {
+            tool: "log_event",
+            desc: "Log action with optional causal parent_id",
+          },
+          { tool: "search_memory", desc: "Semantic search over agent history" },
+          {
+            tool: "get_context",
+            desc: "Formatted memory block for system prompts",
+          },
+          { tool: "why", desc: "Causal chain for an event_id" },
+          { tool: "query_events", desc: "List/filter recent events" },
+          { tool: "time_travel", desc: "Logged state at a past timestamp" },
+          { tool: "memory_diff", desc: "Session summary" },
+          { tool: "forget", desc: "GDPR delete by metadata filter" },
+        ].map((item) => (
+          <div
+            key={item.tool}
+            style={{
+              display: "flex",
+              gap: 16,
+              padding: "11px 16px",
+              background: "#fafafa",
+              borderRadius: 8,
+              border: "1px solid #ebebeb",
+            }}
+          >
+            <code
+              style={{
+                fontFamily: "monospace",
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: "#111",
+                minWidth: 140,
+                flexShrink: 0,
+              }}
+            >
+              {item.tool}
+            </code>
+            <span style={{ fontSize: 13.5, color: "#444" }}>{item.desc}</span>
           </div>
         ))}
       </div>
 
       <h2 style={S.h2}>Troubleshooting</h2>
-      <div style={{ display: 'grid', gap: 12 }}>
+      <div style={{ display: "grid", gap: 12 }}>
         {[
-          { q: 'Tools not showing', a: 'Restart the app after editing config. Check JSON is valid (no trailing commas).' },
-          { q: 'uvx not found', a: 'Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh' },
-          { q: 'Auth errors', a: 'Cloud: verify ZIZKADB_API_KEY. Self-host: set ZIZKADB_HOST to http://localhost:8000 and ensure local API is running (curl http://localhost:8000/health). Dev key is zizkadb_dev_local by default.' },
-        ].map(item => (
-          <div key={item.q} style={{ padding: '14px 18px', background: '#fafafa', borderRadius: 10, border: '1px solid #ebebeb' }}>
-            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{item.q}</div>
-            <div style={{ fontSize: 13.5, color: '#555' }}>{item.a}</div>
+          {
+            q: "Tools not showing",
+            a: "Restart the app after editing config. Check JSON is valid (no trailing commas).",
+          },
+          {
+            q: "uvx not found",
+            a: "Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh",
+          },
+          {
+            q: "Auth errors",
+            a: "Cloud: verify ZIZKADB_API_KEY. Self-host: set ZIZKADB_HOST to http://localhost:8000 and ensure local API is running (curl http://localhost:8000/health). Dev key is zizkadb_dev_local by default.",
+          },
+        ].map((item) => (
+          <div
+            key={item.q}
+            style={{
+              padding: "14px 18px",
+              background: "#fafafa",
+              borderRadius: 10,
+              border: "1px solid #ebebeb",
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+              {item.q}
+            </div>
+            <div style={{ fontSize: 13.5, color: "#555" }}>{item.a}</div>
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ── Self-host (expanded) ────────────────────────────────────────────────────
@@ -839,35 +1514,53 @@ export function SelfHostSection() {
     <div>
       <h1 style={S.h1}>Self-Host</h1>
       <p style={S.lead}>
-        Run the full ZizkaDB stack on your server. Free forever (AGPL), no cloud account required.
-        SDK, MCP, and dashboard all connect to the same local tenant.
+        Run the full ZizkaDB stack on your server. Free forever (AGPL), no cloud
+        account required. SDK, MCP, and dashboard all connect to the same local
+        tenant.
       </p>
 
       <Callout type="warning">
-        <strong>One rule:</strong> SDK/MCP and dashboard must use the <strong>same tenant</strong>.
-        <ul style={{ margin: '8px 0 0', paddingLeft: 20 }}>
-          <li><strong>Local dev (just you):</strong> login → <em>Open my dashboard →</em> + SDK with <code style={{ fontFamily: 'monospace' }}>host=</code></li>
-          <li><strong>Production / team on your server:</strong> email OTP login → create API key in Settings → use that key in SDK/MCP</li>
+        <strong>One rule:</strong> SDK/MCP and dashboard must use the{" "}
+        <strong>same tenant</strong>.
+        <ul style={{ margin: "8px 0 0", paddingLeft: 20 }}>
+          <li>
+            <strong>Local dev (just you):</strong> login →{" "}
+            <em>Open my dashboard →</em> + SDK with{" "}
+            <code style={{ fontFamily: "monospace" }}>host=</code>
+          </li>
+          <li>
+            <strong>Production / team on your server:</strong> email OTP login →
+            create API key in Settings → use that key in SDK/MCP
+          </li>
         </ul>
         Mixing email login with the auto dev key shows an empty dashboard.
       </Callout>
 
       <Callout type="info">
-        Stack: Postgres + pgvector, Qdrant, Redis, FastAPI. Starts in under 60 seconds with Docker Compose.
+        Stack: Postgres + pgvector, Qdrant, Redis, FastAPI. Starts in under 60
+        seconds with Docker Compose.
       </Callout>
 
       <Step n={1} title="Quick start (recommended)">
         <Code lang="bash">{`git clone https://github.com/Zizka-ai/ZizkaDB
 cd ZizkaDB
 bash scripts/setup-local.sh`}</Code>
-        <p style={S.p}>Starts API + dashboard. Opens at <code style={{ fontFamily: 'monospace' }}>http://localhost:3001/login</code> — click <strong>Open my dashboard →</strong>.</p>
+        <p style={S.p}>
+          Starts API + dashboard. Opens at{" "}
+          <code style={{ fontFamily: "monospace" }}>
+            http://localhost:3001/login
+          </code>{" "}
+          — click <strong>Open my dashboard →</strong>.
+        </p>
       </Step>
 
       <Step n={2} title="Manual setup (optional)">
         <Code lang="bash">{`git clone https://github.com/Zizka-ai/ZizkaDB
 cd ZizkaDB
 cp .env.example infra/.env`}</Code>
-        <p style={S.p}>Edit <code style={{ fontFamily: 'monospace' }}>infra/.env</code>:</p>
+        <p style={S.p}>
+          Edit <code style={{ fontFamily: "monospace" }}>infra/.env</code>:
+        </p>
         <Code lang="bash">{`OPENAI_API_KEY=sk-...          # for semantic search
 JWT_SECRET=your-random-32-char-secret
 DEV_API_KEY=zizkadb_dev_local       # default local dev key (SDK auto-sends this)
@@ -880,31 +1573,55 @@ EMAIL_PASS=your-app-password`}</Code>
       </Step>
 
       <Step n={3} title="Start the API stack">
-        <Code lang="bash">docker compose -f infra/docker-compose.yml up -d --build</Code>
+        <Code lang="bash">
+          docker compose -f infra/docker-compose.yml up -d --build
+        </Code>
         <Code lang="bash">{`curl http://localhost:8000/health
 # {"status":"ok","version":"0.1.0"}`}</Code>
       </Step>
 
       <Step n={4} title="Connect SDK or MCP">
         <p style={S.p}>
-          Self-hosted SDK calls auto-send the local dev key (<code style={{ fontFamily: 'monospace' }}>zizkadb_dev_local</code> by default).
-          Create a named API key in the dashboard Settings when you move to production.
+          Self-hosted SDK calls auto-send the local dev key (
+          <code style={{ fontFamily: "monospace" }}>zizkadb_dev_local</code> by
+          default). Create a named API key in the dashboard Settings when you
+          move to production.
         </p>
         <Code lang="python">{`from zizkadb import ZizkaDB
 db = ZizkaDB(host="http://localhost:8000")`}</Code>
-        <p style={S.p}>MCP: <code style={{ fontFamily: 'monospace' }}>ZIZKADB_HOST=http://localhost:8000</code> (dev key auto-injected on localhost)</p>
-        <p style={S.p}>REST: <code style={{ fontFamily: 'monospace' }}>Authorization: Bearer zizkadb_dev_local</code></p>
+        <p style={S.p}>
+          MCP:{" "}
+          <code style={{ fontFamily: "monospace" }}>
+            ZIZKADB_HOST=http://localhost:8000
+          </code>{" "}
+          (dev key auto-injected on localhost)
+        </p>
+        <p style={S.p}>
+          REST:{" "}
+          <code style={{ fontFamily: "monospace" }}>
+            Authorization: Bearer zizkadb_dev_local
+          </code>
+        </p>
       </Step>
 
       <Step n={5} title="Open the dashboard">
         <p style={S.p}>
-          With <code style={{ fontFamily: 'monospace' }}>bash scripts/setup-local.sh</code>, dashboard is at{' '}
-          <code style={{ fontFamily: 'monospace' }}>http://localhost:3001/login</code>.
-          Click <strong>Open my dashboard →</strong> — no email required.
+          With{" "}
+          <code style={{ fontFamily: "monospace" }}>
+            bash scripts/setup-local.sh
+          </code>
+          , dashboard is at{" "}
+          <code style={{ fontFamily: "monospace" }}>
+            http://localhost:3001/login
+          </code>
+          . Click <strong>Open my dashboard →</strong> — no email required.
         </p>
         <p style={S.p}>
-          Or run manually:{' '}
-          <code style={{ fontFamily: 'monospace' }}>docker compose -f infra/docker-compose.yml -f infra/docker-compose.dashboard.yml up -d</code>
+          Or run manually:{" "}
+          <code style={{ fontFamily: "monospace" }}>
+            docker compose -f infra/docker-compose.yml -f
+            infra/docker-compose.dashboard.yml up -d
+          </code>
         </p>
       </Step>
 
@@ -913,25 +1630,50 @@ db = ZizkaDB(host="http://localhost:8000")`}</Code>
         <Code lang="bash">{`docker compose -f infra/docker-compose.yml up -d
 bash infra/deploy-selfhost.sh
 # Set EMAIL_* in infra/.env for team login; set NEXT_PUBLIC_DEV_MODE=false`}</Code>
-        <p style={S.p}>Point nginx to :3001 (dashboard) and :8000 (API) — see <code style={{ fontFamily: 'monospace' }}>infra/nginx.conf</code>.</p>
+        <p style={S.p}>
+          Point nginx to :3001 (dashboard) and :8000 (API) — see{" "}
+          <code style={{ fontFamily: "monospace" }}>infra/nginx.conf</code>.
+        </p>
       </Step>
 
       <h2 style={S.h2}>Troubleshooting</h2>
-      <div style={{ display: 'grid', gap: 12 }}>
+      <div style={{ display: "grid", gap: 12 }}>
         {[
-          { q: 'API not starting', a: 'docker compose -f infra/docker-compose.yml logs api --tail=50' },
-          { q: 'Dashboard empty but SDK logs work', a: 'Use "Open my dashboard →" (dev login) with host= SDK — or create an API key in Settings and use it in your agent.' },
-          { q: 'Search not working', a: 'Set OPENAI_API_KEY in infra/.env and restart api container.' },
-          { q: 'Port 8000 in use', a: 'Change port mapping in infra/docker-compose.yml.' },
-        ].map(item => (
-          <div key={item.q} style={{ padding: '14px 18px', background: '#fafafa', borderRadius: 10, border: '1px solid #ebebeb' }}>
-            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{item.q}</div>
-            <div style={{ fontSize: 13.5, color: '#555' }}>{item.a}</div>
+          {
+            q: "API not starting",
+            a: "docker compose -f infra/docker-compose.yml logs api --tail=50",
+          },
+          {
+            q: "Dashboard empty but SDK logs work",
+            a: 'Use "Open my dashboard →" (dev login) with host= SDK — or create an API key in Settings and use it in your agent.',
+          },
+          {
+            q: "Search not working",
+            a: "Set OPENAI_API_KEY in infra/.env and restart api container.",
+          },
+          {
+            q: "Port 8000 in use",
+            a: "Change port mapping in infra/docker-compose.yml.",
+          },
+        ].map((item) => (
+          <div
+            key={item.q}
+            style={{
+              padding: "14px 18px",
+              background: "#fafafa",
+              borderRadius: 10,
+              border: "1px solid #ebebeb",
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>
+              {item.q}
+            </div>
+            <div style={{ fontSize: 13.5, color: "#555" }}>{item.a}</div>
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ── Frameworks (LangChain, CrewAI, OpenAI) ───────────────────────────────────
@@ -941,19 +1683,24 @@ export function FrameworksSection() {
     <div>
       <h1 style={S.h1}>Framework integrations</h1>
       <p style={S.lead}>
-        Official adapters and starters — same causal <code style={{ fontFamily: 'monospace' }}>log()</code> +{' '}
-        <code style={{ fontFamily: 'monospace' }}>parent_id</code> pattern for every stack.
+        Official adapters and starters — same causal{" "}
+        <code style={{ fontFamily: "monospace" }}>log()</code> +{" "}
+        <code style={{ fontFamily: "monospace" }}>parent_id</code> pattern for
+        every stack.
       </p>
 
       <Callout type="tip">
-        <strong>Fastest start:</strong>{' '}
-        <code style={{ fontFamily: 'monospace' }}>pip install zizkadb-sdk</code> then{' '}
-        <code style={{ fontFamily: 'monospace' }}>zizkadb init my-agent --template langchain</code>.
-        Templates: <code style={{ fontFamily: 'monospace' }}>basic</code>,{' '}
-        <code style={{ fontFamily: 'monospace' }}>openai</code>,{' '}
-        <code style={{ fontFamily: 'monospace' }}>langchain</code>,{' '}
-        <code style={{ fontFamily: 'monospace' }}>crewai</code>,{' '}
-        <code style={{ fontFamily: 'monospace' }}>mcp-cursor</code>.
+        <strong>Fastest start:</strong>{" "}
+        <code style={{ fontFamily: "monospace" }}>pip install zizkadb-sdk</code>{" "}
+        then{" "}
+        <code style={{ fontFamily: "monospace" }}>
+          zizkadb init my-agent --template langchain
+        </code>
+        . Templates: <code style={{ fontFamily: "monospace" }}>basic</code>,{" "}
+        <code style={{ fontFamily: "monospace" }}>openai</code>,{" "}
+        <code style={{ fontFamily: "monospace" }}>langchain</code>,{" "}
+        <code style={{ fontFamily: "monospace" }}>crewai</code>,{" "}
+        <code style={{ fontFamily: "monospace" }}>mcp-cursor</code>.
       </Callout>
 
       <h2 style={{ ...S.h2, marginTop: 24 }}>Scaffold a project</h2>
@@ -965,10 +1712,12 @@ python agent.py`}</Code>
 
       <h2 style={S.h2}>OpenAI / Anthropic (SDK)</h2>
       <p style={S.p}>
-        Use <code style={{ fontFamily: 'monospace' }}>AsyncOpenAI</code> or{' '}
-        <code style={{ fontFamily: 'monospace' }}>AsyncAnthropic</code> inside{' '}
-        <code style={{ fontFamily: 'monospace' }}>async with ZizkaDB(...)</code>. Log the user turn, call the model, log the reply with{' '}
-        <code style={{ fontFamily: 'monospace' }}>parent_id=turn.event_id</code>.
+        Use <code style={{ fontFamily: "monospace" }}>AsyncOpenAI</code> or{" "}
+        <code style={{ fontFamily: "monospace" }}>AsyncAnthropic</code> inside{" "}
+        <code style={{ fontFamily: "monospace" }}>async with ZizkaDB(...)</code>
+        . Log the user turn, call the model, log the reply with{" "}
+        <code style={{ fontFamily: "monospace" }}>parent_id=turn.event_id</code>
+        .
       </p>
       <Code lang="python">{`# pip install zizkadb-sdk anthropic
 import anthropic
@@ -992,9 +1741,15 @@ async def run(user_input: str):
 
       <h2 style={S.h2}>LangChain</h2>
       <p style={S.p}>
-        Install <code style={{ fontFamily: 'monospace' }}>zizkadb-langchain</code> from PyPI.
-        Pass <code style={{ fontFamily: 'monospace' }}>ZizkaDBCallbackHandler</code> in{' '}
-        <code style={{ fontFamily: 'monospace' }}>config={'{'}&quot;callbacks&quot;: [handler]{'}'}</code>.
+        Install{" "}
+        <code style={{ fontFamily: "monospace" }}>zizkadb-langchain</code> from
+        PyPI. Pass{" "}
+        <code style={{ fontFamily: "monospace" }}>ZizkaDBCallbackHandler</code>{" "}
+        in{" "}
+        <code style={{ fontFamily: "monospace" }}>
+          config={"{"}&quot;callbacks&quot;: [handler]{"}"}
+        </code>
+        .
       </p>
       <Code lang="python">{`pip install zizkadb-sdk zizkadb-langchain langchain-openai
 
@@ -1011,8 +1766,10 @@ async with ZizkaDB("zizkadb_live_...") as db:
 
       <h2 style={S.h2}>CrewAI</h2>
       <p style={S.p}>
-        Install <code style={{ fontFamily: 'monospace' }}>zizkadb-crewai</code> from PyPI.
-        <code style={{ fontFamily: 'monospace' }}>ZizkaDBCrewLogger</code> logs kickoff, tasks, and final output with lineage.
+        Install <code style={{ fontFamily: "monospace" }}>zizkadb-crewai</code>{" "}
+        from PyPI.
+        <code style={{ fontFamily: "monospace" }}>ZizkaDBCrewLogger</code> logs
+        kickoff, tasks, and final output with lineage.
       </p>
       <Code lang="python">{`pip install zizkadb-sdk zizkadb-crewai crewai
 
@@ -1027,74 +1784,108 @@ async with ZizkaDB("zizkadb_live_...") as db:
 
       <h2 style={S.h2}>Examples in the repo</h2>
       <p style={S.p}>
-        Runnable trees under <code style={{ fontFamily: 'monospace' }}>examples/</code> on{' '}
-        <a href="https://github.com/Zizka-ai/ZizkaDB" style={{ color: '#1e40af' }}>GitHub</a>:
-        minimal-python, openai-agent, langchain-agent, crewai-agent, mcp-cursor.
+        Runnable trees under{" "}
+        <code style={{ fontFamily: "monospace" }}>examples/</code> on{" "}
+        <a
+          href="https://github.com/Zizka-ai/ZizkaDB"
+          style={{ color: "#1e40af" }}
+        >
+          GitHub
+        </a>
+        : minimal-python, openai-agent, langchain-agent, crewai-agent,
+        mcp-cursor.
       </p>
     </div>
-  )
+  );
 }
 
 // ── Concepts ──────────────────────────────────────────────────────────────────
 
-export function ConceptsSection({ onNavigate }: { onNavigate: (s: string) => void }) {
+export function ConceptsSection({
+  onNavigate,
+}: {
+  onNavigate: (s: string) => void;
+}) {
   return (
     <div>
       <h1 style={S.h1}>Core Concepts</h1>
       <p style={S.lead}>
-        How ZizkaDB thinks about agent memory — events, causality, search, replay, and drift.
+        How ZizkaDB thinks about agent memory — events, causality, search,
+        replay, and drift.
       </p>
       <Callout type="info">
-        Runnable examples: <code style={{ fontFamily: 'monospace' }}>zizkadb init my-agent</code> or the{' '}
-        <code style={{ fontFamily: 'monospace' }}>examples/</code> folder on GitHub. Framework guides in{' '}
-        <button type="button" onClick={() => onNavigate('frameworks')} style={{ background: 'none', border: 'none', color: '#1e40af', fontWeight: 500, cursor: 'pointer', padding: 0, fontSize: 'inherit' }}>
+        Runnable examples:{" "}
+        <code style={{ fontFamily: "monospace" }}>zizkadb init my-agent</code>{" "}
+        or the <code style={{ fontFamily: "monospace" }}>examples/</code> folder
+        on GitHub. Framework guides in{" "}
+        <button
+          type="button"
+          onClick={() => onNavigate("frameworks")}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#1e40af",
+            fontWeight: 500,
+            cursor: "pointer",
+            padding: 0,
+            fontSize: "inherit",
+          }}
+        >
           Framework integrations
-        </button>.
+        </button>
+        .
       </Callout>
 
       {[
         {
-          title: 'Events',
-          body: 'Everything is an event: agent name, event type string, JSON data, timestamp. Log what matters — user messages, tool calls, decisions, errors.',
+          title: "Events",
+          body: "Everything is an event: agent name, event type string, JSON data, timestamp. Log what matters — user messages, tool calls, decisions, errors.",
           code: `await db.log(agent="support-bot", event="tool_call",
     data={"tool": "get_billing", "user_id": 123})`,
         },
         {
-          title: 'Causal lineage',
+          title: "Causal lineage",
           body: 'parent_id links child → parent. db.why() walks from any event back to the root. This is how you debug "why did the agent do that?"',
           code: `msg  = await db.log(..., event="user_message", data={...})
 tool = await db.log(..., event="tool_call", parent_id=msg.event_id)
 await db.why(tool.event_id)  # user_message → tool_call`,
         },
         {
-          title: 'Sessions & baselines',
-          body: 'Use session_id on every event in one run. After enough sessions, baseline() compares recent behavior to historical patterns and returns a drift score.',
+          title: "Sessions & baselines",
+          body: "Use session_id on every event in one run. After enough sessions, baseline() compares recent behavior to historical patterns and returns a drift score.",
           code: `baseline = await db.baseline("support-bot", recent_window=50)
 # drift.score: 0 = identical, 1 = totally different`,
         },
         {
-          title: 'Semantic search',
-          body: 'Events are embedded automatically (OpenAI). Search in plain English — no SQL, no keywords.',
+          title: "Semantic search",
+          body: "Events are embedded automatically (OpenAI). Search in plain English — no SQL, no keywords.",
           code: `results = await db.search("angry customer billing", agent="support-bot")`,
         },
         {
-          title: 'Time travel',
-          body: 'at() reconstructs logged state from events up to a timestamp. Replays what was recorded, not a re-run of the LLM.',
+          title: "Time travel",
+          body: "at() reconstructs logged state from events up to a timestamp. Replays what was recorded, not a re-run of the LLM.",
           code: `from datetime import datetime, timezone
 state = await db.at("support-bot", datetime(2026, 5, 1, 15, 0, tzinfo=timezone.utc))`,
         },
         {
-          title: 'Context injection',
-          body: 'context_for() returns recent + semantically relevant events within a token budget — paste into your system prompt.',
+          title: "Context injection",
+          body: "context_for() returns recent + semantically relevant events within a token budget — paste into your system prompt.",
           code: `ctx = await db.context_for(agent="support-bot", task="refund question", max_tokens=2000)`,
         },
-      ].map(concept => (
-        <div key={concept.title} style={{ marginBottom: 48, paddingBottom: 48, borderBottom: '1px solid #f0f0f0' }}>
+      ].map((concept) => (
+        <div
+          key={concept.title}
+          style={{
+            marginBottom: 48,
+            paddingBottom: 48,
+            borderBottom: "1px solid #f0f0f0",
+          }}
+        >
           <h2 style={{ ...S.h2, marginTop: 0 }}>{concept.title}</h2>
           <p style={S.p}>{concept.body}</p>
           <Code lang="python">{concept.code}</Code>
         </div>
       ))}
     </div>
-  )
+  );
 }

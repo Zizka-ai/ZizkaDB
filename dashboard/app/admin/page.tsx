@@ -24,8 +24,9 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 
 import { setAdminToken, clearAdminToken, getAdminToken } from "@/lib/auth";
+import { FOUNDER_EMAIL, POLL_INTERVAL_MS, OTP_LENGTH } from "@/lib/constants";
 
-const ADMIN_EMAIL = "founder@zizka.ai";
+const ADMIN_EMAIL = FOUNDER_EMAIL;
 
 type Section = "subscribers" | "managed" | "telemetry" | "demo_requests";
 
@@ -89,11 +90,10 @@ function Login({ onAuthed }: { onAuthed: (t: string) => void }) {
   const send = async () => {
     setBusy(true);
     setErr("");
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 30_000);
       await adminRequestOtp(ADMIN_EMAIL, controller.signal);
-      clearTimeout(timer);
       setStep("verify");
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") {
@@ -104,6 +104,7 @@ function Login({ onAuthed }: { onAuthed: (t: string) => void }) {
         setErr(e instanceof Error ? e.message : "Failed");
       }
     } finally {
+      clearTimeout(timer);
       setBusy(false);
     }
   };
@@ -186,13 +187,13 @@ function Login({ onAuthed }: { onAuthed: (t: string) => void }) {
               autoFocus
               value={otp}
               onChange={(e) =>
-                setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                setOtp(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))
               }
               onKeyDown={(e) =>
-                e.key === "Enter" && otp.length === 6 && verify()
+                e.key === "Enter" && otp.length === OTP_LENGTH && verify()
               }
               placeholder="123456"
-              maxLength={6}
+              maxLength={OTP_LENGTH}
               style={{
                 width: "100%",
                 padding: "12px 14px",
@@ -210,8 +211,8 @@ function Login({ onAuthed }: { onAuthed: (t: string) => void }) {
             />
             <button
               onClick={verify}
-              disabled={busy || otp.length !== 6}
-              style={btnPrimary(busy || otp.length !== 6)}
+              disabled={busy || otp.length !== OTP_LENGTH}
+              style={btnPrimary(busy || otp.length !== OTP_LENGTH)}
             >
               {busy ? "Verifying…" : "Sign in"}
             </button>
@@ -314,7 +315,7 @@ function Dashboard({
     };
 
     loadOverview();
-    const interval = setInterval(loadOverview, 10_000);
+    const interval = setInterval(loadOverview, POLL_INTERVAL_MS);
 
     return () => {
       cancelled = true;
@@ -750,7 +751,7 @@ function SubscribersSection({ token }: { token: string }) {
       .then(setOverview)
       .catch(() => {});
     load();
-    const interval = setInterval(load, 10_000);
+    const interval = setInterval(load, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, statusFilter]);
@@ -964,7 +965,7 @@ function ManagedSection({ token }: { token: string }) {
       loadUsers();
     };
     loadAll();
-    const interval = setInterval(loadAll, 10_000);
+    const interval = setInterval(loadAll, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, filter]);
@@ -1275,7 +1276,7 @@ function DemoRequestsSection({ token }: { token: string }) {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 10_000);
+    const interval = setInterval(load, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
