@@ -166,3 +166,18 @@ export function pricingCtaStyle(filled: boolean) {
     boxShadow: filled ? '0 4px 14px rgba(249,115,22,0.25)' : 'none',
   } as const
 }
+
+export const tealBtn = {
+  display: 'inline-flex' as const,
+  alignItems: 'center' as const,
+  gap: 8,
+  padding: '14px 24px',
+  background: `linear-gradient(135deg, ${M.teal} 0%, #0f766e 100%)`,
+  color: '#fff',
+  borderRadius: 12,
+  textDecoration: 'none',
+  fontWeight: 700,
+  fontSize: 15,
+  border: 'none',
+  boxShadow: '0 4px 20px rgba(13,148,136,0.35)',
+}
