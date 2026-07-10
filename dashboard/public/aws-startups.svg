@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 44" role="img" aria-label="AWS">
-  <g transform="translate(0 6)">
-    <path fill="#FF9900" d="M14.3 24.2c-5.5 4-13.5 6.2-20.4 6.2C-10 30.4-19.4 23.7-19.4 15.4c0-9.5 8.3-17.2 18.6-17.2 8.6 0 16 5.6 16 13.6 0 6.7-4 10.6-9.9 10.6-2.2 0-4.1-.6-5.8-1.6l-.2 1.2c-.3 1.3-1.2 2.9-1.8 3.9l2.8 2.2zm-7.9-9.8c0 4.1 2.7 6.9 6.7 6.9 4.2 0 7.9-2.6 7.9-7.6 0-4.3-2.7-6.8-6.6-6.8-4.2 0-8 2.7-8 7.5z" transform="translate(19.4 17.2)"/>
-    <text x="0" y="22" fill="#FFFFFF" font-family="Inter, Helvetica Neue, Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="-0.5">aws</text>
-  </g>
-</svg>

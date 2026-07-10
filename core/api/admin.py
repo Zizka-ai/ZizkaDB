@@ -535,34 +535,3 @@ async def admin_demo_requests(
         }
         for r in rows
     ]
-
-
-@router.get("/marketing-events")
-async def admin_marketing_events(
-    limit: int = Query(100, ge=1, le=500),
-    _: dict = Depends(require_admin),
-):
-    pool = get_pool()
-    rows = await pool.fetch(
-        """
-        SELECT event_id, visitor_id, session_id, event_type, segment, page_path, payload, ip_address, created_at
-        FROM marketing_events
-        ORDER BY created_at DESC
-        LIMIT $1
-        """,
-        limit,
-    )
-    return [
-        {
-            "event_id":    str(r["event_id"]),
-            "visitor_id":  r["visitor_id"],
-            "session_id":  r["session_id"],
-            "event_type":  r["event_type"],
-            "segment":     r["segment"],
-            "page_path":   r["page_path"],
-            "payload":     r["payload"] if isinstance(r["payload"], dict) else {},
-            "ip_address":  r["ip_address"],
-            "created_at":  r["created_at"].isoformat() if r["created_at"] else None,
-        }
-        for r in rows
-    ]

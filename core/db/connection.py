@@ -49,6 +49,10 @@ async def init_db():
         ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ;
         ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(255);
         ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_subscription_id VARCHAR(255);
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS retention_trial_used BOOLEAN NOT NULL DEFAULT FALSE;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS gdpr_consent_at TIMESTAMPTZ;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS marketing_consent BOOLEAN NOT NULL DEFAULT FALSE;
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS marketing_consent_at TIMESTAMPTZ;
     """)
     await _pg_pool.execute("""
         UPDATE users
@@ -57,22 +61,12 @@ async def init_db():
             trial_ends_at = COALESCE(trial_ends_at, created_at + INTERVAL '30 days')
         WHERE plan IS NULL OR subscription_status IS NULL
     """)
-
-    # Restore dashboard access for users blocked by Stripe checkout rollout (no data deleted)
-    restored = await _pg_pool.execute(
-        """
+    await _pg_pool.execute("""
         UPDATE users
         SET subscription_status = 'trialing',
-            plan = COALESCE(plan, 'pro'),
             trial_ends_at = COALESCE(trial_ends_at, NOW() + INTERVAL '30 days')
-        WHERE stripe_subscription_id IS NULL
-          AND subscription_status IN (
-            'pending_checkout', 'past_due', 'unpaid', 'incomplete', 'incomplete_expired'
-          )
-        """
-    )
-    if restored and restored != "UPDATE 0":
-        logger.info("Restored local trial access after Stripe rollback: %s", restored)
+        WHERE subscription_status = 'pending_checkout'
+    """)
 
     await _pg_pool.execute("""
         CREATE TABLE IF NOT EXISTS community_posts (
@@ -156,26 +150,11 @@ async def init_db():
 
     await _pg_pool.execute("""
         ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS email VARCHAR(255) NOT NULL DEFAULT '';
-        ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS position VARCHAR(120);
-        ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS source VARCHAR(64);
     """)
 
     await _pg_pool.execute("""
-        CREATE TABLE IF NOT EXISTS marketing_events (
-            event_id    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            visitor_id  TEXT NOT NULL,
-            session_id  TEXT,
-            event_type  VARCHAR(64) NOT NULL,
-            segment     VARCHAR(32),
-            page_path   VARCHAR(512),
-            payload     JSONB NOT NULL DEFAULT '{}'::jsonb,
-            ip_address  VARCHAR(64),
-            created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        );
-        CREATE INDEX IF NOT EXISTS idx_marketing_events_created
-            ON marketing_events (created_at DESC);
-        CREATE INDEX IF NOT EXISTS idx_marketing_events_visitor
-            ON marketing_events (visitor_id);
+        ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS position VARCHAR(120);
+        ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS source VARCHAR(64);
     """)
 
     _redis = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
@@ -183,6 +162,7 @@ async def init_db():
 
     _qdrant = AsyncQdrantClient(url=os.getenv("QDRANT_URL", "http://localhost:6333"))
     await _ensure_qdrant_collection()
+    await _log_qdrant_version()
     logger.info("Qdrant connected")
 
 
@@ -226,6 +206,20 @@ def get_qdrant() -> AsyncQdrantClient:
     if not _qdrant:
         raise RuntimeError("Qdrant not initialized")
     return _qdrant
+
+
+async def _log_qdrant_version() -> None:
+    try:
+        import httpx
+
+        url = os.getenv("QDRANT_URL", "http://localhost:6333").rstrip("/")
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            response = await client.get(f"{url}/")
+            if response.status_code == 200:
+                version = response.json().get("version", "unknown")
+                logger.info("Qdrant server version: %s", version)
+    except Exception as exc:
+        logger.warning("Could not fetch Qdrant version: %s", exc)
 
 
 async def check_postgres() -> dict:

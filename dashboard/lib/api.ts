@@ -243,10 +243,6 @@ export async function adminDemoRequests(token: string, params: { search?: string
   return apiFetch(`/v1/admin/demo-requests${q ? `?${q}` : ''}`, token)
 }
 
-export async function adminMarketingEvents(token: string, limit = 150) {
-  return apiFetch(`/v1/admin/marketing-events?limit=${limit}`, token)
-}
-
 export async function getApiKeys(token: string) {
   return apiFetch('/v1/auth/api-keys', token)
 }

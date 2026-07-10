@@ -6,7 +6,6 @@ import {
   adminOverview, adminTelemetrySummary, adminTelemetryRecent,
   adminManagedOverview, adminManagedSubscribers, adminManagedUsers, adminManagedUsage,
   adminDemoRequests,
-  adminMarketingEvents,
 } from '@/lib/api'
 import { format, formatDistanceToNow } from 'date-fns'
 
@@ -14,19 +13,7 @@ import { setAdminToken, clearAdminToken, getAdminToken } from '@/lib/auth'
 
 const ADMIN_EMAIL = 'founder@zizka.ai'
 
-type Section = 'subscribers' | 'managed' | 'telemetry' | 'demo_requests' | 'marketing'
-
-interface MarketingEvent {
-  event_id:    string
-  visitor_id:  string
-  session_id:  string
-  event_type:  string
-  segment:     string | null
-  page_path:   string | null
-  payload:     Record<string, unknown>
-  ip_address:  string | null
-  created_at:  string | null
-}
+type Section = 'subscribers' | 'managed' | 'telemetry' | 'demo_requests'
 
 interface Overview {
   telemetry: { total_installs?: number; active_7d?: number; active_24h?: number; total_pings?: number }
@@ -338,7 +325,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             { key: 'managed',     label: 'All customers' },
             { key: 'telemetry',   label: 'SDKs & telemetry' },
             { key: 'demo_requests', label: 'Demo requests' },
-            { key: 'marketing',     label: 'Marketing events' },
           ] as { key: Section; label: string }[]).map((t) => (
             <button key={t.key} onClick={() => setSection(t.key)}
                     style={{
@@ -364,7 +350,6 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         {section === 'managed'     && <ManagedSection   token={token} />}
         {section === 'telemetry'   && <TelemetrySection token={token} />}
         {section === 'demo_requests' && <DemoRequestsSection token={token} />}
-        {section === 'marketing'     && <MarketingEventsSection token={token} />}
       </div>
     </div>
   )
@@ -859,121 +844,6 @@ function DemoRequestsSection({ token }: { token: string }) {
                          style={{ color: '#a78bfa', textDecoration: 'none' }}>
                         {r.website}
                       </a>
-                    </Td>
-                    <Td align="right" subtle>
-                      {r.created_at ? formatDistanceToNow(new Date(r.created_at), { addSuffix: true }) : '—'}
-                    </Td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-    </div>
-  )
-}
-
-
-// ── Marketing events ───────────────────────────────────────────────────────
-
-function MarketingEventsSection({ token }: { token: string }) {
-  const [rows, setRows] = useState<MarketingEvent[] | null>(null)
-  const [filter, setFilter] = useState('')
-
-  const load = () => {
-    adminMarketingEvents(token, 200).then(setRows).catch(() => setRows([]))
-  }
-
-  useEffect(() => {
-    load()
-    const interval = setInterval(load, 15_000)
-    return () => clearInterval(interval)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
-
-  const filtered = rows?.filter(r => {
-    if (!filter.trim()) return true
-    const q = filter.toLowerCase()
-    return (
-      r.event_type.toLowerCase().includes(q) ||
-      (r.segment ?? '').toLowerCase().includes(q) ||
-      (r.visitor_id ?? '').toLowerCase().includes(q) ||
-      JSON.stringify(r.payload).toLowerCase().includes(q)
-    )
-  }) ?? null
-
-  const byType = filtered?.reduce<Record<string, number>>((acc, r) => {
-    acc[r.event_type] = (acc[r.event_type] ?? 0) + 1
-    return acc
-  }, {}) ?? {}
-
-  const bySegment = filtered?.reduce<Record<string, number>>((acc, r) => {
-    const s = r.segment ?? 'unknown'
-    acc[s] = (acc[s] ?? 0) + 1
-    return acc
-  }, {}) ?? {}
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        <Stat label="Events (loaded)" value={fmt(filtered?.length)} sub="last 200 from homepage" accent="#f97316" />
-        <Stat label="Unique visitors" value={fmt(new Set(filtered?.map(r => r.visitor_id)).size)} sub="in this batch" />
-        <Stat label="Page views" value={fmt(byType.page_view)} sub="segment picker + hero" />
-        <Stat label="CTA clicks" value={fmt(byType.cta_click)} sub="signup, demo, calendly" accent="#22c55e" />
-      </div>
-
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-        <input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filter by event type, segment, visitor…"
-          style={{
-            flex: '1 1 220px', padding: '8px 12px', background: '#0a0a0a',
-            border: '1px solid #2a2a2a', borderRadius: 8, color: '#fff', fontSize: 13,
-          }}
-        />
-        <button type="button" onClick={load} style={btnSmall()}>Refresh</button>
-      </div>
-
-      {Object.keys(bySegment).length > 0 && (
-        <Card title="By segment" subtitle="Audience picker on homepage (solo / managed / enterprise).">
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-            {Object.entries(bySegment).map(([seg, n]) => (
-              <span key={seg} style={{ fontSize: 13, color: '#d4d4d4' }}>
-                <span style={{ fontWeight: 600, color: '#fff' }}>{seg}</span>
-                {' · '}{fmt(n)}
-              </span>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      <Card title="Recent events" subtitle="Homepage funnel: page_view → segment_select → cta_click / demo_submit / github_click. Auto-refreshes every 15s.">
-        {!filtered ? <SkeletonBlock /> : filtered.length === 0 ? (
-          <Empty>No marketing events yet.</Empty>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 900 }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #1f1f1f', color: '#737373', fontSize: 11, textTransform: 'uppercase' }}>
-                  <Th>Event</Th>
-                  <Th>Segment</Th>
-                  <Th>Visitor</Th>
-                  <Th>Payload</Th>
-                  <Th align="right">When</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r) => (
-                  <tr key={r.event_id} style={{ borderBottom: '1px solid #161616' }}>
-                    <Td mono>{r.event_type}</Td>
-                    <Td>{r.segment ?? '—'}</Td>
-                    <Td mono subtle>{r.visitor_id.slice(0, 8)}…</Td>
-                    <Td subtle>
-                      {Object.keys(r.payload).length > 0
-                        ? JSON.stringify(r.payload).slice(0, 80) + (JSON.stringify(r.payload).length > 80 ? '…' : '')
-                        : '—'}
                     </Td>
                     <Td align="right" subtle>
                       {r.created_at ? formatDistanceToNow(new Date(r.created_at), { addSuffix: true }) : '—'}
