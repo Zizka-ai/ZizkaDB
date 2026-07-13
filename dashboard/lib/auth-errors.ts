@@ -10,7 +10,9 @@ export function isAlreadyRegisteredError(err: unknown): boolean {
 
 export function isGdprConsentError(err: unknown): boolean {
   return (
-    err instanceof Error && err.message.toLowerCase().includes("gdpr consent")
+    err instanceof AuthRequestError &&
+    err.status === 401 &&
+    err.message.toLowerCase().includes("gdpr consent")
   );
 }
 

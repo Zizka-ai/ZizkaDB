@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { requestOtp, verifyOtp } from "@/lib/api";
+import { requestOtp, verifyOtp, API as API_URL } from "@/lib/api";
 import { authErrorMessage, isNoAccountError } from "@/lib/auth-errors";
 import { getToken, setToken } from "@/lib/auth";
 import { OTP_LENGTH } from "@/lib/constants";
@@ -11,7 +11,6 @@ import { useResendCooldown } from "@/hooks/useResendCooldown";
 import { BrandLogo } from "@/components/BrandLogo";
 
 const IS_DEV_MODE = process.env.NEXT_PUBLIC_DEV_MODE === "true";
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 function completeAuthRedirect(path: string) {
   window.location.assign(path);

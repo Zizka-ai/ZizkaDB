@@ -3,7 +3,7 @@ import "./globals.css";
 
 const TAGLINE =
   "Operational Database For AI Agents. Open source. Self-host free or managed cloud.";
-const SITE_URL = process.env.DASHBOARD_URL ?? "";
+const SITE_URL = process.env.DASHBOARD_URL || "https://db.zizka.ai";
 
 export const metadata: Metadata = {
   title: {

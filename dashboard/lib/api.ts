@@ -1,6 +1,6 @@
 // NEXT_PUBLIC_ prefix makes this available in the browser.
 // Falls back to '' (relative URL) so Nginx can route /v1/ → FastAPI.
-const API = process.env.NEXT_PUBLIC_API_URL ?? ''
+export const API = process.env.NEXT_PUBLIC_API_URL ?? ''
 
 export class AuthRequestError extends Error {
   readonly status: number
