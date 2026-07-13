@@ -40,7 +40,7 @@ export * from './types'
 
 const CLOUD_HOST = 'https://db.zizka.ai'
 const TELEMETRY_URL = 'https://db.zizka.ai/v1/telemetry'
-const SDK_VERSION = '0.2.4'
+const SDK_VERSION = '0.2.5'
 const DEFAULT_DEV_API_KEY = 'zizkadb_dev_local'
 
 function isLocalHost(host: string): boolean {
@@ -113,6 +113,23 @@ function _uuid(): string {
     const r = (Math.random() * 16) | 0
     return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
   })
+}
+
+function formatFastApiDetail(detail: unknown, fallback: string): string {
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (item && typeof item === 'object' && 'msg' in item) {
+          return String((item as { msg: unknown }).msg)
+        }
+        return JSON.stringify(item)
+      })
+      .join('; ')
+  }
+  if (detail && typeof detail === 'object') return JSON.stringify(detail)
+  if (detail == null) return fallback
+  return String(detail)
 }
 
 export class ZizkaDB {
@@ -509,7 +526,7 @@ export class ZizkaDB {
       let detail = res.statusText
       try {
         const json = await res.json() as Record<string, unknown>
-        detail = (json.detail as string) ?? detail
+        detail = formatFastApiDetail(json.detail, detail)
       } catch {}
       throw new AgentScopeError(`Agent mismatch (403): ${detail}`)
     }
@@ -523,7 +540,7 @@ export class ZizkaDB {
       let detail = res.statusText
       try {
         const json = await res.json() as Record<string, unknown>
-        detail = (json.detail as string) ?? detail
+        detail = formatFastApiDetail(json.detail, detail)
       } catch {}
       throw new ZizkaDBError(`ZizkaDB error (${res.status}): ${detail}`, res.status)
     }

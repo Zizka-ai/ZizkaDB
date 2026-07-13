@@ -218,7 +218,9 @@ class ZizkaDBCallbackHandler(AsyncCallbackHandler):
         parent_run_id: UUID | None,
     ) -> LogResult:
         parent_id = None
-        if parent_run_id and parent_run_id in self._run_parents:
+        if event.endswith(("_end", "_error")):
+            parent_id = self._run_parents.get(run_id)
+        if parent_id is None and parent_run_id and parent_run_id in self._run_parents:
             parent_id = self._run_parents[parent_run_id]
         data = {**data, "run_id": str(run_id)}
         result = await self.db.log(
@@ -228,7 +230,10 @@ class ZizkaDBCallbackHandler(AsyncCallbackHandler):
             parent_id=parent_id,
             session_id=self.session_id,
         )
-        self._run_parents[run_id] = result.event_id
+        if event.endswith("_start"):
+            self._run_parents[run_id] = result.event_id
+        elif event.endswith(("_end", "_error")):
+            self._run_parents.pop(run_id, None)
         # Evict oldest entries if the dict grows too large
         if len(self._run_parents) > _RUN_PARENT_MAX:
             oldest = next(iter(self._run_parents))

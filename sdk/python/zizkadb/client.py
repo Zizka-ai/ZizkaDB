@@ -208,11 +208,9 @@ class ZizkaDB:
             CausalChain — call .print() to display as a tree
 
         Example:
-            chain = await db.why("evt_abc123")
+            tool = await db.log(...)
+            chain = await db.why(tool.event_id)
             chain.print()
-            # user_message: "why is my bill high?"
-            #     └── tool_call: get_billing(user=123)
-            #         └── agent_response: "I found an anomaly"
         """
         response = await self._get(
             f"/v1/events/{event_id}/why",

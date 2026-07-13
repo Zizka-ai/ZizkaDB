@@ -77,6 +77,19 @@ async def test_dev_token_and_log_event():
                 "data": {"ok": True},
             },
         )
-    assert log_res.status_code == 200
-    body = log_res.json()
-    assert "event_id" in body
+        assert log_res.status_code == 201
+        body = log_res.json()
+        assert "event_id" in body
+        event_id = body["event_id"]
+
+        why_res = await client.get(
+            f"/v1/events/{event_id}/why",
+            headers={"Authorization": f"Bearer {dev_key}"},
+        )
+        assert why_res.status_code == 200
+
+        bad_why = await client.get(
+            "/v1/events/evt_abc123/why",
+            headers={"Authorization": f"Bearer {dev_key}"},
+        )
+        assert bad_why.status_code == 404

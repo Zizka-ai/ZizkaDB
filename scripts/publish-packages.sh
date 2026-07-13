@@ -37,6 +37,23 @@ echo "→ Build Python SDK ${SDK_VER}"
 pip install -q build twine
 (cd sdk/python && rm -rf dist build && python3 -m build)
 
+echo "→ Verify PyPI wheel matches source (LangChain callbacks)"
+python3 - <<'PY'
+import glob, zipfile, sys
+from pathlib import Path
+wheels = glob.glob("sdk/python/dist/zizkadb_sdk-*.whl")
+if not wheels:
+    sys.exit("No wheel built")
+with zipfile.ZipFile(wheels[0]) as z:
+    whl = next(n for n in z.namelist() if n.endswith("langchain/callbacks.py"))
+    pkg = z.read(whl).decode()
+for marker in ("on_llm_error", "on_chain_start", "_RUN_PARENT_MAX"):
+    if marker not in pkg:
+        print(f"✗ PyPI wheel missing {marker}")
+        sys.exit(1)
+print("✓ PyPI wheel callbacks include required handlers")
+PY
+
 echo "→ Build MCP ${MCP_VER}"
 (cd mcp && rm -rf dist build && python3 -m build)
 

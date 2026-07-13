@@ -77,41 +77,48 @@ async def get_context(
     # 2. Semantically relevant events via Qdrant
     semantic_rows = []
     embedding = await generate_embedding(body.task, tenant_id)
-    if embedding:
-        try:
-            from qdrant_client.models import Filter, FieldCondition, MatchValue
-            qdrant = get_qdrant()
+    if not embedding:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Embedding generation failed. Configure embeddings in Dashboard → Settings "
+                "(platform key or your OpenAI API key)."
+            ),
+        )
+    try:
+        from qdrant_client.models import Filter, FieldCondition, MatchValue
+        qdrant = get_qdrant()
 
-            must = [
-                FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id)),
-                FieldCondition(key="agent_id", match=MatchValue(value=body.agent)),
-            ]
-            results = await qdrant.search(
-                collection_name="agent_events",
-                query_vector=embedding,
-                query_filter=Filter(must=must),
-                limit=body.semantic_limit,
-                with_payload=True,
+        must = [
+            FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id)),
+            FieldCondition(key="agent_id", match=MatchValue(value=body.agent)),
+        ]
+        results = await qdrant.search(
+            collection_name="agent_events",
+            query_vector=embedding,
+            query_filter=Filter(must=must),
+            limit=body.semantic_limit,
+            with_payload=True,
+        )
+
+        if results:
+            sem_ids = [r.id for r in results]
+            score_map = {str(r.id): round(r.score, 3) for r in results}
+
+            sem_rows = await pool.fetch(
+                """
+                SELECT event_id, agent_id, timestamp, event_type, data, session_id
+                FROM events
+                WHERE event_id = ANY($1::uuid[]) AND tenant_id = $2
+                  AND ($3::text IS NULL OR session_id::text != $3)
+                """,
+                sem_ids, tenant_id, body.session_id,
             )
 
-            if results:
-                sem_ids = [r.id for r in results]
-                score_map = {str(r.id): round(r.score, 3) for r in results}
-
-                sem_rows = await pool.fetch(
-                    """
-                    SELECT event_id, agent_id, timestamp, event_type, data, session_id
-                    FROM events
-                    WHERE event_id = ANY($1::uuid[]) AND tenant_id = $2
-                      AND ($3::text IS NULL OR session_id::text != $3)
-                    """,
-                    sem_ids, tenant_id, body.session_id,
-                )
-
-                for row in sem_rows:
-                    semantic_rows.append((row, score_map.get(str(row["event_id"]), 0.0)))
-        except Exception as e:
-            log.warning(f"Semantic search failed for context: {e}")
+            for row in sem_rows:
+                semantic_rows.append((row, score_map.get(str(row["event_id"]), 0.0)))
+    except Exception as e:
+        log.warning(f"Semantic search failed for context: {e}")
 
     # 3. Merge — deduplicate, recent first then semantic fills gaps
     # Recent events take priority: they provide temporal grounding. Semantic

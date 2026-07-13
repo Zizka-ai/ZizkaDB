@@ -15,7 +15,7 @@ class ZizkaDBCrewLogger:
     Usage:
         logger = ZizkaDBCrewLogger(db, agent="research-crew")
         kickoff = await logger.log_kickoff(goal="...")
-        result = crew.kickoff()
+        result = await crew.kickoff_async()
         await logger.log_output(str(result), parent_id=kickoff.event_id)
     """
 

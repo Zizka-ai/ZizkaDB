@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zizkadb-sdk"
-version = "0.2.4"
+version = "0.2.5"
 description = "ZizkaDB tells you when your agent stops behaving like itself. Causal lineage, time travel and behavioral baselines for any AI agent."
 readme = "README.md"
 license = { text = "AGPL-3.0" }

@@ -17,8 +17,13 @@ Go to [db.zizka.ai/signup](https://db.zizka.ai/signup) → enter email → verif
 
 ```bash
 export ZIZKADB_API_KEY=zizkadb_live_...
-# or legacy alias:
-export AGENTDB_API_KEY=zizkadb_live_...
+export ZIZKADB_AGENT=support-bot    # must match the agent you created
+# Legacy alias still works:
+# export AGENTDB_API_KEY=zizkadb_live_...
+# Self-host:
+# export ZIZKADB_HOST=http://localhost:8000
+# Optional:
+# export ZIZKADB_TELEMETRY=false
 ```
 
 ### 4. Log your first event

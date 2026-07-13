@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Any
 from uuid import UUID
 from datetime import datetime
@@ -17,8 +17,8 @@ router = APIRouter()
 # ─────────────────────────────────────────
 
 class LogEventRequest(BaseModel):
-    agent: str
-    event: str
+    agent: str = Field(..., min_length=1, max_length=255)
+    event: str = Field(..., min_length=1, max_length=255)
     data: dict[str, Any]
     parent_id: str | None = None
     session_id: str | None = None
@@ -128,6 +128,11 @@ async def why(
 ):
     pool = get_pool()
     tenant_id = tenant["tenant_id"]
+
+    try:
+        UUID(event_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Event not found")
 
     rows = await pool.fetch(
         """

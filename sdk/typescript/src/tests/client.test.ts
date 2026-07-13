@@ -300,6 +300,16 @@ describe('error mapping', () => {
     expect((err as ZizkaDBError).statusCode).toBe(422)
   })
 
+  it('formats FastAPI array validation detail on 422', async () => {
+    mockFetch(422, {
+      detail: [{ type: 'missing', loc: ['body', 'agent'], msg: 'Field required' }],
+    })
+    const db = new ZizkaDB({ apiKey: 'zizkadb_live_test' })
+    const err = await db.log({ agent: 'x', event: 'e', data: {} }).catch(e => e)
+    expect((err as ZizkaDBError).message).toContain('Field required')
+    expect((err as ZizkaDBError).message).not.toContain('[object Object]')
+  })
+
   it('includes detail from JSON body in error message', async () => {
     mockFetch(400, { detail: 'agent_id too long' })
     const db = new ZizkaDB({ apiKey: 'zizkadb_live_test' })

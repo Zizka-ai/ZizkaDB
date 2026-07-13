@@ -13,7 +13,7 @@ from zizkadb_crewai import ZizkaDBCrewLogger
 async with ZizkaDB("zizkadb_live_...") as db:
     logger = ZizkaDBCrewLogger(db, agent="research-crew")
     kickoff = await logger.log_kickoff(goal="Research causal logging")
-    output = crew.kickoff()
+    output = await crew.kickoff_async()
     await logger.log_output(str(output), parent_id=kickoff.event_id)
 ```
 

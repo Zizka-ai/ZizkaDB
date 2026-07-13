@@ -300,12 +300,20 @@ export function OverviewSection({
       </p>
 
       <Callout type="info">
-        <strong>Managed cloud (recommended):</strong> Sign up at{" "}
-        <Link href="/signup" style={{ color: "#1e40af", fontWeight: 500 }}>
-          db.zizka.ai/signup
-        </Link>
-        , create an API key in Settings, and connect via SDK, MCP, or REST. We
-        run Postgres, Qdrant, embeddings, and the dashboard.
+        <strong>Managed cloud (recommended):</strong> Sign up at{' '}
+        <Link href="/signup" style={{ color: '#1e40af', fontWeight: 500 }}>db.zizka.ai/signup</Link>
+        , create an agent in the dashboard, copy its API key, and use the <strong>same agent name</strong> in every{' '}
+        <code style={{ fontFamily: 'monospace' }}>log()</code> call. Connect via Python SDK, TypeScript SDK, MCP, or REST.
+      </Callout>
+
+      <Callout type="tip">
+        <strong>Environment variables</strong> (all SDKs):
+        <Code lang="bash">{`export ZIZKADB_API_KEY=zizkadb_live_...   # or AGENTDB_API_KEY (legacy)
+export ZIZKADB_AGENT=my-bot                 # must match dashboard agent name
+# Self-host only:
+export ZIZKADB_HOST=http://localhost:8000
+# Optional privacy:
+export ZIZKADB_TELEMETRY=false`}</Code>
       </Callout>
 
       <Callout type="tip">
@@ -811,8 +819,9 @@ export function TypeScriptSection() {
     <div>
       <h1 style={S.h1}>TypeScript SDK</h1>
       <p style={S.lead}>
-        Integrate ZizkaDB in Node.js, Bun, Deno, or edge runtimes. Same API
-        surface as Python.
+        Integrate ZizkaDB in Node.js, Bun, Deno, or edge runtimes. Core HTTP client matches Python for{' '}
+        <code style={{ fontFamily: 'monospace' }}>log</code>, <code style={{ fontFamily: 'monospace' }}>why</code>,{' '}
+        <code style={{ fontFamily: 'monospace' }}>search</code>, and related APIs. LangChain and CrewAI adapters are Python-only — use MCP or REST from Node for those stacks.
       </p>
 
       <Step n={1} title="Prerequisites">
@@ -1690,18 +1699,31 @@ export function FrameworksSection() {
       </p>
 
       <Callout type="tip">
-        <strong>Fastest start:</strong>{" "}
-        <code style={{ fontFamily: "monospace" }}>pip install zizkadb-sdk</code>{" "}
-        then{" "}
-        <code style={{ fontFamily: "monospace" }}>
-          zizkadb init my-agent --template langchain
-        </code>
-        . Templates: <code style={{ fontFamily: "monospace" }}>basic</code>,{" "}
-        <code style={{ fontFamily: "monospace" }}>openai</code>,{" "}
-        <code style={{ fontFamily: "monospace" }}>langchain</code>,{" "}
-        <code style={{ fontFamily: "monospace" }}>crewai</code>,{" "}
-        <code style={{ fontFamily: "monospace" }}>mcp-cursor</code>.
+        <strong>Fastest start (Python):</strong>{' '}
+        <code style={{ fontFamily: 'monospace' }}>pip install zizkadb-sdk</code> then{' '}
+        <code style={{ fontFamily: 'monospace' }}>zizkadb init my-agent --template langchain</code>.
+        The <code style={{ fontFamily: 'monospace' }}>zizkadb init</code> CLI ships with the Python SDK only.
+        Templates: <code style={{ fontFamily: 'monospace' }}>basic</code>,{' '}
+        <code style={{ fontFamily: 'monospace' }}>openai</code>,{' '}
+        <code style={{ fontFamily: 'monospace' }}>langchain</code>,{' '}
+        <code style={{ fontFamily: 'monospace' }}>crewai</code>,{' '}
+        <code style={{ fontFamily: 'monospace' }}>mcp-cursor</code>.
       </Callout>
+
+      <h2 style={S.h2}>Package overview</h2>
+      <div style={{ display: 'grid', gap: 10, marginBottom: 24 }}>
+        {[
+          ['Python SDK (zizkadb-sdk)', 'log, why, search, context_for, zizkadb init CLI'],
+          ['TypeScript SDK (npm)', 'log, why, search, context_for — HTTP client only'],
+          ['zizkadb-langchain', 'Auto-log LangChain LLM + tool steps (Python)'],
+          ['zizkadb-crewai', 'Log crew kickoff + output (Python)'],
+          ['zizkadb-mcp', 'Cursor / Claude Desktop tools — any language via MCP'],
+        ].map(([pkg, desc]) => (
+          <div key={pkg} style={{ padding: '12px 16px', background: '#fafafa', borderRadius: 10, border: '1px solid #ebebeb', fontSize: 13.5 }}>
+            <strong>{pkg}</strong> — {desc}
+          </div>
+        ))}
+      </div>
 
       <h2 style={{ ...S.h2, marginTop: 24 }}>Scaffold a project</h2>
       <Code lang="bash">{`pip install zizkadb-sdk
@@ -1779,7 +1801,7 @@ from zizkadb_crewai import ZizkaDBCrewLogger
 async with ZizkaDB("zizkadb_live_...") as db:
     logger = ZizkaDBCrewLogger(db, agent="research-crew")
     kickoff = await logger.log_kickoff(goal="Research topic X")
-    output = crew.kickoff()
+    output = await crew.kickoff_async()
     await logger.log_output(str(output), parent_id=kickoff.event_id)`}</Code>
 
       <h2 style={S.h2}>Examples in the repo</h2>

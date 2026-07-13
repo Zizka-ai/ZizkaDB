@@ -33,7 +33,7 @@ async def main() -> None:
             agent=researcher,
         )
         crew = Crew(agents=[researcher], tasks=[task], verbose=True)
-        result = crew.kickoff()
+        result = await crew.kickoff_async()
         await logger.log_output(str(result), parent_id=kickoff.event_id)
         print(result)
 

@@ -230,6 +230,39 @@ class TestOnToolError:
 
 class TestCausalLinkage:
     @pytest.mark.asyncio
+    async def test_llm_end_links_to_llm_start(self):
+        db = _make_db("parent-evt-id")
+        handler = _make_handler(db=db)
+        run_id = uuid4()
+
+        await handler.on_chat_model_start({"name": "gpt-4"}, [[]], run_id=run_id)
+        db.log.reset_mock()
+        db.log.return_value = MagicMock(event_id="end-evt-id")
+
+        gen = MagicMock()
+        gen.text = "done"
+        response = MagicMock(generations=[[gen]])
+        await handler.on_llm_end(response, run_id=run_id)
+
+        call_kwargs = db.log.call_args.kwargs
+        assert call_kwargs["parent_id"] == "parent-evt-id"
+
+    @pytest.mark.asyncio
+    async def test_tool_end_links_to_tool_start(self):
+        db = _make_db("tool-start-evt")
+        handler = _make_handler(db=db)
+        run_id = uuid4()
+
+        await handler.on_tool_start({"name": "search"}, "q", run_id=run_id)
+        db.log.reset_mock()
+        db.log.return_value = MagicMock(event_id="tool-end-evt")
+
+        await handler.on_tool_end("result", run_id=run_id)
+
+        call_kwargs = db.log.call_args.kwargs
+        assert call_kwargs["parent_id"] == "tool-start-evt"
+
+    @pytest.mark.asyncio
     async def test_child_uses_parent_event_id(self):
         db = _make_db("parent-evt-id")
         handler = _make_handler(db=db)

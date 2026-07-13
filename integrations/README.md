@@ -8,6 +8,15 @@ Official adapters for agent frameworks. Each package is optional — core SDK is
 | [crewai](crewai/) | `pip install zizkadb-crewai` | `ZizkaDBCrewLogger` for crew kickoff / output |
 | [mcp](../mcp/) | `uvx zizkadb-mcp` | Cursor, Claude Desktop, Windsurf tools |
 
+**Configure once (all packages):**
+
+```bash
+export ZIZKADB_API_KEY=zizkadb_live_...
+export ZIZKADB_AGENT=my-bot          # must match dashboard agent name
+# Self-host: export ZIZKADB_HOST=http://localhost:8000
+# Optional: export ZIZKADB_TELEMETRY=false
+```
+
 Monorepo dev:
 
 ```bash

@@ -48,7 +48,7 @@ zizkadb init my-agent --template mcp-cursor
 
 | Method | Description |
 |--------|-------------|
-| `log(agent, event, data, ...)` | Append event (auto-embeds) |
+| `log(agent, event, data, ...)` | Append event (embeds when tenant embeddings are configured) |
 | `query(agent, ...)` | List events |
 | `why(event_id)` | Causal chain via `parent_id` |
 | `search(query, agent?)` | Semantic search |
