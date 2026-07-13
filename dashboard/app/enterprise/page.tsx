@@ -1,6 +1,6 @@
 "use client";
 
-import { BRAND } from "@/components/brand";
+import { BRAND, BRAND_SHADOW_TINT } from "@/components/brand";
 import { BrandLogo } from "@/components/BrandLogo";
 import { CalendlyBookModal } from "@/components/marketing/CalendlyBookModal";
 import { EnterpriseConnectForm } from "@/components/marketing/enterprise/EnterpriseConnectForm";
@@ -803,7 +803,7 @@ export default function EnterprisePage() {
                     : `1px solid ${M.line}`,
                   position: "relative",
                   boxShadow: tier.highlight
-                    ? "0 12px 40px rgba(249,115,22,0.1)"
+                    ? `0 12px 40px ${BRAND_SHADOW_TINT}`
                     : "none",
                   height: "100%",
                   display: "flex",

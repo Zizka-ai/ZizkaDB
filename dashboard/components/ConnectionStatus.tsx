@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API } from "@/lib/api";
+import { IS_DEV_MODE as IS_DEV } from "@/lib/constants";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "";
-const IS_DEV = process.env.NEXT_PUBLIC_DEV_MODE === "true";
 const SETUP_SCRIPT_HINT = "bash scripts/setup-local.sh";
 
 function pythonQuickstartSnippet(clientArg: string): string {

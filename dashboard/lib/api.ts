@@ -566,6 +566,19 @@ export async function verifyOtp(
   }
 }
 
+// Self-host local dev only — issues a token for the default dev tenant.
+export async function devLogin(): Promise<{ access_token: string }> {
+  const res = await fetch(`${API}/v1/auth/dev-token`, { method: 'POST' })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }))
+    throw new AuthRequestError(
+      formatApiError(err.detail, 'Dev token failed'),
+      res.status,
+    )
+  }
+  return res.json()
+}
+
 export interface BillingStatus {
   enforced: boolean
   has_access: boolean

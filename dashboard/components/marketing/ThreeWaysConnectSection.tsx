@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { M, container, h2, lead, sectionTitle } from './marketing-theme'
-
-const GITHUB_URL = 'https://github.com/Zizka-ai/ZizkaDB'
+import { GITHUB_URL } from '@/lib/constants'
 
 const MCP_CONFIG = `{
   "mcpServers": {
