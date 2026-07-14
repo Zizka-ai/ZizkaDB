@@ -1,7 +1,6 @@
 'use client'
 
 import { BRAND } from '@/components/brand'
-import { BrandLogo } from '@/components/BrandLogo'
 import { CalendlyBookModal } from '@/components/marketing/CalendlyBookModal'
 import { EnterpriseConnectForm } from '@/components/marketing/enterprise/EnterpriseConnectForm'
 import {
