@@ -28,6 +28,9 @@ export function MarketingPageStyles() {
         outline: 2px solid #f97316;
         outline-offset: 2px;
       }
+      .zdb-footer-grid a:hover {
+        color: #fff !important;
+      }
       @media (max-width: 1024px) {
         .zdb-connect-grid { grid-template-columns: 1fr !important; }
         .zdb-feature-grid { grid-template-columns: repeat(2, 1fr) !important; }
@@ -50,8 +53,12 @@ export function MarketingPageStyles() {
         .zdb-resource-grid { grid-template-columns: 1fr 1fr !important; }
         .zdb-hero-btns { flex-direction: column !important; align-items: stretch !important; }
         .zdb-hero-btns a, .zdb-hero-btns button { justify-content: center !important; }
-        .zdb-footer { flex-direction: column !important; gap: 16px !important; align-items: flex-start !important; }
-        .zdb-footer-links { flex-wrap: wrap !important; gap: 16px !important; }
+        .zdb-footer-grid { grid-template-columns: 1fr !important; gap: 32px !important; padding: 40px 20px 32px !important; }
+        .zdb-footer-meta { flex-direction: column !important; padding: 16px 20px 24px !important; }
+        .zdb-footer-meta span { text-align: left !important; }
+      }
+      @media (max-width: 1024px) and (min-width: 769px) {
+        .zdb-footer-grid { grid-template-columns: 1fr 1fr !important; }
       }
     `}</style>
   )

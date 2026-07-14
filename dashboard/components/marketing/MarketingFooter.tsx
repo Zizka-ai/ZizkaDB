@@ -1,61 +1,121 @@
 import Link from 'next/link'
 import { BrandLogo } from '@/components/BrandLogo'
+import { ZIZKADB_COMPANY, ZIZKADB_FOOTER_COLUMNS, type FooterLink } from './footer-config'
 
-const GITHUB_URL = 'https://github.com/Zizka-ai/ZizkaDB'
+const YEAR = new Date().getFullYear()
 
-const LINKS: [string, string][] = [
-  ['Docs', '/docs'],
-  ['Enterprise', '/enterprise'],
-  ['Pricing', '/#pricing'],
-  ['Trust', '/trust'],
-  ['GitHub', GITHUB_URL],
-  ['Sign in', '/login'],
-]
+function FooterAnchor({ link }: { link: FooterLink }) {
+  const style = {
+    color: 'rgba(255,255,255,0.72)',
+    textDecoration: 'none' as const,
+    fontSize: 14,
+    lineHeight: 1.5,
+    display: 'inline-block' as const,
+  }
+
+  if (link.external || link.href.startsWith('http') || link.href.startsWith('mailto:')) {
+    return (
+      <a href={link.href} target="_blank" rel="noopener noreferrer" style={style}>
+        {link.label}
+      </a>
+    )
+  }
+
+  return (
+    <Link href={link.href} style={style}>
+      {link.label}
+    </Link>
+  )
+}
 
 export function MarketingFooter() {
   return (
-    <footer
-      className="zdb-footer"
-      style={{
-        borderTop: '1px solid #e2e8f0',
-        padding: '32px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        fontSize: 13,
-        color: '#000',
-        background: '#fff',
-        flexWrap: 'wrap',
-        gap: 16,
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <BrandLogo variant="mark" showWordmark={false} href="/" />
-        <span style={{ fontWeight: 700, color: '#000' }}>ZizkaDB</span>
-        <span style={{ color: '#000' }}>·</span>
-        <span style={{ fontWeight: 500, color: '#000' }}>Open source operational database for AI agents</span>
-      </div>
-      <div className="zdb-footer-links" style={{ display: 'flex', gap: 22, flexWrap: 'wrap' }}>
-        {LINKS.map(([label, href]) =>
-          href.startsWith('http') ? (
+    <footer className="zdb-footer" style={{ background: '#0f1117', color: 'rgba(255,255,255,0.72)' }}>
+      <div
+        className="zdb-footer-grid"
+        style={{
+          maxWidth: 1100,
+          margin: '0 auto',
+          padding: '56px 40px 40px',
+          display: 'grid',
+          gridTemplateColumns: '1.4fr repeat(3, 1fr)',
+          gap: 40,
+        }}
+      >
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <BrandLogo variant="mark" showWordmark={false} href="/" />
+            <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: -0.3 }}>ZizkaDB</span>
+          </div>
+          <p style={{ margin: '0 0 20px', fontSize: 14, lineHeight: 1.65, color: 'rgba(255,255,255,0.55)', maxWidth: 280 }}>
+            Know why your agent did what it did. Causal lineage, time travel, and drift for production agents.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <a
-              key={label}
-              href={href}
+              href="https://github.com/Zizka-ai/ZizkaDB"
               target="_blank"
-              rel="noreferrer"
-              style={{ color: '#000', textDecoration: 'none', fontWeight: 500 }}
+              rel="noopener noreferrer"
+              style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}
             >
-              {label}
+              GitHub →
             </a>
-          ) : (
-            <Link key={label} href={href} style={{ color: '#000', textDecoration: 'none', fontWeight: 500 }}>
-              {label}
-            </Link>
-          ),
-        )}
-        <Link href="/signup" style={{ color: '#000', fontWeight: 700, textDecoration: 'none' }}>
-          Start free
-        </Link>
+            <a
+              href={ZIZKADB_COMPANY.zizkaAiUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}
+            >
+              zizka.ai →
+            </a>
+          </div>
+        </div>
+
+        {ZIZKADB_FOOTER_COLUMNS.map((col) => (
+          <div key={col.title}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: 0.9,
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.38)',
+                marginBottom: 16,
+              }}
+            >
+              {col.title}
+            </div>
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {col.links.map((link) => (
+                <li key={link.label}>
+                  <FooterAnchor link={link} />
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <div
+          className="zdb-footer-meta"
+          style={{
+            maxWidth: 1100,
+            margin: '0 auto',
+            padding: '20px 40px 28px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: 12,
+            fontSize: 12,
+            color: 'rgba(255,255,255,0.38)',
+          }}
+        >
+          <span>© {YEAR} {ZIZKADB_COMPANY.name}</span>
+          <span style={{ textAlign: 'right' }}>
+            {ZIZKADB_COMPANY.location} · {ZIZKADB_COMPANY.taxId}
+          </span>
+        </div>
       </div>
     </footer>
   )
