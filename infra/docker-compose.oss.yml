@@ -1,0 +1,15 @@
+# OSS quickstart overlay — pull pre-built images from GHCR (no local build).
+# Used by scripts/quickstart.sh and scripts/setup-local.sh when images are available.
+#
+#   docker compose -f infra/docker-compose.yml \
+#     -f infra/docker-compose.dashboard.yml \
+#     -f infra/docker-compose.oss.yml up -d
+
+services:
+  api:
+    image: ghcr.io/zizka-ai/zizkadb-api:${ZIZKADB_IMAGE_TAG:-latest}
+    pull_policy: always
+
+  dashboard:
+    image: ghcr.io/zizka-ai/zizkadb-dashboard:${ZIZKADB_IMAGE_TAG:-latest}
+    pull_policy: always

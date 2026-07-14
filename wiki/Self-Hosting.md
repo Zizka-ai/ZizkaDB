@@ -2,14 +2,24 @@
 
 Run ZizkaDB on your laptop or VPS with Docker or a native fallback when Docker is unavailable.
 
-## Quick local setup
+## OSS quickstart (recommended)
 
 ### Docker (recommended — matches production)
 
 ```bash
 git clone https://github.com/Zizka-ai/ZizkaDB.git && cd ZizkaDB
+bash scripts/quickstart.sh
+```
+
+One command: Docker stack (pre-built GHCR images when available) + `db.why()` demo + dashboard link.
+
+Stack only:
+
+```bash
 bash scripts/setup-local.sh
 ```
+
+Connect your agent: [CONNECT.md](https://github.com/Zizka-ai/ZizkaDB/blob/main/CONNECT.md)
 
 Requires Docker Desktop or OrbStack running in a **native arm64 Terminal** (not Rosetta on Apple Silicon).
 

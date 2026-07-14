@@ -1,0 +1,70 @@
+name: Publish OSS images
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  API_IMAGE: ghcr.io/zizka-ai/zizkadb-api
+  DASHBOARD_IMAGE: ghcr.io/zizka-ai/zizkadb-dashboard
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker meta
+        id: meta
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="latest"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Publishing tag: ${TAG}"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        name: Build and push API
+        with:
+          context: core
+          push: true
+          tags: |
+            ${{ env.API_IMAGE }}:latest
+            ${{ env.API_IMAGE }}:${{ steps.meta.outputs.tag }}
+
+      - uses: docker/build-push-action@v6
+        name: Build and push dashboard
+        with:
+          context: dashboard
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=http://localhost:8000
+            NEXT_PUBLIC_DEV_MODE=true
+          tags: |
+            ${{ env.DASHBOARD_IMAGE }}:latest
+            ${{ env.DASHBOARD_IMAGE }}:${{ steps.meta.outputs.tag }}
+
+      - name: Make GHCR packages public (required for curl quickstart)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for pkg in zizkadb-api zizkadb-dashboard; do
+            echo "→ Setting visibility=public for ${pkg}"
+            gh api --method PATCH "/orgs/zizka-ai/packages/container/${pkg}" \
+              -f visibility=public \
+              || echo "WARN: could not set ${pkg} public — enable manually in GitHub Packages settings"
+          done

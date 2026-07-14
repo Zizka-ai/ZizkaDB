@@ -1,6 +1,70 @@
 # Getting Started
 
-## Managed cloud (recommended)
+**Open source (recommended):** run ZizkaDB locally — **no full repo download required.**
+
+## Fastest path — no git clone (~60 seconds)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh | bash
+```
+
+Downloads only compose + schema to `~/.zizkadb`, pulls pre-built images, runs `zizkadb demo`.
+
+| Service | URL |
+|---------|-----|
+| Dashboard | http://localhost:3001/login → **Open my dashboard →** |
+| API | http://localhost:8000/health |
+
+## Have the repo? One-command quickstart
+
+```bash
+git clone https://github.com/Zizka-ai/ZizkaDB.git && cd ZizkaDB
+bash scripts/quickstart.sh
+```
+
+### Run the demo again
+
+```bash
+pip install zizkadb-sdk
+zizkadb demo
+```
+
+Worked example: [worked/01-support-order-delay](../worked/01-support-order-delay/)
+
+### Connect your own agent
+
+See **[CONNECT.md](../CONNECT.md)** — Python, TypeScript, LangChain, CrewAI, MCP, REST.
+
+### Stack only (no demo)
+
+```bash
+bash scripts/setup-local.sh
+```
+
+---
+
+## OSS ladder
+
+1. **Taste lineage** — `bash scripts/quickstart.sh` or `zizkadb demo`
+2. **Connect your code** — [CONNECT.md](../CONNECT.md) or `zizkadb init my-agent --template basic`
+3. **Go deeper** — [examples/](../examples/), [integrations/](../integrations/)
+4. **Production** — [[Self-Hosting]], [[Production Deployment]]
+
+---
+
+## Golden rule (self-host)
+
+> Use the **same tenant** in SDK and dashboard.
+>
+> **Local dev:** login → *Open my dashboard →* + `ZizkaDB(host="http://localhost:8000")`
+>
+> **Production VPS:** email OTP → API key in Settings → paste into SDK/MCP
+
+---
+
+## Managed cloud (optional)
+
+If you prefer hosted ZizkaDB instead of Docker:
 
 ### 1. Sign up
 
@@ -9,7 +73,7 @@ Go to [db.zizka.ai/signup](https://db.zizka.ai/signup) → enter email → verif
 ### 2. Create an agent + API key
 
 1. Open [Dashboard → Agents](https://db.zizka.ai/dashboard)
-2. Enter an agent id (e.g. `support-bot`, `my-cursor-agent`)
+2. Enter an agent id (e.g. `support-bot`)
 3. Click **Create**
 4. **Copy the full API key** — shown once only (`zizkadb_live_...`)
 
@@ -17,18 +81,10 @@ Go to [db.zizka.ai/signup](https://db.zizka.ai/signup) → enter email → verif
 
 ```bash
 export ZIZKADB_API_KEY=zizkadb_live_...
-export ZIZKADB_AGENT=support-bot    # must match the agent you created
-# Legacy alias still works:
-# export AGENTDB_API_KEY=zizkadb_live_...
-# Self-host:
-# export ZIZKADB_HOST=http://localhost:8000
-# Optional:
-# export ZIZKADB_TELEMETRY=false
+export ZIZKADB_AGENT=support-bot
 ```
 
 ### 4. Log your first event
-
-**Python:**
 
 ```bash
 pip install zizkadb-sdk
@@ -39,7 +95,7 @@ import asyncio
 from zizkadb import ZizkaDB
 
 async def main():
-    async with ZizkaDB() as db:  # reads ZIZKADB_API_KEY from env
+    async with ZizkaDB() as db:
         result = await db.log(
             agent="support-bot",
             event="connection_test",
@@ -50,44 +106,12 @@ async def main():
 asyncio.run(main())
 ```
 
-**curl:**
-
-```bash
-curl -s -w "\nHTTP %{http_code}\n" \
-  -H "Authorization: Bearer $ZIZKADB_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"agent":"support-bot","event":"test","data":{"ok":true}}' \
-  https://db.zizka.ai/v1/events
-```
-
-Expect **HTTP 201**.
-
 ### 5. Verify in dashboard
 
-- Open your agent on the dashboard
-- Click **Test agent** (logs via dashboard session)
-- Or refresh **Events** tab after your SDK/curl call
-- API key should show **Last used**
+Open your agent on the dashboard → **Events** tab.
 
 ---
 
-## Self-host (local, ~30 seconds)
-
-```bash
-git clone https://github.com/Zizka-ai/ZizkaDB.git && cd ZizkaDB
-bash scripts/setup-local.sh
-```
-
-| Service | URL |
-|---------|-----|
-| API health | http://localhost:8000/health |
-| Swagger | http://localhost:8000/swagger |
-| Dashboard | http://localhost:3001/login → **Open my dashboard →** |
-
-Local dev uses auto-injected dev key — no signup required.
-
----
-
-## Golden rule
+## Golden rule (managed cloud)
 
 > **The `agent` name in your code must match the agent you created in the dashboard** (unless you use a tenant-wide key — see [[Multi-Agent Apps]]).

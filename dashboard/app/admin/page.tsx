@@ -12,23 +12,119 @@ import {
   adminManagedUsers,
   adminManagedUsage,
   adminDemoRequests,
-  type AdminOverview,
-  type AdminTelemetrySummary,
-  type AdminTelemetryPing,
-  type ManagedUser,
-  type ManagedOverview,
-  type Subscriber,
-  type ManagedUsage,
-  type DemoRequest,
-} from "@/lib/api";
-import { format, formatDistanceToNow } from "date-fns";
+  adminMarketingSubscriptions,
+} from '@/lib/api'
+import { format, formatDistanceToNow } from 'date-fns'
 
 import { setAdminToken, clearAdminToken, getAdminToken } from "@/lib/auth";
 import { FOUNDER_EMAIL, POLL_INTERVAL_MS, OTP_LENGTH } from "@/lib/constants";
 
-const ADMIN_EMAIL = FOUNDER_EMAIL;
+const ADMIN_EMAIL = 'founder@zizka.ai'
 
-type Section = "subscribers" | "managed" | "telemetry" | "demo_requests";
+type Section = 'subscribers' | 'managed' | 'telemetry' | 'demo_requests' | 'marketing_subscriptions'
+
+interface Overview {
+  telemetry: { total_installs?: number; active_7d?: number; active_24h?: number; total_pings?: number }
+  managed:   { users?: number; tenants?: number; active_keys?: number; total_events?: number; events_24h?: number }
+}
+
+interface TelemetrySummary {
+  by_sdk:     { sdk: string; installs: number; pings: number }[]
+  by_mode:    { mode: string; installs: number }[]
+  by_os:      { os: string; installs: number }[]
+  by_version: { sdk: string; sdk_version: string; installs: number }[]
+  daily_new_installs: { day: string; new_installs: number }[]
+}
+
+interface TelemetryPing {
+  install_id:  string
+  sdk:         string
+  sdk_version: string
+  runtime:     string
+  os:          string
+  mode:        string
+  first_seen:  string
+  last_seen:   string
+  ping_count:  number
+}
+
+interface ManagedApiKey {
+  name: string
+  prefix: string
+  created_at: string | null
+  last_used: string | null
+}
+
+interface ManagedUser {
+  user_id:      string
+  email:        string
+  tenant_id:    string | null
+  tenant_name:  string | null
+  tenant_created_at: string | null
+  created_at:   string | null
+  last_login:   string | null
+  active_keys:  number
+  agent_count:  number
+  total_events: number
+  events_7d:    number
+  last_event:   string | null
+  api_keys:     ManagedApiKey[]
+  customer_status: 'active' | 'signed_up' | 'registered'
+  plan: string | null
+  subscription_status: string | null
+  trial_ends_at: string | null
+}
+
+interface ManagedOverview {
+  total_users?: number
+  signups_7d?: number
+  subscribers?: number
+  trialing?: number
+  active_paid?: number
+  users_with_keys?: number
+  tenants_active_7d?: number
+}
+
+interface Subscriber {
+  user_id: string
+  email: string
+  plan: string | null
+  subscription_status: string | null
+  trial_ends_at: string | null
+  created_at: string | null
+  last_login: string | null
+  tenant_id: string | null
+  tenant_name: string | null
+  active_keys: number
+  events_7d: number
+}
+
+interface ManagedUsage {
+  daily: { day: string; events: number; tenants_active: number }[]
+  top_tenants_7d: { tenant_id: string; name: string; owner: string | null; events_7d: number }[]
+}
+
+interface DemoRequest {
+  request_id: string
+  first_name: string
+  last_name: string
+  email: string
+  company_name: string
+  website: string
+  position: string | null
+  source: string | null
+  ip_address: string | null
+  created_at: string | null
+}
+
+interface MarketingSubscription {
+  subscription_id: string
+  email: string
+  source: string
+  ip_address: string | null
+  created_at: string | null
+}
+
 
 export default function AdminPage() {
   const [token, setToken] = useState<string | null>(null);
@@ -296,7 +392,7 @@ function Dashboard({
   onLogout: () => void;
 }) {
   const [section, setSection] = useState<Section>("subscribers");
-  const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [overview, setOverview] = useState<Overview | null>(null);
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -404,41 +500,22 @@ function Dashboard({
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px" }}>
         <OverviewRow overview={overview} />
 
-        <div
-          style={{
-            display: "flex",
-            gap: 4,
-            padding: 4,
-            background: "#111",
-            border: "1px solid #1f1f1f",
-            borderRadius: 12,
-            marginTop: 28,
-            marginBottom: 24,
-          }}
-        >
-          {(
-            [
-              { key: "subscribers", label: "Subscribers" },
-              { key: "managed", label: "All customers" },
-              { key: "telemetry", label: "SDKs & telemetry" },
-              { key: "demo_requests", label: "Demo requests" },
-            ] as { key: Section; label: string }[]
-          ).map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setSection(t.key)}
-              style={{
-                flex: 1,
-                padding: "10px 14px",
-                borderRadius: 8,
-                border: "none",
-                background: section === t.key ? "#1a1a1a" : "transparent",
-                color: section === t.key ? "#fff" : "#737373",
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-            >
+        <div style={{ display: 'flex', gap: 4, padding: 4, background: '#111',
+                      border: '1px solid #1f1f1f', borderRadius: 12, marginTop: 28, marginBottom: 24 }}>
+          {([
+            { key: 'subscribers', label: 'Subscribers' },
+            { key: 'managed',     label: 'All customers' },
+            { key: 'telemetry',   label: 'SDKs & telemetry' },
+            { key: 'demo_requests', label: 'Demo requests' },
+            { key: 'marketing_subscriptions', label: 'Marketing Material Subscriptions' },
+          ] as { key: Section; label: string }[]).map((t) => (
+            <button key={t.key} onClick={() => setSection(t.key)}
+                    style={{
+                      flex: 1, padding: '10px 14px', borderRadius: 8, border: 'none',
+                      background: section === t.key ? '#1a1a1a' : 'transparent',
+                      color: section === t.key ? '#fff' : '#737373',
+                      fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                    }}>
               {t.label}
             </button>
           ))}
@@ -460,10 +537,11 @@ function Dashboard({
           </div>
         )}
 
-        {section === "subscribers" && <SubscribersSection token={token} />}
-        {section === "managed" && <ManagedSection token={token} />}
-        {section === "telemetry" && <TelemetrySection token={token} />}
-        {section === "demo_requests" && <DemoRequestsSection token={token} />}
+        {section === 'subscribers' && <SubscribersSection token={token} />}
+        {section === 'managed'     && <ManagedSection   token={token} />}
+        {section === 'telemetry'   && <TelemetrySection token={token} />}
+        {section === 'demo_requests' && <DemoRequestsSection token={token} />}
+        {section === 'marketing_subscriptions' && <MarketingSubscriptionsSection token={token} />}
       </div>
     </div>
   );
@@ -471,7 +549,7 @@ function Dashboard({
 
 // ── Top-level numbers ─────────────────────────────────────────────────────────
 
-function OverviewRow({ overview }: { overview: AdminOverview | null }) {
+function OverviewRow({ overview }: { overview: Overview | null }) {
   const t = overview?.telemetry ?? {};
   const m = overview?.managed ?? {};
   return (
@@ -566,8 +644,8 @@ function Stat({
 // ── Telemetry section ────────────────────────────────────────────────────────
 
 function TelemetrySection({ token }: { token: string }) {
-  const [summary, setSummary] = useState<AdminTelemetrySummary | null>(null);
-  const [recent, setRecent] = useState<AdminTelemetryPing[] | null>(null);
+  const [summary, setSummary] = useState<TelemetrySummary | null>(null);
+  const [recent, setRecent] = useState<TelemetryPing[] | null>(null);
 
   useEffect(() => {
     adminTelemetrySummary(token)
@@ -1406,6 +1484,76 @@ function DemoRequestsSection({ token }: { token: string }) {
     </div>
   );
 }
+
+function MarketingSubscriptionsSection({ token }: { token: string }) {
+  const [rows, setRows] = useState<MarketingSubscription[] | null>(null)
+  const [search, setSearch] = useState('')
+
+  const load = () => {
+    adminMarketingSubscriptions(token, { search, limit: 300 }).then(setRows).catch(() => setRows([]))
+  }
+
+  useEffect(() => {
+    load()
+    const interval = setInterval(load, 10_000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        <Stat label="Total subscriptions" value={fmt(rows?.length)} sub="email captures" accent="#22c55e" />
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && load()}
+          placeholder="Search email…"
+          style={{
+            flex: '1 1 220px', padding: '8px 12px', background: '#0a0a0a',
+            border: '1px solid #2a2a2a', borderRadius: 8, color: '#fff', fontSize: 13,
+          }}
+        />
+        <button type="button" onClick={load} style={btnSmall()}>Refresh</button>
+      </div>
+
+      <Card title="Marketing Material Subscriptions" subtitle="Emails submitted from the marketing popup. Newest first.">
+        {!rows ? <SkeletonBlock /> : rows.length === 0 ? (
+          <Empty>No subscriptions yet.</Empty>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 860 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #1f1f1f', color: '#737373', fontSize: 11, textTransform: 'uppercase' }}>
+                  <Th>Email</Th>
+                  <Th>Source</Th>
+                  <Th>IP</Th>
+                  <Th align="right">Submitted</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.subscription_id} style={{ borderBottom: '1px solid #161616' }}>
+                    <Td mono>{r.email}</Td>
+                    <Td subtle>{r.source || '—'}</Td>
+                    <Td subtle mono>{r.ip_address || '—'}</Td>
+                    <Td align="right" subtle>
+                      {r.created_at ? formatDistanceToNow(new Date(r.created_at), { addSuffix: true }) : '—'}
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
+
 
 // ── Reusable bits ────────────────────────────────────────────────────────────
 

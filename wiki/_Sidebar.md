@@ -1,7 +1,9 @@
 **[Home](Home)**
 
-### Start here
+### Start here (OSS)
 - [Getting Started](Getting-Started)
+- [CONNECT.md](https://github.com/Zizka-ai/ZizkaDB/blob/main/CONNECT.md) — connect your stack
+- [Worked example 01](https://github.com/Zizka-ai/ZizkaDB/tree/main/worked/01-support-order-delay)
 - [Agents and API Keys](Agents-and-API-Keys)
 - [Troubleshooting](Troubleshooting)
 
@@ -18,6 +20,6 @@
 - [Architecture](Architecture)
 
 ### External
-- [db.zizka.ai](https://db.zizka.ai)
 - [Docs site](https://db.zizka.ai/docs)
 - [Swagger](https://db.zizka.ai/swagger)
+- [Managed cloud](https://db.zizka.ai/signup)

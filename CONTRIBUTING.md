@@ -9,7 +9,8 @@ This guide explains how to get started, what we expect in pull requests, and the
 | Resource | URL |
 |----------|-----|
 | Repository | https://github.com/Zizka-ai/ZizkaDB |
-| Live demo | https://db.zizka.ai |
+| OSS quickstart (no clone) | `curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh \| bash` |
+| Connect guide | [CONNECT.md](CONNECT.md) |
 | Docs | https://db.zizka.ai/docs |
 | Architecture / trust | https://db.zizka.ai/trust |
 | Wiki | https://github.com/Zizka-ai/ZizkaDB/wiki |

@@ -295,25 +295,29 @@ export function OverviewSection({
         </a>
       </div>
       <p style={S.lead}>
-        Complete guides for every way to integrate ZizkaDB — managed cloud or
-        self-hosted. Pick the path that matches your stack.
+        Open-source guides for self-hosting ZizkaDB with Docker. Start with the quickstart,
+        then connect your stack. Managed cloud docs are at the bottom if you prefer hosted.
       </p>
 
-      <Callout type="info">
-        <strong>Managed cloud (recommended):</strong> Sign up at{' '}
-        <Link href="/signup" style={{ color: '#1e40af', fontWeight: 500 }}>db.zizka.ai/signup</Link>
-        , create an agent in the dashboard, copy its API key, and use the <strong>same agent name</strong> in every{' '}
-        <code style={{ fontFamily: 'monospace' }}>log()</code> call. Connect via Python SDK, TypeScript SDK, MCP, or REST.
+      <Callout type="tip">
+        <strong>OSS quickstart (recommended):</strong>
+        <Code lang="bash">{`git clone https://github.com/Zizka-ai/ZizkaDB
+cd ZizkaDB
+bash scripts/quickstart.sh`}</Code>
+        Pulls pre-built GHCR images when available — no local compile. Runs the <code style={{ fontFamily: 'monospace' }}>why()</code> demo
+        and opens the dashboard at <code style={{ fontFamily: 'monospace' }}>http://localhost:3001/login</code> (no signup).
+        Full connect guide:{' '}
+        <a href="https://github.com/Zizka-ai/ZizkaDB/blob/main/CONNECT.md" target="_blank" rel="noreferrer" style={{ color: '#166534', fontWeight: 500 }}>
+          CONNECT.md
+        </a>
       </Callout>
 
       <Callout type="tip">
-        <strong>Environment variables</strong> (all SDKs):
-        <Code lang="bash">{`export ZIZKADB_API_KEY=zizkadb_live_...   # or AGENTDB_API_KEY (legacy)
-export ZIZKADB_AGENT=my-bot                 # must match dashboard agent name
-# Self-host only:
-export ZIZKADB_HOST=http://localhost:8000
-# Optional privacy:
-export ZIZKADB_TELEMETRY=false`}</Code>
+        <strong>Environment variables</strong> (self-host + cloud):
+        <Code lang="bash">{`export ZIZKADB_HOST=http://localhost:8000   # self-host only
+export ZIZKADB_API_KEY=zizkadb_live_...   # managed cloud only
+export ZIZKADB_AGENT=my-bot
+export ZIZKADB_TELEMETRY=false            # optional`}</Code>
       </Callout>
 
       <Callout type="tip">
@@ -335,60 +339,17 @@ export ZIZKADB_TELEMETRY=false`}</Code>
       <h2 style={{ ...S.h2, marginTop: 24 }}>Choose your integration</h2>
       <div style={{ display: "grid", gap: 12, marginBottom: 40 }}>
         {[
-          {
-            id: "frameworks",
-            title: "Framework starters",
-            desc: "zizkadb init — LangChain, CrewAI, OpenAI, MCP templates",
-            time: "~2 min",
-          },
-          {
-            id: "python",
-            title: "Python SDK",
-            desc: "FastAPI, LangChain, notebooks, batch jobs. pip install zizkadb-sdk",
-            time: "~5 min",
-          },
-          {
-            id: "typescript",
-            title: "TypeScript SDK",
-            desc: "Node, Bun, Deno, edge workers. npm install zizkadb-sdk",
-            time: "~5 min",
-          },
-          {
-            id: "mcp",
-            title: "MCP server",
-            desc: "Claude Desktop, Cursor, Windsurf — no app code changes",
-            time: "~2 min",
-          },
-          {
-            id: "rest",
-            title: "REST API",
-            desc: "Any language via HTTP. curl, Go, Rust, Java, Ruby",
-            time: "~3 min",
-          },
-          {
-            id: "selfhost",
-            title: "Self-host",
-            desc: "Docker Compose on your VPS. Free, full features, AGPL",
-            time: "~10 min",
-          },
-        ].map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onNavigate(item.id)}
-            style={{
-              textAlign: "left",
-              padding: "18px 20px",
-              borderRadius: 12,
-              border: "1px solid #e5e5e5",
-              background: "#fff",
-              cursor: "pointer",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
+          { id: 'selfhost', title: 'Self-host (OSS)', desc: 'bash scripts/quickstart.sh — Docker, pre-built images, db.why() demo', time: '~2 min' },
+          { id: 'frameworks', title: 'Framework starters', desc: 'zizkadb init — LangChain, CrewAI, OpenAI, MCP templates', time: '~2 min' },
+          { id: 'python', title: 'Python SDK', desc: 'FastAPI, LangChain, notebooks. pip install zizkadb-sdk', time: '~5 min' },
+          { id: 'typescript', title: 'TypeScript SDK', desc: 'Node, Bun, Deno. npm install zizkadb-sdk', time: '~5 min' },
+          { id: 'mcp', title: 'MCP server', desc: 'Claude Desktop, Cursor, Windsurf — no app code changes', time: '~2 min' },
+          { id: 'rest', title: 'REST API', desc: 'Any language via HTTP. curl, Go, Rust, Java', time: '~3 min' },
+        ].map(item => (
+          <button key={item.id} type="button" onClick={() => onNavigate(item.id)} style={{
+            textAlign: 'left', padding: '18px 20px', borderRadius: 12, border: '1px solid #e5e5e5',
+            background: '#fff', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
+          }}>
             <div>
               <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>
                 {item.title}
@@ -402,13 +363,48 @@ export ZIZKADB_TELEMETRY=false`}</Code>
         ))}
       </div>
 
-      <h2 style={{ ...S.h2, marginTop: 0 }}>Two paths — pick one</h2>
-
-      <h3 style={S.h3}>Path A — Managed cloud (easiest)</h3>
+      <h2 style={{ ...S.h2, marginTop: 0 }}>OSS path — self-host with Docker</h2>
       <p style={S.p}>
-        Best if you don&apos;t want to run servers. Everything at{" "}
-        <strong>db.zizka.ai</strong>.
+        Full guide in{' '}
+        <button type="button" onClick={() => onNavigate('selfhost')} style={{ background: 'none', border: 'none', color: '#1e40af', fontWeight: 500, cursor: 'pointer', padding: 0, fontSize: 'inherit' }}>Self-host →</button>
+        {' '}· connect snippets in{' '}
+        <a href="https://github.com/Zizka-ai/ZizkaDB/blob/main/CONNECT.md" target="_blank" rel="noreferrer" style={{ color: '#1e40af', fontWeight: 500 }}>CONNECT.md</a>
       </p>
+      <Step n={1} title="Quickstart (one command)">
+        <Code lang="bash">{`git clone https://github.com/Zizka-ai/ZizkaDB
+cd ZizkaDB
+bash scripts/quickstart.sh`}</Code>
+        <p style={S.p}>
+          Starts API + dashboard. Uses pre-built <code style={{ fontFamily: 'monospace' }}>ghcr.io/zizka-ai/*</code> images when published;
+          otherwise builds locally. Runs <code style={{ fontFamily: 'monospace' }}>zizkadb demo</code> (causal lineage).
+        </p>
+      </Step>
+      <Step n={2} title="Open dashboard (no email)">
+        <p style={S.p}>
+          Go to <code style={{ fontFamily: 'monospace' }}>http://localhost:3001/login</code> → click{' '}
+          <strong>Open my dashboard →</strong>. This is your local workspace.
+        </p>
+      </Step>
+      <Step n={3} title="Connect your agent">
+        <Code lang="python">{`pip install zizkadb-sdk
+# zizkadb demo          # repeat the worked example
+# zizkadb init my-agent --template basic
+
+from zizkadb import ZizkaDB
+db = ZizkaDB(host="http://localhost:8000")  # auto-uses local dev key
+await db.log(agent="my-bot", event="started", data={})`}</Code>
+        <Callout type="warning">
+          <strong>Important:</strong> SDK and dashboard must use the <strong>same tenant</strong>.
+          Local dev: green dashboard button + <code style={{ fontFamily: 'monospace' }}>host=</code> SDK.
+          Production VPS: email OTP + API key from Settings.
+        </Callout>
+      </Step>
+      <Step n={4} title="See your data in the dashboard">
+        <p style={S.p}>Agents appear as soon as you log events. Click an agent for events, sessions, and drift.</p>
+      </Step>
+
+      <h2 style={{ ...S.h2, marginTop: 48 }}>Managed cloud (optional)</h2>
+      <p style={S.p}>Prefer not to run Docker? Use hosted ZizkaDB at <strong>db.zizka.ai</strong>.</p>
       <Step n={1} title="Sign up & create an agent">
         <p style={S.p}>
           <Link href="/signup" style={{ color: "#111", fontWeight: 500 }}>
@@ -434,85 +430,16 @@ export ZIZKADB_TELEMETRY=false`}</Code>
       </Step>
       <Step n={2} title="Connect SDK, MCP, or REST">
         <p style={S.p}>
-          Use your API key and the <strong>same agent name</strong> in every{" "}
-          <code style={{ fontFamily: "monospace" }}>db.log(agent=…)</code> call.
-          Multi-agent apps: Settings → <strong>Tenant-wide API key</strong>.
+          Use your API key and the <strong>same agent name</strong> in every <code style={{ fontFamily: 'monospace' }}>db.log(agent=…)</code> call.
         </p>
       </Step>
       <Step n={3} title="Open your dashboard">
         <p style={S.p}>
-          <Link href="/dashboard" style={{ color: "#111", fontWeight: 500 }}>
-            db.zizka.ai/dashboard
-          </Link>{" "}
-          shows the same agents and events your code logs. No extra setup.
+          <Link href="/dashboard" style={{ color: '#111', fontWeight: 500 }}>db.zizka.ai/dashboard</Link> shows the same agents and events your code logs.
         </p>
       </Step>
 
-      <h3 style={{ ...S.h3, marginTop: 40 }}>
-        Path B — Self-host (open source)
-      </h3>
-      <p style={S.p}>
-        Run Docker on your laptop or VPS. Full guide in{" "}
-        <button
-          type="button"
-          onClick={() => onNavigate("selfhost")}
-          style={{
-            background: "none",
-            border: "none",
-            color: "#1e40af",
-            fontWeight: 500,
-            cursor: "pointer",
-            padding: 0,
-            fontSize: "inherit",
-          }}
-        >
-          Self-host →
-        </button>
-        .
-      </p>
-      <Step n={1} title="Start API + dashboard">
-        <Code lang="bash">{`git clone https://github.com/Zizka-ai/ZizkaDB
-cd ZizkaDB
-bash scripts/setup-local.sh`}</Code>
-        <p style={S.p}>
-          Starts API + dashboard on port <strong>3001</strong> (PM2). API at{" "}
-          <code style={{ fontFamily: "monospace" }}>http://localhost:8000</code>
-          .
-        </p>
-      </Step>
-      <Step n={2} title="Open dashboard (no email)">
-        <p style={S.p}>
-          Go to{" "}
-          <code style={{ fontFamily: "monospace" }}>
-            http://localhost:3001/login
-          </code>{" "}
-          → click <strong>Open my dashboard →</strong>. This is your local
-          workspace.
-        </p>
-      </Step>
-      <Step n={3} title="Log events from your agent">
-        <Code lang="python">{`from zizkadb import ZizkaDB
-db = ZizkaDB(host="http://localhost:8000")  # auto-uses local dev key
-await db.log(agent="my-bot", event="started", data={})`}</Code>
-        <Callout type="warning">
-          <strong>Important:</strong> Your SDK and dashboard must use the{" "}
-          <strong>same tenant</strong>. Local dev: use the green dashboard
-          button + <code style={{ fontFamily: "monospace" }}>host=</code> SDK
-          (same dev tenant). Production self-host: sign in with email OTP,
-          create an API key in Settings, paste that key into your SDK.
-        </Callout>
-      </Step>
-      <Step n={4} title="See your data in the dashboard">
-        <p style={S.p}>
-          Refresh{" "}
-          <Link href="/dashboard" style={{ color: "#111", fontWeight: 500 }}>
-            /dashboard
-          </Link>{" "}
-          — agents appear as soon as you log events with a matching key/tenant.
-        </p>
-      </Step>
-
-      <h2 style={{ ...S.h2, marginTop: 48 }}>After connecting (both paths)</h2>
+      <h2 style={{ ...S.h2, marginTop: 48 }}>After connecting</h2>
       <Step n={1} title="Log events with session_id">
         <p style={S.p}>
           Log{" "}
@@ -1550,20 +1477,33 @@ export function SelfHostSection() {
         seconds with Docker Compose.
       </Callout>
 
-      <Step n={1} title="Quick start (recommended)">
+      <Step n={1} title="Quickstart (recommended)">
         <Code lang="bash">{`git clone https://github.com/Zizka-ai/ZizkaDB
 cd ZizkaDB
-bash scripts/setup-local.sh`}</Code>
+bash scripts/quickstart.sh`}</Code>
         <p style={S.p}>
-          Starts API + dashboard. Opens at{" "}
-          <code style={{ fontFamily: "monospace" }}>
-            http://localhost:3001/login
-          </code>{" "}
-          — click <strong>Open my dashboard →</strong>.
+          One command: Docker stack + <code style={{ fontFamily: 'monospace' }}>db.why()</code> demo + dashboard link.
+          Pre-built images from <code style={{ fontFamily: 'monospace' }}>ghcr.io/zizka-ai/</code> when available.
+        </p>
+        <p style={S.p}>
+          Stack only: <code style={{ fontFamily: 'monospace' }}>bash scripts/setup-local.sh</code> ·
+          Connect guide:{' '}
+          <a href="https://github.com/Zizka-ai/ZizkaDB/blob/main/CONNECT.md" target="_blank" rel="noreferrer" style={{ color: '#1e40af' }}>CONNECT.md</a>
         </p>
       </Step>
 
-      <Step n={2} title="Manual setup (optional)">
+      <Step n={2} title="Run the lineage demo again">
+        <Code lang="bash">{`pip install zizkadb-sdk
+zizkadb demo`}</Code>
+        <p style={S.p}>
+          Worked example:{' '}
+          <a href="https://github.com/Zizka-ai/ZizkaDB/tree/main/worked/01-support-order-delay" target="_blank" rel="noreferrer" style={{ color: '#1e40af' }}>
+            worked/01-support-order-delay
+          </a>
+        </p>
+      </Step>
+
+      <Step n={3} title="Manual setup (optional)">
         <Code lang="bash">{`git clone https://github.com/Zizka-ai/ZizkaDB
 cd ZizkaDB
 cp .env.example infra/.env`}</Code>
@@ -1581,15 +1521,13 @@ EMAIL_USER=you@gmail.com
 EMAIL_PASS=your-app-password`}</Code>
       </Step>
 
-      <Step n={3} title="Start the API stack">
-        <Code lang="bash">
-          docker compose -f infra/docker-compose.yml up -d --build
-        </Code>
+      <Step n={4} title="Start the API stack">
+        <Code lang="bash">docker compose -f infra/docker-compose.yml up -d --build</Code>
         <Code lang="bash">{`curl http://localhost:8000/health
 # {"status":"ok","version":"0.1.0"}`}</Code>
       </Step>
 
-      <Step n={4} title="Connect SDK or MCP">
+      <Step n={5} title="Connect SDK or MCP">
         <p style={S.p}>
           Self-hosted SDK calls auto-send the local dev key (
           <code style={{ fontFamily: "monospace" }}>zizkadb_dev_local</code> by
@@ -1613,7 +1551,7 @@ db = ZizkaDB(host="http://localhost:8000")`}</Code>
         </p>
       </Step>
 
-      <Step n={5} title="Open the dashboard">
+      <Step n={6} title="Open the dashboard">
         <p style={S.p}>
           With{" "}
           <code style={{ fontFamily: "monospace" }}>
@@ -1634,7 +1572,7 @@ db = ZizkaDB(host="http://localhost:8000")`}</Code>
         </p>
       </Step>
 
-      <Step n={6} title="Production on your VPS">
+      <Step n={7} title="Production on your VPS">
         <p style={S.p}>For production on a VPS:</p>
         <Code lang="bash">{`docker compose -f infra/docker-compose.yml up -d
 bash infra/deploy-selfhost.sh

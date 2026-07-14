@@ -535,3 +535,44 @@ async def admin_demo_requests(
         }
         for r in rows
     ]
+
+
+@router.get("/marketing-subscriptions")
+async def admin_marketing_subscriptions(
+    search: str = "",
+    limit: int = Query(200, ge=1, le=500),
+    _: dict = Depends(require_admin),
+):
+    pool = get_pool()
+    params: list = []
+    where = "WHERE TRUE"
+
+    if search.strip():
+        params.append(f"%{search.strip()}%")
+        n = len(params)
+        where += f" AND email ILIKE ${n}"
+
+    params.append(limit)
+    limit_idx = len(params)
+
+    rows = await pool.fetch(
+        f"""
+        SELECT subscription_id, email, source, ip_address, created_at
+        FROM marketing_subscriptions
+        {where}
+        ORDER BY created_at DESC
+        LIMIT ${limit_idx}
+        """,
+        *params,
+    )
+
+    return [
+        {
+            "subscription_id": str(r["subscription_id"]),
+            "email": r["email"],
+            "source": r["source"],
+            "ip_address": r["ip_address"],
+            "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+        }
+        for r in rows
+    ]

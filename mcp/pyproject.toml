@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,8 @@ name = "zizkadb-mcp"
 version = "0.1.4"
 description = "MCP server for ZizkaDB — give any AI agent persistent memory and observability"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{ name = "Zizka AI", email = "founder@zizka.ai" }]
 keywords = ["mcp", "ai", "agents", "memory", "observability", "zizkadb", "claude", "cursor"]

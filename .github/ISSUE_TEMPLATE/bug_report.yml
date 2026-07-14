@@ -1,0 +1,60 @@
+name: Bug report
+description: Something broke in self-host, SDK, or dashboard
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    value: |
+      Thanks for reporting. Include repro steps — solo-dev quickstart issues are especially helpful.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - OSS quickstart (curl / Docker)
+        - Python SDK
+        - TypeScript SDK
+        - Dashboard (localhost)
+        - Managed cloud (db.zizka.ai)
+        - MCP
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. curl -fsSL …/quickstart-remote.sh | bash
+        2. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: GitHub release tag, or `pip show zizkadb-sdk`
+      placeholder: v0.2.5 / zizkadb-sdk 0.2.5
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      placeholder: macOS 15, Docker Desktop 4.x, Python 3.12

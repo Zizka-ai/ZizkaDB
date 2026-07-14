@@ -68,10 +68,9 @@ export function ConnectionStatus() {
       {IS_DEV && (
         <span style={{ color: "#22c55e" }}>Self-hosted · local dev tenant</span>
       )}
-      {health === "error" && (
-        <span style={{ color: "#f87171" }}>
-          Start API:{" "}
-          <code style={{ fontFamily: "monospace" }}>{SETUP_SCRIPT_HINT}</code>
+      {health === 'error' && (
+        <span style={{ color: '#f87171' }}>
+          Start stack: <code style={{ fontFamily: 'monospace' }}>bash scripts/quickstart.sh</code>
         </span>
       )}
     </div>
@@ -80,25 +79,49 @@ export function ConnectionStatus() {
 
 export function GettingStartedChecklist() {
   const snippet = IS_DEV
-    ? `# Self-host — same tenant as "Open my dashboard →"\n${pythonQuickstartSnippet("host='http://localhost:8000'")}`
-    : `# Managed cloud — use your key from Settings\n${pythonQuickstartSnippet("'zizkadb_live_YOUR_KEY'")}`;
+    ? `# OSS — same tenant as "Open my dashboard →"
+pip install zizkadb-sdk
+zizkadb demo`
+    : `# Managed cloud — use your key from Settings
+pip install zizkadb-sdk
+python -c "
+import asyncio
+from zizkadb import ZizkaDB
+async def main():
+    async with ZizkaDB('zizkadb_live_YOUR_KEY') as db:
+        r = await db.log(agent='my-bot', event='started', data={'ok': True})
+        print('Logged:', r.event_id)
+asyncio.run(main())"`
 
-  const steps = [
-    {
-      title: "API is running",
-      desc: IS_DEV
-        ? `Green dot above = API reachable. If red, run ${SETUP_SCRIPT_HINT}`
-        : "Your ZizkaDB API should respond at db.zizka.ai/health",
-    },
-    {
-      title: "Log your first event",
-      desc: "Run the snippet below in a terminal. Use the same API key / host as this dashboard account.",
-    },
-    {
-      title: "Watch it live",
-      desc: "Your agent appears here within 30 seconds — no refresh needed. Click it for events, sessions, and drift.",
-    },
-  ];
+  const steps = IS_DEV
+    ? [
+        {
+          title: 'Run OSS quickstart',
+          desc: 'From the repo: bash scripts/quickstart.sh — starts Docker + db.why() demo',
+        },
+        {
+          title: 'Run the lineage demo',
+          desc: 'pip install zizkadb-sdk && zizkadb demo — support-bot order delay scenario',
+        },
+        {
+          title: 'Connect your agent',
+          desc: 'See CONNECT.md on GitHub for Python, TypeScript, LangChain, CrewAI, MCP, REST',
+        },
+      ]
+    : [
+        {
+          title: 'API is running',
+          desc: 'Your ZizkaDB API should respond at db.zizka.ai/health',
+        },
+        {
+          title: 'Log your first event',
+          desc: 'Run the snippet below. Use the same API key / host as this dashboard account.',
+        },
+        {
+          title: 'Watch it live',
+          desc: 'Your agent appears here within 30 seconds — no refresh needed. Click it for events, sessions, and drift.',
+        },
+      ]
 
   return (
     <div
@@ -106,8 +129,10 @@ export function GettingStartedChecklist() {
       style={{ background: "#111", border: "1px solid #1f1f1f" }}
     >
       <h3 className="text-white font-medium mb-1">Getting started</h3>
-      <p className="text-sm mb-6" style={{ color: "#e5e5e5" }}>
-        Three steps to see your first agent in the dashboard.
+      <p className="text-sm mb-6" style={{ color: '#e5e5e5' }}>
+        {IS_DEV
+          ? 'OSS quickstart — taste causal lineage, then connect your stack.'
+          : 'Three steps to see your first agent in the dashboard.'}
       </p>
       <ol className="space-y-4 mb-6 text-left">
         {steps.map((step, i) => (
@@ -133,13 +158,34 @@ export function GettingStartedChecklist() {
       >
         {snippet}
       </pre>
-      <p className="text-xs mt-4" style={{ color: "#e5e5e5" }}>
-        Dashboard empty but SDK works? Your SDK and login must share the same
-        tenant — see{" "}
-        <a href="/docs" style={{ color: "#e5e5e5" }}>
-          Self-host docs
-        </a>
-        .
+      <p className="text-xs mt-4" style={{ color: '#e5e5e5' }}>
+        {IS_DEV ? (
+          <>
+            Connect guide:{' '}
+            <a
+              href="https://github.com/Zizka-ai/ZizkaDB/blob/main/CONNECT.md"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: '#e5e5e5' }}
+            >
+              CONNECT.md
+            </a>
+            {' '}· worked example:{' '}
+            <a
+              href="https://github.com/Zizka-ai/ZizkaDB/tree/main/worked/01-support-order-delay"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: '#e5e5e5' }}
+            >
+              01-support-order-delay
+            </a>
+          </>
+        ) : (
+          <>
+            Dashboard empty but SDK works? Your SDK and login must share the same tenant — see{' '}
+            <a href="/docs" style={{ color: '#e5e5e5' }}>Self-host docs</a>.
+          </>
+        )}
       </p>
     </div>
   );

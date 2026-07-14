@@ -1,8 +1,9 @@
-"""zizkadb init — scaffold a new agent project (Supabase-style DX)."""
+"""zizkadb CLI — scaffold agent projects and run the OSS lineage demo."""
 
 from __future__ import annotations
 
 import argparse
+import asyncio
 import os
 import shutil
 import sys
@@ -11,6 +12,7 @@ from pathlib import Path
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
 TEMPLATES = ("basic", "openai", "langchain", "crewai", "mcp-cursor")
+DEFAULT_HOST = "http://localhost:8000"
 
 
 def _copy_template(name: str, dest: Path) -> None:
@@ -46,12 +48,40 @@ def cmd_init(args: argparse.Namespace) -> None:
         print("  python agent.py")
 
 
+def cmd_demo(args: argparse.Namespace) -> None:
+    host = args.host or os.getenv("ZIZKADB_HOST", DEFAULT_HOST)
+    try:
+        from zizkadb.demo_run import run_support_order_delay_demo
+
+        asyncio.run(run_support_order_delay_demo(host))
+    except Exception as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        print(
+            "\nStart the OSS stack first:\n"
+            "  git clone https://github.com/Zizka-ai/ZizkaDB.git && cd ZizkaDB\n"
+            "  bash scripts/quickstart.sh\n",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from e
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="zizkadb",
-        description="ZizkaDB CLI — scaffold agent projects",
+        description="ZizkaDB CLI — OSS demo and agent project scaffolding",
     )
     sub = parser.add_subparsers(dest="command", required=True)
+
+    demo_p = sub.add_parser(
+        "demo",
+        help="Run the support-bot causal lineage demo (requires local stack)",
+    )
+    demo_p.add_argument(
+        "--host",
+        default=None,
+        help=f"API URL (default: ZIZKADB_HOST or {DEFAULT_HOST})",
+    )
+    demo_p.set_defaults(func=cmd_demo)
 
     init_p = sub.add_parser("init", help="Create a new agent project from a template")
     init_p.add_argument("name", help="Project directory name")

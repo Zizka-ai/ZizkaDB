@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { useState } from "react";
-import { SiteNav } from "@/components/SiteNav";
-import { MarketingFooter } from "@/components/marketing/MarketingFooter";
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { SiteNav } from '@/components/SiteNav'
+import { MarketingFooter } from '@/components/marketing/MarketingFooter'
 import {
   OverviewSection,
   PythonSection,
@@ -27,20 +27,16 @@ type Section =
   | "selfhost"
   | "concepts";
 
-const NAV: {
-  id: Section;
-  label: string;
-  group: "start" | "integrate" | "ref";
-}[] = [
-  { id: "overview", label: "Overview", group: "start" },
-  { id: "frameworks", label: "Frameworks", group: "integrate" },
-  { id: "python", label: "Python SDK", group: "integrate" },
-  { id: "typescript", label: "TypeScript SDK", group: "integrate" },
-  { id: "rest", label: "REST API", group: "integrate" },
-  { id: "mcp", label: "MCP", group: "integrate" },
-  { id: "selfhost", label: "Self-host", group: "integrate" },
-  { id: "concepts", label: "Core concepts", group: "ref" },
-];
+const NAV: { id: Section; label: string; group: 'start' | 'integrate' | 'ref' }[] = [
+  { id: 'overview',   label: 'Overview',       group: 'start' },
+  { id: 'frameworks', label: 'Frameworks',     group: 'integrate' },
+  { id: 'python',     label: 'Python SDK',     group: 'integrate' },
+  { id: 'typescript', label: 'TypeScript SDK', group: 'integrate' },
+  { id: 'rest',       label: 'REST API',       group: 'integrate' },
+  { id: 'mcp',        label: 'MCP',            group: 'integrate' },
+  { id: 'selfhost',   label: 'Self-host (OSS)', group: 'integrate' },
+  { id: 'concepts',   label: 'Core concepts',  group: 'ref' },
+]
 
 const MOBILE_LABELS: Record<Section, string> = {
   overview: "Overview",
@@ -110,13 +106,41 @@ function NavItem({
   );
 }
 
+const VALID_SECTIONS: Section[] = ['overview', 'frameworks', 'python', 'typescript', 'rest', 'mcp', 'selfhost', 'concepts']
+
+function sectionFromUrl(): Section | null {
+  if (typeof window === 'undefined') return null
+  const hash = window.location.hash.replace('#', '')
+  if (VALID_SECTIONS.includes(hash as Section)) return hash as Section
+  const param = new URLSearchParams(window.location.search).get('section')
+  if (param && VALID_SECTIONS.includes(param as Section)) return param as Section
+  return null
+}
+
 export default function DocsPage() {
   const [section, setSection] = useState<Section>("overview");
 
+  useEffect(() => {
+    const fromUrl = sectionFromUrl()
+    if (fromUrl) setSection(fromUrl)
+  }, [])
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const fromUrl = sectionFromUrl()
+      if (fromUrl) setSection(fromUrl)
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
   const navigate = (id: string) => {
-    if (NAV.some((n) => n.id === id)) setSection(id as Section);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+    if (VALID_SECTIONS.includes(id as Section)) {
+      setSection(id as Section)
+      window.history.replaceState(null, '', `/docs#${id}`)
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   return (
     <div style={S.page}>

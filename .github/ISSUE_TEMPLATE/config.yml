@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://db.zizka.ai/docs
+    about: Integration guides, SDK reference, self-host
+  - name: Wiki — Getting Started
+    url: https://github.com/Zizka-ai/ZizkaDB/wiki/Getting-Started
+    about: OSS quickstart and connect guide
+  - name: Community board
+    url: https://db.zizka.ai/community
+    about: Ask questions and share setups

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.openapi.docs import get_swagger_ui_html
 from contextlib import asynccontextmanager
 import logging
 import os
@@ -18,6 +19,7 @@ from api.stats import router as stats_router
 from api.billing_checkout import router as billing_checkout_router
 from api.community import router as community_router
 from api.demo_requests import router as demo_requests_router
+from api.marketing_subscriptions import router as marketing_subscriptions_router
 from api.settings import router as settings_router
 from api.account import router as account_router
 
@@ -43,10 +45,47 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
     # /swagger avoids nginx location /api/ rewriting /api-explorer → /v1/explorer
-    docs_url="/swagger",
+    docs_url=None,
     redoc_url=None,
     openapi_url="/openapi.json",
 )
+
+@app.get("/swagger", include_in_schema=False)
+async def swagger_ui():
+    """
+    Swagger UI without the visible /openapi.json link under the title.
+    The schema remains available at /openapi.json for tools that need it.
+    """
+    html = get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} - Swagger UI",
+    )
+    body = html.body.decode("utf-8")
+
+    css = """
+    <style>
+      .swagger-ui .topbar .download-url-wrapper { display: none !important; }
+      .swagger-ui .info hgroup.main a { display: none !important; }
+      .swagger-ui .info .link { display: none !important; }
+      .swagger-ui .info a[href*="openapi.json"] { display: none !important; }
+    </style>
+    """
+
+    hide_url_plugin = """
+    const HideInfoUrlPlugin = () => ({
+      wrapComponents: {
+        InfoUrl: () => () => null,
+      },
+    });
+    """
+
+    body = body.replace(
+        "const ui = SwaggerUIBundle({",
+        hide_url_plugin + "\n    const ui = SwaggerUIBundle({\n        plugins: [HideInfoUrlPlugin],",
+        1,
+    )
+
+    return HTMLResponse(body.replace("</head>", f"{css}</head>"))
 
 
 @app.get("/api-explorer", include_in_schema=False)
@@ -73,6 +112,7 @@ app.include_router(stats_router,     prefix="/v1/stats",     tags=["stats"])
 app.include_router(billing_checkout_router, prefix="/v1/billing", tags=["billing"])
 app.include_router(community_router, prefix="/v1/community", tags=["community"])
 app.include_router(demo_requests_router, prefix="/v1/demo-requests", tags=["demo"])
+app.include_router(marketing_subscriptions_router, prefix="/v1/marketing-subscriptions", tags=["marketing"])
 app.include_router(settings_router,  prefix="/v1/settings",  tags=["settings"])
 app.include_router(account_router,   prefix="/v1/account",   tags=["account"])
 

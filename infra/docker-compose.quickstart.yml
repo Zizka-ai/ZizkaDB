@@ -1,0 +1,91 @@
+# Standalone OSS quickstart — no git clone required.
+# Used by scripts/quickstart-remote.sh (~4 small files downloaded to ~/.zizkadb).
+#
+#   docker compose -f infra/docker-compose.quickstart.yml up -d
+#
+# Requires schema.sql alongside this file (downloaded automatically by quickstart-remote.sh).
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: zizkadb_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-zizkadb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zizkadb}
+      POSTGRES_DB: ${POSTGRES_DB:-zizkadb}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  qdrant:
+    image: qdrant/qdrant:v1.13.5
+    container_name: zizkadb_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+
+  redis:
+    image: redis:7-alpine
+    container_name: zizkadb_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: ghcr.io/zizka-ai/zizkadb-api:${ZIZKADB_IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: zizkadb_api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-zizkadb}:${POSTGRES_PASSWORD:-zizkadb}@postgres:5432/${POSTGRES_DB:-zizkadb}
+      QDRANT_URL: http://qdrant:6333
+      REDIS_URL: redis://redis:6379
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-in-production}
+      ENV: ${ENV:-development}
+      DEV_API_KEY: ${DEV_API_KEY:-zizkadb_dev_local}
+      DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-self_hosted}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8000}
+      DASHBOARD_URL: ${DASHBOARD_URL:-http://localhost:3001}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  dashboard:
+    image: ghcr.io/zizka-ai/zizkadb-dashboard:${ZIZKADB_IMAGE_TAG:-latest}
+    pull_policy: always
+    container_name: zizkadb_dashboard
+    ports:
+      - "3001:3000"
+    environment:
+      NODE_ENV: production
+      HOSTNAME: "0.0.0.0"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  redis_data:

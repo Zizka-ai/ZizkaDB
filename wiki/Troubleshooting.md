@@ -1,5 +1,19 @@
 # Troubleshooting
 
+## OSS quickstart (localhost)
+
+| Problem | Fix |
+|---------|-----|
+| Docker not running | Start Docker Desktop or OrbStack |
+| `API did not become healthy` | First pull can take 1–2 min. Check `docker compose -f ~/.zizkadb/infra/docker-compose.quickstart.yml logs api` |
+| GHCR image pull fails | Clone repo: `git clone … && bash scripts/quickstart.sh` (builds locally) |
+| `docker compose ... --build` hangs/fails on `load metadata for docker.io/library/...` with `DeadlineExceeded` | Registry metadata check timed out even though the base image is already cached locally. Pre-pull once: `docker pull python:3.12-slim && docker pull node:20-alpine`, then re-run `bash scripts/setup-local.sh` — the build reuses the cached layers and finishes in seconds. |
+| Port 8000 / 3001 in use | Stop other services or edit compose ports |
+| Dashboard empty after demo | Login → **Open my dashboard →** → agent **support-bot** |
+| `zizkadb demo` fails | Ensure API healthy: `curl http://localhost:8000/health` |
+
+---
+
 ## API key shows "Never used"
 
 No successful authenticated request reached the API.
@@ -46,6 +60,26 @@ Code sent: conv-user123
 **Fix:** Use same agent name in code, or create a **tenant-wide key** (Settings).
 
 SDK raises `AgentScopeError` (Python/TypeScript).
+
+---
+
+## Self-hosted key sent to the wrong host
+
+A key created via `http://localhost:8000` (self-hosted dashboard/signup) only exists in
+that instance's Postgres — it authenticates against `localhost:8000`, never against
+`https://db.zizka.ai`. If your app only sets `ZIZKADB_API_KEY` and not `ZIZKADB_HOST`,
+most SDK clients default to the cloud host and every request 401s.
+
+**Fix:** set both env vars for a self-hosted target — `ZIZKADB_HOST=http://localhost:8000`
+*and* `ZIZKADB_API_KEY=zizkadb_live_...`. Verify quickly:
+
+```bash
+curl -s http://localhost:8000/v1/agents -H "Authorization: Bearer <key>"
+```
+
+200 with a JSON agent list confirms the key is valid on that host, and shows which agent
+name(s) it's scoped to — use that exact name for `ZIZKADB_AGENT_NAME` / `agent=` (see
+"HTTP 403 Agent mismatch" above).
 
 ---
 
