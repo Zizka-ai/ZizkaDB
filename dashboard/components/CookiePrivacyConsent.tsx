@@ -91,8 +91,8 @@ export function CookiePrivacyConsent() {
           <div style={{ marginTop: 4, color: '#a3a3a3' }}>
             We use cookies/local storage for essential site functionality and to improve the product. You can accept or
             decline — you’ll still have full access either way.{' '}
-            <a href="/trust#security" style={styles.link}>
-              Learn more
+            <a href="/privacy" style={styles.link}>
+              Privacy policy
             </a>
             .
           </div>
