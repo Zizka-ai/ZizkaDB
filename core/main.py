@@ -53,21 +53,38 @@ app = FastAPI(
 @app.get("/swagger", include_in_schema=False)
 async def swagger_ui():
     """
-    Swagger UI with a small CSS tweak to hide the visible /openapi.json link.
-    The OpenAPI schema remains available at /openapi.json.
+    Swagger UI without the visible /openapi.json link under the title.
+    The schema remains available at /openapi.json for tools that need it.
     """
     html = get_swagger_ui_html(
         openapi_url=app.openapi_url,
         title=f"{app.title} - Swagger UI",
     )
-    # Inject CSS to hide the OpenAPI URL control/link in the top bar.
     body = html.body.decode("utf-8")
+
     css = """
     <style>
       .swagger-ui .topbar .download-url-wrapper { display: none !important; }
-      .swagger-ui .topbar a[href$="openapi.json"] { display: none !important; }
+      .swagger-ui .info hgroup.main a { display: none !important; }
+      .swagger-ui .info .link { display: none !important; }
+      .swagger-ui .info a[href*="openapi.json"] { display: none !important; }
     </style>
     """
+
+    hide_url_plugin = """
+    const HideInfoUrlPlugin = () => ({
+      wrapComponents: {
+        InfoUrl: () => () => null,
+      },
+    });
+    """
+
+    body = body.replace(
+        "const ui = SwaggerUIBundle({",
+        hide_url_plugin + "\n    const ui = SwaggerUIBundle({\n        plugins: [HideInfoUrlPlugin],",
+        1,
+    )
+
     return HTMLResponse(body.replace("</head>", f"{css}</head>"))
 
 
