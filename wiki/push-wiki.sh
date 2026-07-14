@@ -29,6 +29,7 @@ fi
 
 echo "▶ Copying wiki pages..."
 rsync -av --delete \
+  --exclude '.git' \
   --exclude 'push-wiki.sh' \
   --exclude 'README.md' \
   "$ROOT/wiki/" "$WIKI_DIR/"
