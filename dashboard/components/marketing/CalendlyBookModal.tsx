@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { M, violetBtn } from './marketing-theme'
 
-const CALENDLY_URL = 'https://calendly.com/founder-zizka/15-minutes'
+const CALENDLY_URL = process.env.NEXT_PUBLIC_CALENDLY_URL ?? 'https://calendly.com/founder-zizka/15-minutes'
 
 type Props = {
   open: boolean

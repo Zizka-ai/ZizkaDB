@@ -43,6 +43,9 @@ jobs:
       - name: Python SDK tests
         run: pytest sdk/python/tests/ -v
 
+      - name: MCP tests
+        run: pytest mcp/tests/ -v
+
   typescript-sdk:
     name: typescript-sdk
     runs-on: ubuntu-latest

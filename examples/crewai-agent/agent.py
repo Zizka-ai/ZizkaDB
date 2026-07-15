@@ -7,7 +7,7 @@ from crewai import Agent, Crew, Task
 from langchain_openai import ChatOpenAI
 
 from zizkadb import ZizkaDB
-from zizkadb.integrations.crewai import ZizkaDBCrewLogger
+from zizkadb_crewai import ZizkaDBCrewLogger
 
 AGENT = os.getenv("ZIZKADB_AGENT", "crewai-researcher")
 API_KEY = os.getenv("ZIZKADB_API_KEY")

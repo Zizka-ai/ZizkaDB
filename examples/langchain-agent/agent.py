@@ -7,7 +7,7 @@ from langchain_core.messages import HumanMessage
 from langchain_openai import ChatOpenAI
 
 from zizkadb import ZizkaDB
-from zizkadb.integrations.langchain import ZizkaDBCallbackHandler
+from zizkadb_langchain import ZizkaDBCallbackHandler
 
 AGENT = os.getenv("ZIZKADB_AGENT", "langchain-agent")
 API_KEY = os.getenv("ZIZKADB_API_KEY")
