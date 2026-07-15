@@ -63,9 +63,6 @@ class CreateAPIKeyBody(BaseModel):
 
 @router.post("/request-otp")
 async def request_otp_route(body: RequestOTPBody):
-    import logging
-    log = logging.getLogger(__name__)
-
     email = body.email.lower().strip()
     _check_otp_rate_limit(email)
 

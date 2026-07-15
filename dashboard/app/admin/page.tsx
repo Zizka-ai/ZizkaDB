@@ -19,7 +19,6 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { setAdminToken, clearAdminToken, getAdminToken } from "@/lib/auth";
 import { FOUNDER_EMAIL, POLL_INTERVAL_MS, OTP_LENGTH } from "@/lib/constants";
 
-const ADMIN_EMAIL = 'founder@zizka.ai'
 
 type Section = 'subscribers' | 'managed' | 'telemetry' | 'demo_requests' | 'marketing_subscriptions'
 
@@ -189,7 +188,7 @@ function Login({ onAuthed }: { onAuthed: (t: string) => void }) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 30_000);
     try {
-      await adminRequestOtp(ADMIN_EMAIL, controller.signal);
+      await adminRequestOtp(FOUNDER_EMAIL, controller.signal);
       setStep("verify");
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") {
@@ -209,7 +208,7 @@ function Login({ onAuthed }: { onAuthed: (t: string) => void }) {
     setBusy(true);
     setErr("");
     try {
-      const { access_token } = await adminVerifyOtp(ADMIN_EMAIL, otp.trim());
+      const { access_token } = await adminVerifyOtp(FOUNDER_EMAIL, otp.trim());
       onAuthed(access_token);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Invalid code");
@@ -269,8 +268,8 @@ function Login({ onAuthed }: { onAuthed: (t: string) => void }) {
           }}
         >
           {step === "request"
-            ? `We will email a 6-digit code to ${ADMIN_EMAIL}.`
-            : `Check ${ADMIN_EMAIL} for the 6-digit code.`}
+            ? `We will email a 6-digit code to ${FOUNDER_EMAIL}.`
+            : `Check ${FOUNDER_EMAIL} for the 6-digit code.`}
         </p>
 
         {step === "request" ? (
@@ -479,7 +478,7 @@ function Dashboard({
             color: "#737373",
           }}
         >
-          <span>{ADMIN_EMAIL}</span>
+          <span>{FOUNDER_EMAIL}</span>
           <button
             onClick={onLogout}
             style={{

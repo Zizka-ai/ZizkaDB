@@ -53,49 +53,6 @@ def _reload_with_env(module_name: str, env: dict) -> None:
                 os.environ[k] = v
 
 
-# ── auth.py — JWT_SECRET / JWT_REFRESH_SECRET ──────────────────────────────
-
-@pytest.mark.skip(
-    reason="auth.py no longer exposes _required_secret after billing rollback; "
-           "runtime behavior intentionally remains unchanged"
-)
-class TestAuthSecretFallback:
-    def test_dev_fallback_used_when_env_unset(self):
-        from services.auth import _required_secret
-        result = _required_secret("NONEXISTENT_VAR_XYZ", "dev-fallback")
-        assert result == "dev-fallback"
-
-    def test_dev_fallback_used_when_env_is_development(self, monkeypatch):
-        monkeypatch.setenv("ENV", "development")
-        monkeypatch.delenv("NONEXISTENT_VAR_XYZ", raising=False)
-        from services.auth import _required_secret
-        result = _required_secret("NONEXISTENT_VAR_XYZ", "dev-fallback")
-        assert result == "dev-fallback"
-
-    def test_explicit_secret_always_used(self, monkeypatch):
-        monkeypatch.setenv("ENV", "production")
-        monkeypatch.setenv("MY_TEST_SECRET", "real-secret-value")
-        from services.auth import _required_secret
-        result = _required_secret("MY_TEST_SECRET", "dev-fallback")
-        assert result == "real-secret-value"
-
-    def test_production_without_secret_raises(self, monkeypatch):
-        monkeypatch.setenv("ENV", "production")
-        monkeypatch.delenv("NONEXISTENT_VAR_XYZ", raising=False)
-        from services.auth import _required_secret
-        with pytest.raises(RuntimeError, match="must be set in production"):
-            _required_secret("NONEXISTENT_VAR_XYZ", "dev-fallback")
-
-    def test_staging_treated_as_production(self, monkeypatch):
-        # Anything other than "development" should be treated as production —
-        # we don't want a typo'd ENV value to silently disable the guard.
-        monkeypatch.setenv("ENV", "staging")
-        monkeypatch.delenv("NONEXISTENT_VAR_XYZ", raising=False)
-        from services.auth import _required_secret
-        with pytest.raises(RuntimeError):
-            _required_secret("NONEXISTENT_VAR_XYZ", "dev-fallback")
-
-
 # ── embedding_config.py — _fernet() ─────────────────────────────────────────
 
 class TestEmbeddingKeyFallback:

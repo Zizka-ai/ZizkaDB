@@ -647,8 +647,6 @@ async def _baseline_for_timewindow(
     }
 
 
-_WINDOW_PATTERN = re.compile(r"^(24h|7d|30d|custom)$")
-
 MINIMUM_BASELINE_EVENTS = 50
 MINIMUM_CURRENT_EVENTS  = 10
 

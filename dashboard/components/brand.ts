@@ -1,5 +1,4 @@
-/** Brand colors + logo path */
-export const LOGO_SRC = "/zizka-logo.png";
+/** Brand colors */
 export const BRAND = "#f97316";
 export const BRAND_DARK = "#ea580c";
 export const BRAND_LIGHT = "#fdba74";

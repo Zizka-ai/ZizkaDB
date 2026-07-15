@@ -25,17 +25,6 @@ class LogEventRequest(BaseModel):
     metadata: dict[str, Any] | None = None
 
 
-class EventResponse(BaseModel):
-    event_id: str
-    agent: str
-    timestamp: datetime
-    event: str
-    data: dict[str, Any]
-    parent_id: str | None
-    session_id: str | None
-    sequence_no: int
-
-
 # ─────────────────────────────────────────
 # LOG EVENT — POST /v1/events
 # ─────────────────────────────────────────

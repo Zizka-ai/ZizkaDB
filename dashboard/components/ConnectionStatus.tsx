@@ -4,20 +4,6 @@ import { useEffect, useState } from "react";
 import { API } from "@/lib/api";
 import { IS_DEV_MODE as IS_DEV } from "@/lib/constants";
 
-const SETUP_SCRIPT_HINT = "bash scripts/setup-local.sh";
-
-function pythonQuickstartSnippet(clientArg: string): string {
-  return `pip install zizkadb-sdk
-python -c "
-import asyncio
-from zizkadb import ZizkaDB
-async def main():
-    async with ZizkaDB(${clientArg}) as db:
-        r = await db.log(agent='my-bot', event='started', data={'ok': True})
-        print('Logged:', r.event_id)
-asyncio.run(main())"`;
-}
-
 type HealthState = "checking" | "ok" | "error";
 
 export function ConnectionStatus() {

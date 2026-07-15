@@ -6,7 +6,7 @@ import os
 from typing import Any
 
 from db.connection import get_pool
-from services.entitlements import api_key_limit_for_plan, is_self_hosted_deployment
+from services.entitlements import is_self_hosted_deployment
 
 TRIAL_DAYS = int(os.getenv("TRIAL_DAYS", "30"))
 
@@ -15,44 +15,8 @@ VALID_PLANS = frozenset({"pro", "team"})
 # API-key-count feature strings are derived from services.entitlements (the
 # single source of truth for the actual limit) so they can never drift from
 # what's enforced — changing a limit there updates this copy automatically.
-PLAN_CATALOG: list[dict[str, Any]] = [
-    {
-        "id": "pro",
-        "name": "Pro",
-        "price": "€29",
-        "price_sub": "/ month",
-        "highlight": True,
-        "features": [
-            "50k events / month",
-            "2 projects",
-            f"{api_key_limit_for_plan('pro')} active API keys",
-            "30-day free trial",
-            "Email support",
-        ],
-    },
-    {
-        "id": "team",
-        "name": "Team",
-        "price": "€69",
-        "price_sub": "/ month",
-        "highlight": False,
-        "features": [
-            "100k events / month",
-            "5 projects",
-            f"{api_key_limit_for_plan('team')} active API keys",
-            "30-day free trial",
-            "Priority support",
-        ],
-    },
-]
-
-
 def _valid_plan(plan: str | None) -> bool:
     return bool(plan and plan in VALID_PLANS)
-
-
-def available_plans() -> list[dict[str, Any]]:
-    return [dict(entry) for entry in PLAN_CATALOG]
 
 
 async def fetch_user_billing(*, user_id: str | None = None, email: str | None = None) -> dict | None:

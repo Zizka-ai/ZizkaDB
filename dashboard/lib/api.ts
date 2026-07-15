@@ -612,14 +612,6 @@ export async function selectBillingPlan(token: string, plan: 'pro' | 'team'): Pr
   })
 }
 
-export function postAuthRedirect(_data: {
-  requires_plan_selection?: boolean
-  requires_checkout?: boolean
-  has_access?: boolean
-  plan?: string | null
-}): string {
-  return '/dashboard'
-}
 
 export interface AccountOptions {
   managed_cloud: boolean
