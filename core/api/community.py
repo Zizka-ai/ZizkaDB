@@ -16,6 +16,7 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
+from api.utils import check_rate, client_ip
 from db.connection import get_pool
 
 router = APIRouter()
@@ -49,21 +50,6 @@ class CreateReplyBody(BaseModel):
     website: str | None = None
 
 
-def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
-
-
-def _check_rate(ip: str) -> None:
-    import time
-    now = time.time()
-    hits = [t for t in _rate.get(ip, []) if now - t < RATE_WINDOW_SEC]
-    if len(hits) >= RATE_MAX_POSTS:
-        raise HTTPException(status_code=429, detail="Too many posts. Try again later.")
-    hits.append(now)
-    _rate[ip] = hits
 
 
 def _public_base_url(request: Request) -> str:
@@ -173,7 +159,7 @@ async def create_post(body: CreatePostBody, request: Request):
     if body.category not in CATEGORIES:
         raise HTTPException(status_code=400, detail="Invalid category")
 
-    _check_rate(_client_ip(request))
+    check_rate(_rate, client_ip(request), RATE_WINDOW_SEC, RATE_MAX_POSTS, "Too many posts. Try again later.")
     pool = get_pool()
     urls = [u for u in body.image_urls if isinstance(u, str) and u.startswith("/v1/community/media/")][:6]
 
@@ -200,7 +186,7 @@ async def create_reply(post_id: str, body: CreateReplyBody, request: Request):
     if body.website:
         raise HTTPException(status_code=400, detail="Invalid submission")
 
-    _check_rate(_client_ip(request))
+    check_rate(_rate, client_ip(request), RATE_WINDOW_SEC, RATE_MAX_POSTS, "Too many posts. Try again later.")
     pool = get_pool()
     try:
         pid = uuid.UUID(post_id)
@@ -237,7 +223,7 @@ async def create_reply(post_id: str, body: CreateReplyBody, request: Request):
 
 @router.post("/upload")
 async def upload_image(request: Request, file: UploadFile = File(...)):
-    _check_rate(_client_ip(request) + ":upload")
+    check_rate(_rate, client_ip(request) + ":upload", RATE_WINDOW_SEC, RATE_MAX_POSTS, "Too many uploads. Try again later.")
 
     if not file.filename:
         raise HTTPException(status_code=400, detail="No file")

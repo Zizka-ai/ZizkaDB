@@ -8,11 +8,11 @@ Public marketing subscription endpoint (popup lead capture).
 from __future__ import annotations
 
 import logging
-import time
 
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 
+from api.utils import check_rate, client_ip
 from db.connection import get_pool
 
 router = APIRouter()
@@ -29,20 +29,6 @@ class SubscribeBody(BaseModel):
     botcheck: str | None = None  # honeypot
 
 
-def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
-
-
-def _check_rate(ip: str) -> None:
-    now = time.time()
-    hits = [t for t in _rate.get(ip, []) if now - t < RATE_WINDOW_SEC]
-    if len(hits) >= RATE_MAX:
-        raise HTTPException(status_code=429, detail="Too many requests. Try again later.")
-    hits.append(now)
-    _rate[ip] = hits
 
 
 @router.post("", status_code=201)
@@ -50,8 +36,8 @@ async def subscribe(body: SubscribeBody, request: Request):
     if body.botcheck:
         raise HTTPException(status_code=400, detail="Invalid submission")
 
-    ip = _client_ip(request)
-    _check_rate(ip)
+    ip = client_ip(request)
+    check_rate(_rate, ip, RATE_WINDOW_SEC, RATE_MAX)
 
     pool = get_pool()
     email = str(body.email).strip().lower()

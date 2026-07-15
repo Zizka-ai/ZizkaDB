@@ -5,7 +5,6 @@ import os
 import logging
 import jwt
 import bcrypt
-import random
 import smtplib
 from typing import Literal
 from email.mime.text import MIMEText
@@ -48,7 +47,7 @@ REFRESH_TOKEN_EXPIRE_DAYS = 30
 # API KEY AUTH
 # ─────────────────────────────────────────
 
-def generate_api_key() -> tuple[str, str]:
+def generate_api_key() -> tuple[str, str, str]:
     """Returns (raw_key, key_hash, prefix). Store hash, show raw once."""
     raw = f"zizkadb_live_{secrets.token_urlsafe(32)}"
     key_hash = hashlib.sha256(raw.encode()).hexdigest()
@@ -103,7 +102,7 @@ async def email_exists(email: str) -> bool:
 
 async def request_otp(email: str) -> None:
     email = email.lower().strip()
-    otp = str(random.randint(100000, 999999))
+    otp = str(secrets.randbelow(900_000) + 100_000)
     otp_hash = bcrypt.hashpw(otp.encode(), bcrypt.gensalt()).decode()
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
 
@@ -359,10 +358,7 @@ def _send_otp_email_sync(email: str, otp: str) -> None:
     password = os.getenv("EMAIL_PASS")
 
     if not host or not user or not password:
-        print(f"\n{'='*50}")
-        print(f"OTP FOR {email}: {otp}")
-        print(f"(Set EMAIL_HOST / EMAIL_USER / EMAIL_PASS to send real emails)")
-        print(f"{'='*50}\n", flush=True)
+        log.warning("DEV OTP for %s: %s (set EMAIL_HOST / EMAIL_USER / EMAIL_PASS to send real emails)", email, otp)
         return
 
     port = int(os.getenv("EMAIL_PORT", 587))

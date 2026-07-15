@@ -1,4 +1,4 @@
-const API = process.env.NEXT_PUBLIC_API_URL ?? ''
+import { API } from './api'
 
 export interface DemoRequestPayload {
   first_name: string
