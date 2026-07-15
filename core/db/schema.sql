@@ -56,6 +56,9 @@ CREATE TABLE users (
     plan                    VARCHAR(50),   -- pro | team | starter
     subscription_status     VARCHAR(50),   -- trialing | active | past_due | canceled
     trial_ends_at           TIMESTAMPTZ,
+    -- DEPRECATED: legacy columns from a removed Stripe integration.
+    -- No Python code reads or writes these. Retained to avoid DDL on a live table.
+    -- Candidate for removal in a future schema cleanup migration.
     stripe_customer_id      VARCHAR(255) UNIQUE,
     stripe_subscription_id  VARCHAR(255) UNIQUE,
     retention_trial_used    BOOLEAN NOT NULL DEFAULT FALSE,
@@ -133,6 +136,8 @@ CREATE TABLE usage_daily (
     tenant_id       UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
     date            DATE NOT NULL,
     events_written  BIGINT DEFAULT 0,
+    -- NOTE: queries_run and searches_run are reserved for future metering.
+    -- Only events_written is currently incremented (core/services/event_write.py).
     queries_run     BIGINT DEFAULT 0,
     searches_run    BIGINT DEFAULT 0,
     PRIMARY KEY (tenant_id, date)
@@ -155,3 +160,64 @@ CREATE TABLE demo_requests (
 );
 
 CREATE INDEX idx_demo_requests_created ON demo_requests (created_at DESC);
+
+-- ─────────────────────────────────────────
+-- COMMUNITY BOARD
+-- (also created at runtime via init_db() in core/db/connection.py)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS community_posts (
+    post_id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title         VARCHAR(300) NOT NULL,
+    body          TEXT NOT NULL,
+    category      VARCHAR(50) NOT NULL DEFAULT 'general',
+    author_name   VARCHAR(120) NOT NULL,
+    author_ip     VARCHAR(64),
+    image_url     TEXT,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    reply_count   INT NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_posts_category
+    ON community_posts (category, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS community_replies (
+    reply_id    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    post_id     UUID NOT NULL REFERENCES community_posts(post_id) ON DELETE CASCADE,
+    body        TEXT NOT NULL,
+    author_name VARCHAR(120) NOT NULL,
+    author_ip   VARCHAR(64),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_replies_post
+    ON community_replies (post_id, created_at ASC);
+
+-- ─────────────────────────────────────────
+-- SDK TELEMETRY (anonymous install pings — no PII)
+-- (also created at runtime via init_db() in core/db/connection.py)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS sdk_telemetry (
+    install_id   VARCHAR(64) PRIMARY KEY,
+    sdk          VARCHAR(50),
+    sdk_version  VARCHAR(30),
+    runtime      VARCHAR(50),
+    os           VARCHAR(50),
+    mode         VARCHAR(30),
+    first_seen   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_seen    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ping_count   INT NOT NULL DEFAULT 1
+);
+
+-- ─────────────────────────────────────────
+-- MARKETING SUBSCRIPTIONS (lead capture popup)
+-- (also created at runtime via init_db() in core/db/connection.py)
+-- ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS marketing_subscriptions (
+    sub_id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email        VARCHAR(255) UNIQUE NOT NULL,
+    source       VARCHAR(64),
+    ip_address   VARCHAR(64),
+    user_agent   TEXT,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
