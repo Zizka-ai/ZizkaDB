@@ -16,10 +16,12 @@ logger = logging.getLogger(__name__)
 # Storage Interfaces and Implementations
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class RateLimitStorage(ABC):
     """
     Abstract base class representing the storage backend for rate limiting hits.
     """
+
     @abstractmethod
     async def get_hits(self, key: str, window_sec: int) -> list[float]:
         """Retrieve all active hit timestamps for key within the window."""
@@ -41,12 +43,13 @@ class InMemoryStorage(RateLimitStorage):
     An in-memory thread-safe storage implementation for tracking rate limit hits.
     Supports lazy or periodic cleanup of expired timestamps to prevent memory leaks.
     """
+
     def __init__(
         self,
         enable_cleanup: bool = False,
         cleanup_method: str = "lazy",
         default_ttl_sec: float = 3600.0,
-        cleanup_interval_sec: float = 60.0
+        cleanup_interval_sec: float = 60.0,
     ):
         """
         Initialize the in-memory storage.
@@ -63,7 +66,7 @@ class InMemoryStorage(RateLimitStorage):
         self.cleanup_method = cleanup_method
         self.default_ttl_sec = default_ttl_sec
         self.cleanup_interval_sec = cleanup_interval_sec
-        
+
         self._gc_thread: threading.Thread | None = None
         self._stop_gc = threading.Event()
 
@@ -72,7 +75,9 @@ class InMemoryStorage(RateLimitStorage):
 
     def _start_gc_thread(self):
         """Start the background thread for periodic garbage collection."""
-        self._gc_thread = threading.Thread(target=self._gc_loop, daemon=True, name="InMemoryStorage-GC")
+        self._gc_thread = threading.Thread(
+            target=self._gc_loop, daemon=True, name="InMemoryStorage-GC"
+        )
         self._gc_thread.start()
         logger.info("Started periodic background garbage collection thread for InMemoryStorage")
 
@@ -137,6 +142,7 @@ class RedisStorage(RateLimitStorage):
     A Redis-backed storage implementation for tracking rate limit hits.
     Uses sorted sets (ZSET) to store hit timestamps and enforce expiry.
     """
+
     def __init__(self, key_prefix: str = "ratelimit"):
         """
         Initialize the Redis storage.
@@ -159,10 +165,10 @@ class RedisStorage(RateLimitStorage):
         rkey = self._get_redis_key(key)
         now = time.time()
         cutoff = now - window_sec
-        
+
         # Remove timestamps older than the window
         await redis_client.zremrangebyscore(rkey, "-inf", cutoff)
-        
+
         # Retrieve remaining hits
         results = await redis_client.zrange(rkey, 0, -1, withscores=True)
         return [score for _, score in results]
@@ -174,7 +180,7 @@ class RedisStorage(RateLimitStorage):
         """
         redis_client = get_redis()
         rkey = self._get_redis_key(key)
-        
+
         # Add hit. A UUID is used (not e.g. threading.get_ident()) because this
         # is async code: every concurrent request on a given worker runs on the
         # same event loop thread, so thread-identity is constant and does not
@@ -186,7 +192,7 @@ class RedisStorage(RateLimitStorage):
         # this fix).
         val = f"{timestamp}:{uuid.uuid4().hex}"
         await redis_client.zadd(rkey, {val: timestamp})
-        
+
         # Set expiry to prevent memory leak
         await redis_client.expire(rkey, window_sec)
 
@@ -204,18 +210,15 @@ class RedisStorage(RateLimitStorage):
 # Rate Limiting Strategies
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class RateLimitStrategy(ABC):
     """
     Abstract base class for rate limiting algorithms/strategies.
     """
+
     @abstractmethod
     async def check(
-        self,
-        key: str,
-        limit: int,
-        window_sec: int,
-        storage: RateLimitStorage,
-        detail: str
+        self, key: str, limit: int, window_sec: int, storage: RateLimitStorage, detail: str
     ) -> None:
         """Check the limit and record a hit if under limit. Raises 429 if exceeded."""
         pass
@@ -226,13 +229,9 @@ class SlidingWindowStrategy(RateLimitStrategy):
     Sliding Window rate limiting strategy.
     Measures requests dynamically over the preceding sliding time window.
     """
+
     async def check(
-        self,
-        key: str,
-        limit: int,
-        window_sec: int,
-        storage: RateLimitStorage,
-        detail: str
+        self, key: str, limit: int, window_sec: int, storage: RateLimitStorage, detail: str
     ) -> None:
         """
         Check the limit using a sliding window algorithm.
@@ -240,9 +239,11 @@ class SlidingWindowStrategy(RateLimitStrategy):
         """
         hits = await storage.get_hits(key, window_sec)
         if len(hits) >= limit:
-            logger.warning(f"Rate limit exceeded (SlidingWindow) for key: {key} (limit={limit}, window={window_sec}s)")
+            logger.warning(
+                f"Rate limit exceeded (SlidingWindow) for key: {key} (limit={limit}, window={window_sec}s)"
+            )
             raise rate_limit_exceeded(detail=detail)
-        
+
         await storage.record_hit(key, time.time(), window_sec)
 
 
@@ -251,13 +252,9 @@ class FixedWindowStrategy(RateLimitStrategy):
     Fixed Window rate limiting strategy.
     Divides time into fixed buckets (e.g., calendar hours) and limits requests per bucket.
     """
+
     async def check(
-        self,
-        key: str,
-        limit: int,
-        window_sec: int,
-        storage: RateLimitStorage,
-        detail: str
+        self, key: str, limit: int, window_sec: int, storage: RateLimitStorage, detail: str
     ) -> None:
         """
         Check the limit using a fixed window algorithm.
@@ -267,12 +264,14 @@ class FixedWindowStrategy(RateLimitStrategy):
         # Segment time into fixed windows
         window_start = int(now // window_sec)
         fixed_key = f"{key}:fixed:{window_start}"
-        
+
         hits = await storage.get_hits(fixed_key, window_sec)
         if len(hits) >= limit:
-            logger.warning(f"Rate limit exceeded (FixedWindow) for key: {key} (limit={limit}, window={window_sec}s)")
+            logger.warning(
+                f"Rate limit exceeded (FixedWindow) for key: {key} (limit={limit}, window={window_sec}s)"
+            )
             raise rate_limit_exceeded(detail=detail)
-        
+
         await storage.record_hit(fixed_key, now, window_sec)
 
 
@@ -280,18 +279,20 @@ class FixedWindowStrategy(RateLimitStrategy):
 # Central Controller
 # ──────────────────────────────────────────────────────────────────────────────
 
+
 class RateLimiter:
     """
     Central controller class that coordinates rate limiting checks.
     Combines a specific limit, window duration, storage engine, and algorithm strategy.
     """
+
     def __init__(
         self,
         limit: int,
         window_sec: int,
         storage: RateLimitStorage,
         strategy: RateLimitStrategy,
-        detail: str = "Rate limit exceeded. Please try again later."
+        detail: str = "Rate limit exceeded. Please try again later.",
     ):
         """
         Initialize the rate limiter controller.
