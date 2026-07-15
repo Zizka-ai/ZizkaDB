@@ -1,0 +1,18 @@
+# Local development override — DO NOT use in production.
+#
+# Mounts the host core/ directory into the container (so edits take effect
+# without a rebuild) and enables uvicorn --reload so the server restarts on
+# file changes.
+#
+# Usage:
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d
+#
+# The quickstart scripts (scripts/quickstart.sh, scripts/setup-local.sh) already
+# include this override automatically. Use the base compose alone for production.
+
+services:
+  api:
+    volumes:
+      - ../core:/app
+      - community_uploads:/data/community_uploads
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload

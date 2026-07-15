@@ -74,6 +74,10 @@ else
 fi
 
 if [ ${#BUILD_FLAG[@]} -gt 0 ]; then
+  # Dev overlay: mounts host core/ into the container and enables --reload so
+  # local edits are reflected without a rebuild. Only used when building from
+  # source; pre-built OSS images are immutable and don't need the mount.
+  COMPOSE+=( -f infra/docker-compose.dev.yml )
   # Registry metadata checks during `compose build` occasionally hang/timeout
   # (DeadlineExceeded) even when the base image is already cached locally.
   # Pre-pulling once avoids that flake and speeds up every subsequent build.
