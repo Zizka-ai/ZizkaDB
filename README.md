@@ -92,8 +92,8 @@ bash scripts/quickstart.sh
 |---|---|
 | **Python** | `pip install zizkadb-sdk` |
 | **TypeScript / JavaScript** | `npm install zizkadb-sdk` |
-| **LangChain** | `pip install zizkadb-sdk zizkadb-langchain` |
-| **CrewAI** | `pip install zizkadb-sdk zizkadb-crewai` |
+| **LangChain** | `pip install zizkadb-sdk "zizkadb-langchain @ git+https://github.com/Zizka-ai/ZizkaDB.git@main#subdirectory=integrations/langchain"` |
+| **CrewAI** | `pip install zizkadb-sdk "zizkadb-crewai @ git+https://github.com/Zizka-ai/ZizkaDB.git@main#subdirectory=integrations/crewai"` |
 | **AI Editor (Cursor, Claude)** | `uvx zizkadb-mcp` |
 | **REST (any language)** | No install needed — use any HTTP client |
 

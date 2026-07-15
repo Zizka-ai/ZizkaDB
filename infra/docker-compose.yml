@@ -64,11 +64,12 @@ services:
       ENV: ${ENV:-development}
       # Local dev only — leave unset on managed cloud (ENV=production)
       DEV_API_KEY: ${DEV_API_KEY:-zizkadb_dev_local}
-      # Marks this stack as self-hosted for plan-based entitlement checks
-      # (e.g. API key limits). This compose file is also used to deploy
-      # managed cloud (infra/deploy-production.sh), so the default here MUST
-      # stay "managed" — self-host installs opt in explicitly via their own
-      # infra/.env (see .env.example / wiki/Self-Hosting.md).
+      # IMPORTANT FOR SELF-HOSTERS: set DEPLOYMENT_MODE=self_hosted in your
+      # infra/.env (see .env.example). Without it, plan-based API key limits
+      # are evaluated as if you are a managed-cloud tenant (default: "managed").
+      # This file is also used by infra/deploy-production.sh for the managed
+      # cloud, so the in-compose default must stay "managed" — self-hosters
+      # must override via their .env file (see wiki/Self-Hosting.md).
       DEPLOYMENT_MODE: ${DEPLOYMENT_MODE:-managed}
       # Email — optional; enables OTP login on self-hosted dashboard
       EMAIL_HOST: ${EMAIL_HOST}

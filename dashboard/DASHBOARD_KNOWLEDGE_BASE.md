@@ -38,7 +38,7 @@
 
 ## 1. Dashboard Architecture
 
-**Framework:** Next.js 14.2.35 App Router (bumped from 14.2.3 2026-07-08 to clear a critical middleware auth-bypass advisory; `npm audit` still reports 4 high/1 moderate advisories on 14.2.35 that only a Next.js 16.x major bump would clear — not taken, tracked as a follow-up, not a regression), React 18, TypeScript. Styling is a mix of **Tailwind** (dashboard app, `className`) and **inline styles** (marketing/landing + signup). Charts via `recharts`, icons via `lucide-react`, JWT decode via `jose`.
+**Framework:** Next.js 14.2.35 App Router (bumped from 14.2.3 2026-07-08 to clear a critical middleware auth-bypass advisory; `npm audit` still reports 4 high/1 moderate advisories on 14.2.35 that only a Next.js 16.x major bump would clear — not taken, tracked as a follow-up, not a regression), React 18, TypeScript. Styling is a mix of **Tailwind** (dashboard app, `className`) and **inline styles** (marketing/landing + signup). Icons via `lucide-react`, JWT decode via `jose`. No chart library is installed — all data visualisation is custom inline HTML/CSS.
 
 **No global state library.** No Redux/Zustand/React Query/SWR/Context. State is:
 - **Local** via `useState`/`useEffect` per page.
@@ -615,7 +615,7 @@ The logic that drives every dashboard gate and funnel branch. Routers are thin; 
 ### 18.4 Events & memory
 
 - **`write_event`** (`core/services/event_write.py:16-109`): upsert agent + bump `event_count`; insert event with SHA-256 checksum of sorted JSON; best-effort embedding + Qdrant upsert to `agent_events`; increment `usage_daily.events_written`; returns `{event_id, timestamp, sequence_no, checksum}`.
-- **Events API** (`core/api/events.py`): `POST /` and `GET /` enforce agent scope (`assert_agent_allowed`); `GET /{id}/why` walks the parent chain (`depth≤50`); `GET /at` reconstructs state at a timestamp via `STATE_SET`/`STATE_DELETE` reduction — note **`/at` does NOT enforce agent scope**.
+- **Events API** (`core/api/events.py`): `POST /`, `GET /`, and `GET /at` all enforce agent scope (`assert_agent_allowed`); `GET /{id}/why` walks the parent chain (`depth≤50`); `GET /at` reconstructs state at a timestamp via `STATE_SET`/`STATE_DELETE` reduction — **scoped API keys (bound to a specific `agent_id`) cannot time-travel into another agent's state and will receive 403**.
 - **Memory** (`core/api/memory.py`): `POST /context` (recent + semantic search merged into a char-budgeted prompt block), `GET /diff/{session_id}` (session summary + new event types vs prior), `DELETE /forget` (deletes events by exact JSONB match + purges Qdrant).
 
 ### 18.5 Agents & baseline (`core/api/agents.py`)

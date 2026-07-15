@@ -93,15 +93,18 @@ pip install zizkadb-sdk zizkadb-langchain
 ```
 
 ```python
+import asyncio
 from langchain_openai import ChatOpenAI
 from zizkadb import ZizkaDB
 from zizkadb_langchain import ZizkaDBCallbackHandler
 
-db = ZizkaDB(host="http://localhost:8000")
-handler = ZizkaDBCallbackHandler(db, agent="my-bot")
+async def main():
+    async with ZizkaDB(host="http://localhost:8000") as db:
+        handler = ZizkaDBCallbackHandler(db=db, agent="my-bot")
+        llm = ChatOpenAI(model="gpt-4o-mini")
+        await llm.ainvoke("Hello", config={"callbacks": [handler]})
 
-llm = ChatOpenAI(model="gpt-4o-mini", callbacks=[handler])
-llm.invoke("Hello")
+asyncio.run(main())
 ```
 
 Or scaffold: `zizkadb init my-agent --template langchain`
