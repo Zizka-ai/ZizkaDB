@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 
-from api.deps import get_tenant
+from api.deps import require_dashboard_session
 from services.billing import (
     VALID_PLANS,
     billing_status_payload,
@@ -32,13 +32,13 @@ class SelectPlanBody(BaseModel):
 
 
 @router.get("/status")
-async def billing_status(tenant: dict = Depends(get_tenant)):
+async def billing_status(tenant: dict = Depends(require_dashboard_session)):
     row = await fetch_user_billing(user_id=tenant["user_id"])
     return billing_status_payload(row)
 
 
 @router.post("/select-plan")
-async def choose_plan(body: SelectPlanBody, tenant: dict = Depends(get_tenant)):
+async def choose_plan(body: SelectPlanBody, tenant: dict = Depends(require_dashboard_session)):
     try:
         row = await select_plan(user_id=tenant["user_id"], plan=body.plan)
         return billing_status_payload(row)

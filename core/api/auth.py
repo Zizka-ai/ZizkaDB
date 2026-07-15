@@ -194,7 +194,7 @@ async def api_keys_usage(session: dict = Depends(require_dashboard_session)):
 @router.delete("/api-keys/{key_id}")
 async def revoke_api_key(
     key_id: str,
-    tenant: dict = Depends(get_tenant),
+    tenant: dict = Depends(require_dashboard_session),
 ):
     """Revoke an API key. The key stops working immediately."""
     pool = get_pool()
@@ -258,7 +258,7 @@ async def test_event(tenant: dict = Depends(get_tenant)):
 
 
 @router.get("/api-keys")
-async def list_api_keys(tenant: dict = Depends(get_tenant)):
+async def list_api_keys(tenant: dict = Depends(require_dashboard_session)):
     pool = get_pool()
     rows = await pool.fetch(
         """

@@ -5,7 +5,6 @@ import os
 import logging
 import jwt
 import bcrypt
-import random
 import smtplib
 from typing import Literal
 from email.mime.text import MIMEText
@@ -103,7 +102,7 @@ async def email_exists(email: str) -> bool:
 
 async def request_otp(email: str) -> None:
     email = email.lower().strip()
-    otp = str(random.randint(100000, 999999))
+    otp = str(secrets.randbelow(900_000) + 100_000)
     otp_hash = bcrypt.hashpw(otp.encode(), bcrypt.gensalt()).decode()
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
 

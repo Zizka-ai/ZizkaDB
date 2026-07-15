@@ -125,7 +125,7 @@ async def create_agent(
 @router.delete("/{agent_id}")
 async def delete_agent(
     agent_id: str,
-    tenant: dict = Depends(get_tenant),
+    tenant: dict = Depends(require_dashboard_session),
 ):
     """Delete an agent and all of its events. Cannot be undone."""
     agent_id = _validate_agent_id(agent_id)
