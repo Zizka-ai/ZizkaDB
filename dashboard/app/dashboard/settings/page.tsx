@@ -60,6 +60,8 @@ export default function SettingsPage() {
     try {
       token = requireAuth();
     } catch {
+      setLoading(false);
+      setEmbLoading(false);
       return;
     }
     getApiKeys(token)

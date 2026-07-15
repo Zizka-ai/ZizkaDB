@@ -181,6 +181,7 @@ async def time_travel(
     timestamp: datetime,
     tenant: dict = Depends(get_tenant),
 ):
+    assert_agent_allowed(tenant, agent)
     pool = get_pool()
     tenant_id = tenant["tenant_id"]
 

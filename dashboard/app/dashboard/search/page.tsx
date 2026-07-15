@@ -29,7 +29,7 @@ export default function SearchPage() {
     try {
       const token = requireAuth();
       const res = await searchEvents(token, query);
-      setResults(res.results);
+      setResults(Array.isArray(res) ? res : (res?.results ?? []));
     } catch {
       setResults([]);
     } finally {

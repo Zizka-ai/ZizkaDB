@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from api.deps import get_tenant, require_dashboard_session
+from api.deps import assert_agent_allowed, get_tenant, require_dashboard_session
 from db.connection import get_pool
 from services.api_keys import (
     assert_and_reserve_api_key_slot,
@@ -139,18 +139,20 @@ async def delete_agent(
     if not row:
         raise HTTPException(status_code=404, detail="Agent not found")
 
-    await pool.execute(
-        "UPDATE events SET parent_event_id = NULL WHERE tenant_id = $1 AND agent_id = $2",
-        tenant_id, agent_id,
-    )
-    await pool.execute(
-        "DELETE FROM events WHERE tenant_id = $1 AND agent_id = $2",
-        tenant_id, agent_id,
-    )
-    await pool.execute(
-        "DELETE FROM agents WHERE tenant_id = $1 AND agent_id = $2",
-        tenant_id, agent_id,
-    )
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            await conn.execute(
+                "UPDATE events SET parent_event_id = NULL WHERE tenant_id = $1 AND agent_id = $2",
+                tenant_id, agent_id,
+            )
+            await conn.execute(
+                "DELETE FROM events WHERE tenant_id = $1 AND agent_id = $2",
+                tenant_id, agent_id,
+            )
+            await conn.execute(
+                "DELETE FROM agents WHERE tenant_id = $1 AND agent_id = $2",
+                tenant_id, agent_id,
+            )
     return {
         "deleted": True,
         "agent": agent_id,
@@ -253,6 +255,7 @@ async def revoke_agent_api_key(
 
 @router.get("/{agent_id}/stats")
 async def agent_stats(agent_id: str, tenant: dict = Depends(get_tenant)):
+    assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
 
     stats = await pool.fetchrow(
@@ -298,6 +301,7 @@ async def list_sessions(
     limit: int = Query(default=50, le=500),
     tenant: dict = Depends(get_tenant),
 ):
+    assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
     rows = await pool.fetch(
         """
@@ -479,6 +483,7 @@ async def agent_baseline(
     `recent` = sessions ending inside that window, `baseline` = everything before.
     Otherwise falls back to the most recent N sessions vs everything prior.
     """
+    assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
 
     sessions = await pool.fetch(
@@ -672,6 +677,7 @@ async def agent_behavior_change(
     Requires >= 50 events before the window to establish a meaningful baseline.
     """
     agent_id  = _validate_agent_id(agent_id)
+    assert_agent_allowed(tenant, agent_id)
     pool      = get_pool()
     tenant_id = tenant["tenant_id"]
 

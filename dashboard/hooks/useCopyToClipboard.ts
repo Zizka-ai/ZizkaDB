@@ -15,11 +15,15 @@ export function useCopyToClipboard(resetMs = DEFAULT_RESET_MS) {
   }, []);
 
   const copy = useCallback(
-    (text: string) => {
-      navigator.clipboard.writeText(text);
-      setCopied(true);
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => setCopied(false), resetMs);
+    async (text: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => setCopied(false), resetMs);
+      } catch {
+        // clipboard write failed (no focus, HTTP, permission denied) — do not show "Copied"
+      }
     },
     [resetMs],
   );

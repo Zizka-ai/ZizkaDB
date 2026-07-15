@@ -369,7 +369,6 @@ export default function AgentPage() {
 
   // ── sessions tab ──────────────────────────────────────────────────────────
   const loadSessions = async () => {
-    if (sessions.length > 0) return;
     setSessLoading(true);
     let token: string;
     try {
