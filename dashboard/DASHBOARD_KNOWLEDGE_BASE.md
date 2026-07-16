@@ -668,38 +668,45 @@ Exhaustive behavior per file (state, effects, API order, branches, edge cases, n
 - **Branches:** submit disabled if `loading || !query.trim()` (`:65`); empty-after-search state (`:74-78`); score badge if `event.score !== undefined` (`:103-107`); example queries when `!searched` (`:115-138`, buttons only set `query`).
 - **Rules:** empty query no-ops (`:26`); no page-load auth redirect (relies on layout gate + `requireAuth` on submit).
 
-### 19.3a Why (causal lineage) — `app/dashboard/debugging/why/page.tsx`
+### 19.3a Why — root cause — `app/dashboard/debugging/why/page.tsx`
 
-- **Purpose:** standalone, agent-agnostic "paste an event_id, get the full causal chain"
-  tool — a shareable, ready-made query wrapping `getWhyChain`, distinct from the same call
-  already used as a tab inside `agents/[id]/page.tsx`.
-- **State:** `eventIdInput`/`depthInput` (form fields), `chain: WhyChain | null`, `loading`,
-  `error`, `expanded: Set<eventId>` (which JSON blocks are open), `copiedKey`, `highlighted`.
-- **URL is the source of truth:** the fetch effect keys off `?event_id=`/`?depth=` from
-  `useSearchParams()`, not local state — every trace action (manual submit, a node's "Trace
-  this instead", a deep link) does `router.push` to a new URL, and the effect reacts. This
-  makes the page fully deep-linkable/shareable and keeps the `cancelled` guard simple (one
-  fetch path, `[urlEventId, urlDepth]` deps).
-- **API:** `getWhyChain(token, eventId, depth?)` — `depth` is optional and only appended as
-  `?depth=` when provided; existing call site in `agents/[id]/page.tsx` is unaffected.
-- **Rendering:** CloudWatch-Insights-style — every `AgentEvent` field is shown per node
-  (`event_id`, `parent_id`, `agent`, `event` type, full-precision `timestamp`, `session_id`,
-  `sequence_no`), nothing trimmed. The chain renders root-first (API order): first node
-  badged "Origin", last node badged "You searched this event" (both badges on the same node
-  when `chain_length === 1`). Any node whose `event` type contains `"error"`/`"fail"`
-  (case-insensitive — same heuristic as `memory.py`'s `has_errors`) gets a red "Error" badge,
-  independent of the Origin/Searched badges.
-- **Client-side validation:** `event_id` is checked against a UUID regex before calling the
-  API — invalid input never reaches the backend, shows an inline message instead.
-- **Copy/share:** per-field copy buttons (`event_id`, `parent_id`, `session_id`), per-node
-  "Copy event JSON", page-level "Copy link" (current URL) and "Copy chain JSON" (whole
-  response array) — all wrapped in try/catch since `navigator.clipboard` isn't guaranteed
-  (e.g. non-secure context).
-- **`parent_id` linking:** if a node's `parent_id` is present in the already-loaded chain,
-  it renders as a click-to-scroll jump (`document.getElementById('why-node-' + id)`); if the
-  ancestor was cut off by the depth limit, it's plain text, not a broken link.
-- **Nav:** `DashboardShell.tsx`'s shared `nav` array (desktop + mobile render from the same
-  list) — entry `{ href: "/dashboard/debugging/why", label: "Why", icon: GitBranch }`.
+- **Purpose:** standalone, error-focused root-cause tool. Paste an error's `event_id`; the
+  page walks its `parent_id` chain via `getWhyChain` and presents the lineage as a
+  **sequential, CloudWatch-style story timeline** from origin → failure, with the root cause
+  called out. Distinct from the same `getWhyChain` call used as a tab in `agents/[id]/page.tsx`.
+- **Single input, no depth knob:** the only field is the error `event_id`. The client always
+  requests `getWhyChain(token, eventId, MAX_DEPTH=50)` internally, so the full lineage is
+  always captured — there is intentionally no user-facing "depth" control.
+- **State:** `eventIdInput` (form), `chain: WhyChain | null`, `loading`, `error`,
+  `expanded: Set<eventId>`, `copiedKey`, `highlighted`. Derived via `useMemo`: `loadedIds`,
+  and `rootCauseIndex` = index of the **first** (earliest) event whose type matches the error
+  heuristic, or `-1` if none.
+- **URL is the source of truth:** the fetch effect keys off `?event_id=` from
+  `useSearchParams()` — every trace action (manual submit, a node's "Trace this instead", a
+  deep link) does `router.push` to a new URL and the effect reacts (single fetch path,
+  `[urlEventId]` dep, `cancelled` guard). Fully deep-linkable/shareable.
+- **Root-cause / story summary banner** (`StorySummary`): computed client-side from `chain`.
+  Root cause = the earliest error/fail event (`rootCauseIndex`); if none, a neutral "no error
+  detected" state is shown (no forced badge). Renders a narrated line ("This flow began with
+  X, ran N steps, failing at step K — `event`: message" — message from `data.error` /
+  `data.message` when present), at-a-glance stats (steps, time span, agent, session), and a
+  "Traced N parent links" caption that explains the lineage walk.
+- **Story timeline** (`StoryStep` per node, root-first): numbered step dots (1·2·3…) joined by
+  a connector rail, a `+Δ` time delta from the previous step plus the absolute timestamp, and
+  markers — **Origin** (step 1), **Root cause** (first failure), **Error** (other error steps),
+  **You searched this** (last step). Every `AgentEvent` field is shown (`event_id`, `parent_id`,
+  `agent`, `event`, `timestamp`, `session_id`, `sequence_no`); the `data` JSON expands per
+  step (error/searched steps open by default, clean steps collapsed).
+- **Error heuristic:** `event` type contains `"error"`/`"fail"` (case-insensitive) — same rule
+  as `memory.py`'s `has_errors`.
+- **Client-side validation:** `event_id` checked against a UUID regex before any API call.
+- **Copy/share:** per-field copy (`event_id`/`parent_id`/`session_id`), per-step "Copy event
+  JSON", banner-level "Copy link" + "Copy chain JSON" — all wrapped in try/catch since
+  `navigator.clipboard` isn't guaranteed (non-secure context).
+- **`parent_id` linking:** when a step's `parent_id` is in the loaded chain it renders as a
+  click-to-scroll jump; otherwise plain text (not a broken link).
+- **Nav:** `DashboardShell.tsx`'s shared `nav` array — `{ href: "/dashboard/debugging/why",
+  label: "Why", icon: GitBranch }`.
 
 ### 19.4 Settings — `app/dashboard/settings/page.tsx`
 

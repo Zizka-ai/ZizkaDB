@@ -14,14 +14,39 @@ import {
   AlertCircle,
   ArrowUpRight,
   Loader2,
+  Target,
+  Flag,
 } from "lucide-react";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// Always request the deepest lineage the API allows, so the user never has to
+// think about a "depth" knob — the full story is always captured.
+const MAX_DEPTH = 50;
+
 function isErrorEvent(eventType: string): boolean {
   const t = eventType.toLowerCase();
   return t.includes("error") || t.includes("fail");
+}
+
+function firstString(...vals: unknown[]): string | null {
+  for (const v of vals) {
+    if (typeof v === "string" && v.trim()) return v;
+  }
+  return null;
+}
+
+function formatDelta(ms: number): string {
+  if (ms < 1000) return `+${Math.max(0, Math.round(ms))}ms`;
+  if (ms < 60_000) return `+${(ms / 1000).toFixed(1)}s`;
+  return `+${(ms / 60_000).toFixed(1)}m`;
+}
+
+function formatSpan(ms: number): string {
+  if (ms < 1000) return `${Math.max(0, Math.round(ms))}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${(ms / 60_000).toFixed(1)}m`;
 }
 
 export default function WhyPage() {
@@ -45,10 +70,8 @@ function WhyPageInner() {
   const searchParams = useSearchParams();
 
   const urlEventId = searchParams.get("event_id") ?? "";
-  const urlDepth = searchParams.get("depth") ?? "";
 
   const [eventIdInput, setEventIdInput] = useState(urlEventId);
-  const [depthInput, setDepthInput] = useState(urlDepth);
   const [chain, setChain] = useState<WhyChain | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -56,9 +79,9 @@ function WhyPageInner() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [highlighted, setHighlighted] = useState<string | null>(null);
 
-  // Single source of truth: the URL. Every trace action (manual submit, deep
-  // link, "trace this instead") navigates to a new ?event_id=&depth= and this
-  // effect reacts — so there's exactly one fetch path, not several.
+  // The URL is the single source of truth: every trace action (manual submit,
+  // deep link, "trace this instead") navigates to a new ?event_id= and this
+  // effect reacts — so there is exactly one fetch path.
   useEffect(() => {
     let cancelled = false;
 
@@ -80,22 +103,20 @@ function WhyPageInner() {
       setError("");
       try {
         const token = requireAuth();
-        const depthNum = urlDepth ? Number(urlDepth) : undefined;
-        const result = await getWhyChain(
-          token,
-          trimmed,
-          depthNum && depthNum > 0 ? depthNum : undefined,
-        );
+        const result = await getWhyChain(token, trimmed, MAX_DEPTH);
         if (cancelled) return;
         setChain(result);
-        if (result.chain.length > 0) {
-          setExpanded(
-            new Set([
-              result.chain[0].event_id,
-              result.chain[result.chain.length - 1].event_id,
-            ]),
-          );
+        // Open the payloads that matter for root-causing by default: every
+        // error/fail step plus the event the user searched. Clean steps stay
+        // collapsed so the story reads top-to-bottom without scrolling walls.
+        const openByDefault = new Set<string>();
+        for (const e of result.chain) {
+          if (isErrorEvent(e.event)) openByDefault.add(e.event_id);
         }
+        if (result.chain.length > 0) {
+          openByDefault.add(result.chain[result.chain.length - 1].event_id);
+        }
+        setExpanded(openByDefault);
       } catch (err) {
         if (cancelled) return;
         setError(
@@ -110,28 +131,33 @@ function WhyPageInner() {
     return () => {
       cancelled = true;
     };
-  }, [urlEventId, urlDepth]);
+  }, [urlEventId]);
 
   const loadedIds = useMemo(
     () => new Set((chain?.chain ?? []).map((e) => e.event_id)),
     [chain],
   );
 
-  function navigateTo(eventId: string, depth?: string) {
-    const params = new URLSearchParams();
-    params.set("event_id", eventId);
-    if (depth) params.set("depth", depth);
+  // The root cause is the earliest (lowest in the chain) error/fail event.
+  // -1 means the chain contains no error at all.
+  const rootCauseIndex = useMemo(() => {
+    if (!chain) return -1;
+    return chain.chain.findIndex((e) => isErrorEvent(e.event));
+  }, [chain]);
+
+  function navigateTo(eventId: string) {
+    const params = new URLSearchParams({ event_id: eventId });
     router.push(`/dashboard/debugging/why?${params.toString()}`);
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    navigateTo(eventIdInput.trim(), depthInput.trim() || undefined);
+    navigateTo(eventIdInput.trim());
   }
 
   function traceEvent(eventId: string) {
     setEventIdInput(eventId);
-    navigateTo(eventId, depthInput.trim() || undefined);
+    navigateTo(eventId);
   }
 
   function jumpToNode(eventId: string) {
@@ -166,34 +192,25 @@ function WhyPageInner() {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1">
           <GitBranch size={16} style={{ color: "#22c55e" }} />
-          <h1 className="text-white font-semibold text-xl">Why</h1>
+          <h1 className="text-white font-semibold text-xl">Why — root cause</h1>
         </div>
         <p className="text-sm" style={{ color: "#e5e5e5" }}>
-          Paste an event ID to see its full causal chain — from the event
-          that started it all, down to the event you&apos;re debugging. No
-          parent ID needed; the chain is walked for you.
+          Paste an error&apos;s event ID. Every event records the{" "}
+          <span className="font-mono" style={{ color: "#a3a3a3" }}>
+            parent_id
+          </span>{" "}
+          of what caused it, so the trace walks that chain back to where it all
+          started — then tells the story from the beginning down to the failure.
         </p>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col sm:flex-row gap-2 mb-6"
-      >
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 mb-6">
         <input
           value={eventIdInput}
           onChange={(e) => setEventIdInput(e.target.value)}
-          placeholder="Event ID (e.g. e37c84a6-0764-4038-a260-b28b3466eaf6)"
+          placeholder="Error event ID (e.g. 5cdb3f8c-3a85-46df-8034-184fb89a66a8)"
           autoFocus
           className="flex-1 rounded-xl px-4 py-3 text-sm font-mono text-white outline-none transition"
-          style={{ background: "#111", border: "1px solid #1f1f1f" }}
-          onFocus={(e) => (e.target.style.borderColor = "#22c55e")}
-          onBlur={(e) => (e.target.style.borderColor = "#1f1f1f")}
-        />
-        <input
-          value={depthInput}
-          onChange={(e) => setDepthInput(e.target.value.replace(/\D/g, ""))}
-          placeholder="Depth (10)"
-          className="w-full sm:w-28 rounded-xl px-4 py-3 text-sm font-mono text-white outline-none transition"
           style={{ background: "#111", border: "1px solid #1f1f1f" }}
           onFocus={(e) => (e.target.style.borderColor = "#22c55e")}
           onBlur={(e) => (e.target.style.borderColor = "#1f1f1f")}
@@ -207,7 +224,7 @@ function WhyPageInner() {
           {loading ? (
             <Loader2 size={14} className="animate-spin mx-auto" />
           ) : (
-            "Trace"
+            "Trace root cause"
           )}
         </button>
       </form>
@@ -228,67 +245,360 @@ function WhyPageInner() {
 
       {chain && chain.chain.length > 0 && (
         <>
-          <div
-            className="flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 mb-4"
-            style={{ background: "#111", border: "1px solid #1f1f1f" }}
-          >
-            <div className="text-xs font-mono" style={{ color: "#e5e5e5" }}>
-              Searched{" "}
-              <span style={{ color: "#fff" }}>{chain.event_id}</span> ·{" "}
-              {chain.chain_length} event
-              {chain.chain_length !== 1 ? "s" : ""} in chain
-            </div>
-            <div className="flex gap-2">
-              <CopyButton
-                label="Copy link"
-                onClick={() =>
-                  copyText(window.location.href, "share-link")
-                }
-                copied={copiedKey === "share-link"}
-              />
-              <CopyButton
-                label="Copy chain JSON"
-                onClick={() =>
-                  copyText(JSON.stringify(chain.chain, null, 2), "chain-json")
-                }
-                copied={copiedKey === "chain-json"}
-              />
-            </div>
-          </div>
+          <StorySummary
+            chain={chain}
+            rootCauseIndex={rootCauseIndex}
+            onCopyLink={() => copyText(window.location.href, "share-link")}
+            onCopyChain={() =>
+              copyText(JSON.stringify(chain.chain, null, 2), "chain-json")
+            }
+            copiedKey={copiedKey}
+          />
 
-          <div className="space-y-3">
-            {chain.chain.map((event, i) => (
-              <EventCard
-                key={event.event_id}
-                event={event}
-                isOrigin={i === 0}
-                isSearched={i === chain.chain.length - 1}
-                isExpanded={expanded.has(event.event_id)}
-                isHighlighted={highlighted === event.event_id}
-                copiedKey={copiedKey}
-                parentInChain={
-                  event.parent_id ? loadedIds.has(event.parent_id) : false
-                }
-                onToggleExpand={() => toggleExpanded(event.event_id)}
-                onCopy={copyText}
-                onTrace={() => traceEvent(event.event_id)}
-                onJumpToParent={() =>
-                  event.parent_id && jumpToNode(event.parent_id)
-                }
-              />
-            ))}
+          <div className="mt-6">
+            {chain.chain.map((event, i) => {
+              const prev = i > 0 ? chain.chain[i - 1] : null;
+              const deltaMs = prev
+                ? new Date(event.timestamp).getTime() -
+                  new Date(prev.timestamp).getTime()
+                : 0;
+              return (
+                <StoryStep
+                  key={event.event_id}
+                  event={event}
+                  index={i}
+                  total={chain.chain.length}
+                  isOrigin={i === 0}
+                  isSearched={i === chain.chain.length - 1}
+                  isRootCause={i === rootCauseIndex}
+                  isError={isErrorEvent(event.event) && i !== rootCauseIndex}
+                  deltaMs={deltaMs}
+                  showDelta={i > 0}
+                  isExpanded={expanded.has(event.event_id)}
+                  isHighlighted={highlighted === event.event_id}
+                  copiedKey={copiedKey}
+                  parentInChain={
+                    event.parent_id ? loadedIds.has(event.parent_id) : false
+                  }
+                  onToggleExpand={() => toggleExpanded(event.event_id)}
+                  onCopy={copyText}
+                  onTrace={() => traceEvent(event.event_id)}
+                  onJumpToParent={() =>
+                    event.parent_id && jumpToNode(event.parent_id)
+                  }
+                />
+              );
+            })}
           </div>
         </>
       )}
 
       {!chain && !loading && !error && (
-        <div
-          className="text-center py-16 text-sm"
-          style={{ color: "#e5e5e5" }}
-        >
-          Enter an event ID above to trace its causal chain.
+        <div className="text-center py-16 text-sm" style={{ color: "#e5e5e5" }}>
+          Enter an error event ID above to trace its root cause.
         </div>
       )}
+    </div>
+  );
+}
+
+function StorySummary({
+  chain,
+  rootCauseIndex,
+  onCopyLink,
+  onCopyChain,
+  copiedKey,
+}: {
+  chain: WhyChain;
+  rootCauseIndex: number;
+  onCopyLink: () => void;
+  onCopyChain: () => void;
+  copiedKey: string | null;
+}) {
+  const events = chain.chain;
+  const origin = events[0];
+  const total = events.length;
+  const rootCause = rootCauseIndex >= 0 ? events[rootCauseIndex] : null;
+  const parentLinks = total - 1;
+
+  const spanMs =
+    new Date(events[total - 1].timestamp).getTime() -
+    new Date(origin.timestamp).getTime();
+
+  const errorMsg = rootCause
+    ? firstString(rootCause.data?.error, rootCause.data?.message)
+    : null;
+
+  return (
+    <div
+      className="rounded-xl p-5"
+      style={{
+        background: "#111",
+        border: `1px solid ${rootCause ? "#3a1f1f" : "#1f2a1f"}`,
+      }}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        {rootCause ? (
+          <Target size={15} style={{ color: "#f87171" }} />
+        ) : (
+          <Flag size={15} style={{ color: "#22c55e" }} />
+        )}
+        <span
+          className="text-xs font-semibold uppercase tracking-wide"
+          style={{ color: rootCause ? "#f87171" : "#22c55e" }}
+        >
+          {rootCause ? "Root cause" : "No error detected"}
+        </span>
+      </div>
+
+      {/* Narrated story line */}
+      <p className="text-sm leading-relaxed" style={{ color: "#e5e5e5" }}>
+        This flow began with{" "}
+        <span className="font-mono" style={{ color: "#fff" }}>
+          {origin.event}
+        </span>{" "}
+        and ran {total} step{total !== 1 ? "s" : ""}
+        {rootCause ? (
+          <>
+            , failing at step {rootCauseIndex + 1} —{" "}
+            <span className="font-mono" style={{ color: "#f87171" }}>
+              {rootCause.event}
+            </span>
+            {errorMsg ? <>: {errorMsg}</> : null}.
+          </>
+        ) : (
+          <> with no errors detected in the chain.</>
+        )}
+      </p>
+
+      {/* At-a-glance stats */}
+      <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-xs" style={{ color: "#a3a3a3" }}>
+        <span>
+          <span style={{ color: "#666" }}>steps:</span> {total}
+        </span>
+        <span>
+          <span style={{ color: "#666" }}>span:</span> {formatSpan(spanMs)}
+        </span>
+        <span>
+          <span style={{ color: "#666" }}>agent:</span>{" "}
+          <span className="font-mono">{origin.agent}</span>
+        </span>
+        {origin.session_id && (
+          <span>
+            <span style={{ color: "#666" }}>session:</span>{" "}
+            <span className="font-mono">{origin.session_id}</span>
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between gap-3 mt-4">
+        <span className="text-xs" style={{ color: "#666" }}>
+          Traced {parentLinks} parent link{parentLinks !== 1 ? "s" : ""} from the
+          event you entered.
+        </span>
+        <div className="flex gap-2 shrink-0">
+          <CopyButton
+            label="Copy link"
+            onClick={onCopyLink}
+            copied={copiedKey === "share-link"}
+          />
+          <CopyButton
+            label="Copy chain JSON"
+            onClick={onCopyChain}
+            copied={copiedKey === "chain-json"}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StoryStep({
+  event,
+  index,
+  total,
+  isOrigin,
+  isSearched,
+  isRootCause,
+  isError,
+  deltaMs,
+  showDelta,
+  isExpanded,
+  isHighlighted,
+  copiedKey,
+  parentInChain,
+  onToggleExpand,
+  onCopy,
+  onTrace,
+  onJumpToParent,
+}: {
+  event: AgentEvent;
+  index: number;
+  total: number;
+  isOrigin: boolean;
+  isSearched: boolean;
+  isRootCause: boolean;
+  isError: boolean;
+  deltaMs: number;
+  showDelta: boolean;
+  isExpanded: boolean;
+  isHighlighted: boolean;
+  copiedKey: string | null;
+  parentInChain: boolean;
+  onToggleExpand: () => void;
+  onCopy: (text: string, key: string) => void;
+  onTrace: () => void;
+  onJumpToParent: () => void;
+}) {
+  const idKey = `id-${event.event_id}`;
+  const jsonKey = `json-${event.event_id}`;
+  const parentKey = `parent-${event.event_id}`;
+  const sessionKey = `session-${event.event_id}`;
+  const isLast = index === total - 1;
+
+  const accent = isRootCause
+    ? "#f87171"
+    : isError
+      ? "#f87171"
+      : isOrigin
+        ? "#22c55e"
+        : "#2a2a2a";
+
+  return (
+    <div className="flex gap-3">
+      {/* Timeline rail: step number dot + connector line to the next step */}
+      <div className="flex flex-col items-center shrink-0">
+        <div
+          className="flex items-center justify-center rounded-full text-xs font-mono font-semibold"
+          style={{
+            width: 26,
+            height: 26,
+            background: "#0a0a0a",
+            border: `1px solid ${accent}`,
+            color: accent === "#2a2a2a" ? "#e5e5e5" : accent,
+          }}
+        >
+          {index + 1}
+        </div>
+        {!isLast && (
+          <div className="w-px flex-1 my-1" style={{ background: "#2a2a2a", minHeight: 24 }} />
+        )}
+      </div>
+
+      {/* Step content */}
+      <div
+        id={`why-node-${event.event_id}`}
+        className="rounded-xl p-4 mb-3 flex-1 min-w-0 transition"
+        style={{
+          background: "#111",
+          border: `1px solid ${
+            isHighlighted
+              ? "#22c55e"
+              : isRootCause || isError
+                ? "#3a1f1f"
+                : isOrigin
+                  ? "#1f2a1f"
+                  : "#1f1f1f"
+          }`,
+        }}
+      >
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span
+            className="text-sm font-mono font-medium px-2 py-0.5 rounded"
+            style={{ background: "#1a1a1a", color: "#e5e5e5" }}
+          >
+            {event.event}
+          </span>
+          {isOrigin && <Badge color="#22c55e" background="#1a2a1a" label="Origin" icon={<Flag size={10} />} />}
+          {isRootCause && (
+            <Badge color="#f87171" background="#2a1a1a" label="Root cause" icon={<Target size={10} />} />
+          )}
+          {isError && (
+            <Badge color="#f87171" background="#2a1a1a" label="Error" icon={<AlertCircle size={10} />} />
+          )}
+          {isSearched && (
+            <Badge color="#a3a3a3" background="#1a1a1a" label="You searched this" />
+          )}
+          <span className="text-xs font-mono ml-auto" style={{ color: "#e5e5e5" }}>
+            {showDelta && (
+              <span style={{ color: "#666" }} className="mr-2">
+                {formatDelta(deltaMs)}
+              </span>
+            )}
+            {format(new Date(event.timestamp), "yyyy-MM-dd HH:mm:ss.SSS")}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 mb-3">
+          <FieldRow label="agent" value={event.agent} />
+          <FieldRow label="sequence_no" value={String(event.sequence_no)} />
+          <FieldRow
+            label="event_id"
+            value={event.event_id}
+            copyKey={idKey}
+            copiedKey={copiedKey}
+            onCopy={() => onCopy(event.event_id, idKey)}
+          />
+          <FieldRow
+            label="parent_id"
+            value={event.parent_id ?? "— (origin, no parent)"}
+            copyKey={event.parent_id ? parentKey : undefined}
+            copiedKey={copiedKey}
+            onCopy={
+              event.parent_id
+                ? () => onCopy(event.parent_id as string, parentKey)
+                : undefined
+            }
+            onJump={event.parent_id && parentInChain ? onJumpToParent : undefined}
+          />
+          <FieldRow
+            label="session_id"
+            value={event.session_id ?? "—"}
+            copyKey={event.session_id ? sessionKey : undefined}
+            copiedKey={copiedKey}
+            onCopy={
+              event.session_id
+                ? () => onCopy(event.session_id as string, sessionKey)
+                : undefined
+            }
+          />
+        </div>
+
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={onToggleExpand}
+            className="flex items-center gap-1 text-xs transition"
+            style={{ color: "#e5e5e5" }}
+          >
+            {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            data
+          </button>
+          <CopyButton
+            label="Copy event JSON"
+            onClick={() => onCopy(JSON.stringify(event, null, 2), jsonKey)}
+            copied={copiedKey === jsonKey}
+          />
+          {!isOrigin && (
+            <button
+              onClick={onTrace}
+              className="flex items-center gap-1 text-xs ml-auto transition"
+              style={{ color: "#22c55e" }}
+            >
+              Trace this instead
+              <ArrowUpRight size={12} />
+            </button>
+          )}
+        </div>
+
+        {isExpanded && (
+          <pre
+            className="text-xs font-mono rounded-lg p-3 overflow-x-auto"
+            style={{ background: "#0a0a0a", color: "#e5e5e5" }}
+          >
+            {JSON.stringify(event.data, null, 2)}
+          </pre>
+        )}
+      </div>
     </div>
   );
 }
@@ -318,164 +628,6 @@ function CopyButton({
   );
 }
 
-function EventCard({
-  event,
-  isOrigin,
-  isSearched,
-  isExpanded,
-  isHighlighted,
-  copiedKey,
-  parentInChain,
-  onToggleExpand,
-  onCopy,
-  onTrace,
-  onJumpToParent,
-}: {
-  event: AgentEvent;
-  isOrigin: boolean;
-  isSearched: boolean;
-  isExpanded: boolean;
-  isHighlighted: boolean;
-  copiedKey: string | null;
-  parentInChain: boolean;
-  onToggleExpand: () => void;
-  onCopy: (text: string, key: string) => void;
-  onTrace: () => void;
-  onJumpToParent: () => void;
-}) {
-  const isError = isErrorEvent(event.event);
-  const idKey = `id-${event.event_id}`;
-  const jsonKey = `json-${event.event_id}`;
-  const parentKey = `parent-${event.event_id}`;
-  const sessionKey = `session-${event.event_id}`;
-
-  return (
-    <div
-      id={`why-node-${event.event_id}`}
-      className="rounded-xl p-4 transition"
-      style={{
-        background: "#111",
-        border: `1px solid ${
-          isHighlighted
-            ? "#22c55e"
-            : isOrigin
-              ? "#1a2a1a"
-              : isSearched
-                ? "#2a1a1a"
-                : "#1f1f1f"
-        }`,
-      }}
-    >
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        <span
-          className="text-sm font-mono font-medium px-2 py-0.5 rounded"
-          style={{ background: "#1a1a1a", color: "#e5e5e5" }}
-        >
-          {event.event}
-        </span>
-        {isOrigin && (
-          <Badge color="#22c55e" background="#1a2a1a" label="Origin" />
-        )}
-        {isSearched && (
-          <Badge
-            color="#f87171"
-            background="#2a1a1a"
-            label="You searched this event"
-          />
-        )}
-        {isError && (
-          <Badge color="#f87171" background="#2a1a1a" label="Error" icon />
-        )}
-        <span className="text-xs font-mono ml-auto" style={{ color: "#e5e5e5" }}>
-          {format(new Date(event.timestamp), "yyyy-MM-dd HH:mm:ss.SSS")}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 mb-3">
-        <FieldRow
-          label="agent"
-          value={event.agent}
-        />
-        <FieldRow
-          label="sequence_no"
-          value={String(event.sequence_no)}
-        />
-        <FieldRow
-          label="event_id"
-          value={event.event_id}
-          copyKey={idKey}
-          copiedKey={copiedKey}
-          onCopy={() => onCopy(event.event_id, idKey)}
-        />
-        <FieldRow
-          label="parent_id"
-          value={event.parent_id ?? "—"}
-          copyKey={event.parent_id ? parentKey : undefined}
-          copiedKey={copiedKey}
-          onCopy={
-            event.parent_id
-              ? () => onCopy(event.parent_id as string, parentKey)
-              : undefined
-          }
-          onJump={
-            event.parent_id && parentInChain ? onJumpToParent : undefined
-          }
-        />
-        <FieldRow
-          label="session_id"
-          value={event.session_id ?? "—"}
-          copyKey={event.session_id ? sessionKey : undefined}
-          copiedKey={copiedKey}
-          onCopy={
-            event.session_id
-              ? () => onCopy(event.session_id as string, sessionKey)
-              : undefined
-          }
-        />
-      </div>
-
-      <div className="flex items-center gap-3 mb-2">
-        <button
-          onClick={onToggleExpand}
-          className="flex items-center gap-1 text-xs transition"
-          style={{ color: "#e5e5e5" }}
-        >
-          {isExpanded ? (
-            <ChevronDown size={12} />
-          ) : (
-            <ChevronRight size={12} />
-          )}
-          data
-        </button>
-        <CopyButton
-          label="Copy event JSON"
-          onClick={() => onCopy(JSON.stringify(event, null, 2), jsonKey)}
-          copied={copiedKey === jsonKey}
-        />
-        {!isOrigin && (
-          <button
-            onClick={onTrace}
-            className="flex items-center gap-1 text-xs ml-auto transition"
-            style={{ color: "#22c55e" }}
-          >
-            Trace this instead
-            <ArrowUpRight size={12} />
-          </button>
-        )}
-      </div>
-
-      {isExpanded && (
-        <pre
-          className="text-xs font-mono rounded-lg p-3 overflow-x-auto"
-          style={{ background: "#0a0a0a", color: "#e5e5e5" }}
-        >
-          {JSON.stringify(event.data, null, 2)}
-        </pre>
-      )}
-    </div>
-  );
-}
-
 function Badge({
   label,
   color,
@@ -485,14 +637,14 @@ function Badge({
   label: string;
   color: string;
   background: string;
-  icon?: boolean;
+  icon?: React.ReactNode;
 }) {
   return (
     <span
       className="flex items-center gap-1 text-xs px-2 py-0.5 rounded"
       style={{ background, color }}
     >
-      {icon && <AlertCircle size={10} />}
+      {icon}
       {label}
     </span>
   );
@@ -515,10 +667,7 @@ function FieldRow({
 }) {
   return (
     <div className="flex items-start gap-2 text-xs">
-      <span
-        className="font-mono shrink-0"
-        style={{ color: "#666", minWidth: 90 }}
-      >
+      <span className="font-mono shrink-0" style={{ color: "#666", minWidth: 90 }}>
         {label}
       </span>
       {onJump ? (
