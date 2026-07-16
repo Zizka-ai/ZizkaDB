@@ -170,8 +170,8 @@ function WhyPageInner() {
         </div>
         <p className="text-sm" style={{ color: "#e5e5e5" }}>
           Paste an event ID to see its full causal chain — from the event
-          that started it all, down to the event you're debugging. No parent
-          ID needed; the chain is walked for you.
+          that started it all, down to the event you&apos;re debugging. No
+          parent ID needed; the chain is walked for you.
         </p>
       </div>
 
