@@ -518,7 +518,7 @@ Router prefixes are mounted in `core/main.py:66-79`.
 | Dashboard fn | Method · Path | Backend |
 |---|---|---|
 | `getEvents` | GET `/v1/events` | `events.py:64` |
-| `getWhyChain` | GET `/v1/events/{id}/why` | `events.py:123` |
+| `getWhyChain` | GET `/v1/events/{id}/why?depth=` | `events.py:123` — used by `agents/[id]/page.tsx`'s Why tab and the standalone `dashboard/debugging/why/page.tsx` screen (§19.x) |
 | `timeTravel` | GET `/v1/events/at` | `events.py:173` |
 | `searchEvents` | POST `/v1/search` | `search.py:18` |
 | `getMemoryDiff` | GET `/v1/memory/diff/{sessionId}` | `memory.py:190` |
@@ -667,6 +667,39 @@ Exhaustive behavior per file (state, effects, API order, branches, edge cases, n
 - **API:** submit → `requireAuth()` (`:30`) → `searchEvents(token, query)` **tenant-wide, no agentId** (`:31`); catch → `results=[]` (`:33-34`); assumes `res.results` (`:32`).
 - **Branches:** submit disabled if `loading || !query.trim()` (`:65`); empty-after-search state (`:74-78`); score badge if `event.score !== undefined` (`:103-107`); example queries when `!searched` (`:115-138`, buttons only set `query`).
 - **Rules:** empty query no-ops (`:26`); no page-load auth redirect (relies on layout gate + `requireAuth` on submit).
+
+### 19.3a Why (causal lineage) — `app/dashboard/debugging/why/page.tsx`
+
+- **Purpose:** standalone, agent-agnostic "paste an event_id, get the full causal chain"
+  tool — a shareable, ready-made query wrapping `getWhyChain`, distinct from the same call
+  already used as a tab inside `agents/[id]/page.tsx`.
+- **State:** `eventIdInput`/`depthInput` (form fields), `chain: WhyChain | null`, `loading`,
+  `error`, `expanded: Set<eventId>` (which JSON blocks are open), `copiedKey`, `highlighted`.
+- **URL is the source of truth:** the fetch effect keys off `?event_id=`/`?depth=` from
+  `useSearchParams()`, not local state — every trace action (manual submit, a node's "Trace
+  this instead", a deep link) does `router.push` to a new URL, and the effect reacts. This
+  makes the page fully deep-linkable/shareable and keeps the `cancelled` guard simple (one
+  fetch path, `[urlEventId, urlDepth]` deps).
+- **API:** `getWhyChain(token, eventId, depth?)` — `depth` is optional and only appended as
+  `?depth=` when provided; existing call site in `agents/[id]/page.tsx` is unaffected.
+- **Rendering:** CloudWatch-Insights-style — every `AgentEvent` field is shown per node
+  (`event_id`, `parent_id`, `agent`, `event` type, full-precision `timestamp`, `session_id`,
+  `sequence_no`), nothing trimmed. The chain renders root-first (API order): first node
+  badged "Origin", last node badged "You searched this event" (both badges on the same node
+  when `chain_length === 1`). Any node whose `event` type contains `"error"`/`"fail"`
+  (case-insensitive — same heuristic as `memory.py`'s `has_errors`) gets a red "Error" badge,
+  independent of the Origin/Searched badges.
+- **Client-side validation:** `event_id` is checked against a UUID regex before calling the
+  API — invalid input never reaches the backend, shows an inline message instead.
+- **Copy/share:** per-field copy buttons (`event_id`, `parent_id`, `session_id`), per-node
+  "Copy event JSON", page-level "Copy link" (current URL) and "Copy chain JSON" (whole
+  response array) — all wrapped in try/catch since `navigator.clipboard` isn't guaranteed
+  (e.g. non-secure context).
+- **`parent_id` linking:** if a node's `parent_id` is present in the already-loaded chain,
+  it renders as a click-to-scroll jump (`document.getElementById('why-node-' + id)`); if the
+  ancestor was cut off by the depth limit, it's plain text, not a broken link.
+- **Nav:** `DashboardShell.tsx`'s shared `nav` array (desktop + mobile render from the same
+  list) — entry `{ href: "/dashboard/debugging/why", label: "Why", icon: GitBranch }`.
 
 ### 19.4 Settings — `app/dashboard/settings/page.tsx`
 

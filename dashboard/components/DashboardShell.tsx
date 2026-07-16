@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clearToken } from "@/lib/auth";
 import { BrandLogo } from "@/components/BrandLogo";
-import { Search, Settings, LogOut, Cpu } from "lucide-react";
+import { Search, Settings, LogOut, Cpu, GitBranch } from "lucide-react";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { TenantPlanBanner } from "@/components/TenantPlanBanner";
 
 const nav = [
   { href: "/dashboard", label: "Agents", icon: Cpu },
   { href: "/dashboard/search", label: "Search", icon: Search },
+  { href: "/dashboard/debugging/why", label: "Why", icon: GitBranch },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 

@@ -181,8 +181,9 @@ export async function getEvents(
   return Array.isArray(data) ? data : data.events ?? []
 }
 
-export async function getWhyChain(token: string, eventId: string): Promise<WhyChain> {
-  return apiFetch(`/v1/events/${eventId}/why`, token)
+export async function getWhyChain(token: string, eventId: string, depth?: number): Promise<WhyChain> {
+  const qs = depth ? `?depth=${depth}` : ''
+  return apiFetch(`/v1/events/${eventId}/why${qs}`, token)
 }
 
 // The backend's search response shape isn't fully pinned down (some call
