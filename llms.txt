@@ -1,0 +1,60 @@
+# ZizkaDB
+
+> Causal event database for AI agents. Log every action, trace why a decision was made, time-travel to any past state, and inject relevant memory into future runs.
+
+ZizkaDB is open-source (AGPL-3.0, except MCP server which is MIT). It runs as a FastAPI backend + Next.js 14 dashboard on a single EC2 instance. SDKs are available for Python and TypeScript.
+
+## Architecture
+
+- [Core API](core/) — FastAPI + asyncpg + PostgreSQL 16/pgvector + Qdrant + Redis. 14 routers at `/v1/`.
+- [Dashboard](dashboard/) — Next.js 14 App Router. Marketing + authenticated agent fleet view.
+- [Python SDK](sdk/python/) — `zizkadb-sdk` on PyPI. Async client, `zizkadb init` CLI.
+- [TypeScript SDK](sdk/typescript/) — `zizkadb-sdk` on npm. Sync constructor, camelCase fields.
+- [Integrations](integrations/) — `zizkadb-langchain`, `zizkadb-crewai` (git source, not yet on PyPI).
+- [MCP Server](mcp/) — `zizkadb-mcp` on PyPI. MIT license. `uvx zizkadb-mcp`.
+- [Infra](infra/) — Docker Compose. Production: `docker-compose.yml`. Dev overlay: `docker-compose.dev.yml`.
+
+## Key context files
+
+- [CLAUDE.md](CLAUDE.md) — Full AI onboarding: stack, conventions, invariants, test commands
+- [Dashboard Knowledge Base](dashboard/DASHBOARD_KNOWLEDGE_BASE.md) — 897-line source of truth for the dashboard module
+- [Architecture Decisions](docs/adr/) — Why key design decisions were made
+- [CONNECT.md](CONNECT.md) — How to connect any agent to ZizkaDB
+- [CONTRIBUTING.md](CONTRIBUTING.md) — Contribution guide
+- [Wiki: Architecture](wiki/Architecture.md) — System architecture overview
+- [Wiki: Self-Hosting](wiki/Self-Hosting.md) — Self-hosting guide
+- [Wiki: REST API](wiki/REST-API.md) — API reference
+
+## API
+
+- Base URL (local): `http://localhost:8000`
+- Swagger UI: `http://localhost:8000/swagger`
+- OpenAPI schema: `http://localhost:8000/openapi.json`
+- Auth: `Authorization: Bearer <api_key_or_jwt>`
+- Dev key (local only): `zizkadb_dev_local`
+
+## Core SDK methods
+
+```python
+async with ZizkaDB(api_key="zizkadb_live_...") as db:
+    event = await db.log(agent="my-bot", event="user_message", data={...})
+    chain = await db.why(event.event_id)       # causal chain backward
+    state = await db.at(agent, timestamp)       # time-travel
+    ctx   = await db.context_for(agent, task)   # memory injection
+    hits  = await db.search("plain english query")
+```
+
+## Key design decisions
+
+- **Causal lineage**: `parent_event_id` on `events` table + recursive CTE (see [ADR-001](docs/adr/001-causal-lineage-parent-event-id.md))
+- **Dual-write**: Postgres (source of truth) + Qdrant (semantic search) (see [ADR-002](docs/adr/002-dual-write-postgres-qdrant.md))
+- **Billing stub**: always `has_access: True`, no payment provider wired (see [ADR-003](docs/adr/003-billing-stub.md))
+- **Auth split**: `get_tenant` (API keys + JWT) vs `require_dashboard_session` (JWT only) (see [ADR-004](docs/adr/004-auth-dependency-split.md))
+- **Rate limiting**: in-process Python dicts, single-worker only (see [ADR-005](docs/adr/005-in-process-rate-limiting.md))
+
+## Local dev
+
+```bash
+bash scripts/setup-local.sh
+# API: http://localhost:8000 | Dashboard: http://localhost:3001
+```
