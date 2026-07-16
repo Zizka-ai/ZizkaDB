@@ -11,7 +11,7 @@ ZizkaDB is a causal event database for AI agents. It lets you log every agent ac
 | API | FastAPI 0.111 + asyncpg (no ORM) | `core/main.py` — 14 routers at `/v1/` |
 | Database | PostgreSQL 16 + pgvector | `core/db/schema.sql` + `core/db/connection.py` |
 | Vector search | Qdrant 1.13 | Collection `agent_events`, 1536-dim cosine |
-| Cache | Redis 7 | Embedding cache (24 h TTL) |
+| Cache | Redis 7 | Embedding cache (24 h TTL) — cache key uses `hashlib.sha256`, not `hash()` |
 | Dashboard | Next.js 14 App Router | `dashboard/app/` |
 | Python SDK | `zizkadb-sdk` (PyPI) | `sdk/python/zizkadb/client.py` |
 | TypeScript SDK | `zizkadb-sdk` (npm) | `sdk/typescript/src/index.ts` |
@@ -107,7 +107,7 @@ cd dashboard && npm run lint && npm run build
 
 **Billing stub** — `billing_status_payload()` always returns `has_access: True`. No Stripe or payment provider is wired. The architecture is ready for Stripe to be added; billing routes exist but are stubs.
 
-**Rate limiting** — In-process Python dicts in `core/api/utils.py` (`check_rate()`). Shared util used by community, demo requests, and marketing subscriptions routes. Known limitation: state resets on restart and doesn't scale across multiple uvicorn workers.
+**Rate limiting** — In-process Python dicts in `core/api/utils.py` (`check_rate()`). Used by community, demo requests, marketing subscriptions, and OTP login routes. Known limitations: (1) state resets on restart; (2) with `--workers 4` each worker has its own dict, so the effective limit is 4× the configured value — the OTP brute-force protection is particularly affected. See `docs/adr/005-in-process-rate-limiting.md`.
 
 **Schema migrations** — Fresh install: `core/db/schema.sql` (run by Docker on first boot). Running install: `ALTER TABLE IF EXISTS` in `core/db/connection.py::init_db()` (runs on every startup). Always write idempotent DDL.
 
@@ -146,6 +146,8 @@ cd dashboard && npm run lint && npm run build
 4. **Entitlements single source**: plan caps live only in `core/services/entitlements.py::PLAN_ENTITLEMENTS`.
 5. **Idempotent DDL**: all schema changes must use `IF NOT EXISTS` / `IF EXISTS` — the same migration runs on fresh installs and live databases.
 6. **`docker-compose.yml` is production**: never add `--reload` or `../core:/app` volume mounts to the base compose file. Those belong in `docker-compose.dev.yml`.
+7. **Self-hosted security**: always set `ENV=production` in production `.env` — without it, hardcoded dev API keys (`zizkadb_dev_local`) are accepted, bypassing auth entirely.
+8. **`NEXT_PUBLIC_DEV_MODE`**: must be `false` in any public-facing deployment — when `true`, the dashboard login screen is bypassed entirely (no OTP required).
 
 ---
 

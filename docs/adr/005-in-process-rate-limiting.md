@@ -13,7 +13,7 @@ Several public API routes need rate limiting to prevent abuse:
 - `POST /v1/community/upload` — file uploads
 - `POST /v1/demo-requests` — enterprise lead form
 - `POST /v1/marketing-subscriptions` — email signups
-- `POST /v1/auth/request-otp` — OTP login (brute-force protection)
+- `POST /v1/auth/request-otp` — OTP login (brute-force protection) — **see critical note below**
 
 Options for implementation:
 1. Redis-backed rate limiting (e.g., sliding window with `INCR`/`EXPIRE`)
@@ -57,8 +57,10 @@ Each route module holds its own `store` dict as a module-level variable. Rate li
 - **Doesn't scale across workers**: production runs with `--workers 4` (4 uvicorn processes). Each worker has independent in-process state. A user can make 4× the intended rate limit by hitting different workers.
 - **Memory grows unbounded for long-running processes**: old timestamps are cleaned up on each request for that key, but keys are never evicted from the dict. For low-traffic routes (demo requests, subscriptions) this is negligible; for high-traffic routes this could matter.
 
-**Why accepted despite limitations:**
-The routes being rate-limited are low-traffic marketing and community surfaces, not the core event logging API. The consequences of burst requests slipping through (a few extra demo form submissions, extra community posts) are tolerable. Redis-backed rate limiting adds operational complexity for a marginal gain at current scale.
+**Why accepted despite limitations — with one important exception:**
+The marketing and community routes are low-traffic surfaces; burst requests slipping through (extra demo form submissions, extra community posts) are tolerable.
+
+**The OTP route is different and this decision does NOT apply to it.** `POST /v1/auth/request-otp` uses a separate `_otp_rate` dict in `core/api/auth.py` (not the shared `check_rate()` util) with a 10-attempt / 15-minute limit. With 4 uvicorn workers, the real limit is 40 attempts per 15 minutes per email — weakening the brute-force protection for a 6-digit OTP (900,000 possible values) to a material degree. The OTP rate limiter **must** be migrated to Redis before horizontal scaling or any public multi-tenant deployment.
 
 ---
 

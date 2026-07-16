@@ -74,6 +74,14 @@ There is no AWS pipeline, no CodeDeploy, no ECS task definition.
 | `scripts/seed-support-bot-events.py` | Seed 50+ sessions for drift/baseline testing |
 | `scripts/github-setup.sh` | One-time repo init — already applied, kept for reference |
 
+## Security footguns for self-hosters
+
+**`NEXT_PUBLIC_DEV_MODE`** — must be `false` in any public-facing deployment. When `true`, the dashboard login page shows an "Open my dashboard" button that bypasses OTP authentication entirely. The default in `.env.example` is `true` (dev convenience); flip it before deploying.
+
+**`infra/.env` must never be committed to git** — `.gitignore` lists `.env` at the repo root but `infra/.env` has historically been tracked. If it appears in `git status` as tracked, run `git rm --cached infra/.env`, add `infra/.env` to `.gitignore`, and rotate all secrets in it. Once pushed to a public repo, secrets in git history are permanently compromised.
+
+**`ENV=production` is required for deployed instances** — without it, hardcoded dev API keys (`zizkadb_dev_local`, `agdb_dev_local`) are accepted as valid auth tokens. Always set `ENV=production` in `infra/.env` before exposing the API to the internet.
+
 ## iCloud Drive warning
 
 **Never keep the repo inside `~/Desktop` or `~/Documents`** — iCloud syncs `.git/` and creates `filename 2` duplicate files in ref dirs (e.g., `refs/heads/main 2`), which are illegal git ref names and corrupt the repository. Move the repo to `~/code/` or add a `.nosync` suffix to opt out of iCloud sync.

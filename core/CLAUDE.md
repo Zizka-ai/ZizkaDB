@@ -113,6 +113,18 @@ Never use SQLAlchemy, never open a direct `asyncpg.connect()` — always use the
 
 ---
 
+## Known issues (audit findings — not yet fixed)
+
+| Issue | Location | Impact |
+|---|---|---|
+| CORS `allow_origins=["*"]` + `allow_credentials=True` | `main.py:97–102` | Browsers reject credentialed cross-origin requests — dashboard cookie auth silently fails cross-origin |
+| `GET /health` always returns HTTP 200 | `main.py:120–122` | Deploy script polls this; a deploy "succeeds" even when Postgres is unreachable. Use `/health/deep` for real checks |
+| Redis embedding cache broken across workers | `services/embeddings.py:37` | Cache key uses `hash(text)` — non-stable across processes. Effective cache hit rate is near zero with 4 workers |
+| Rate limiting 4× effective limit | `api/utils.py:17–29`, `api/auth.py:26–40` | With `--workers 4`, each worker has its own rate dict. OTP brute-force protection is 4× weaker than configured |
+| 80 Postgres connections at full load | `db/connection.py:22–25` | `max_size=20` × 4 workers = 80 connections. Postgres default `max_connections=100`. Add PgBouncer before horizontal scaling |
+
+---
+
 ## Test commands
 
 ```bash
