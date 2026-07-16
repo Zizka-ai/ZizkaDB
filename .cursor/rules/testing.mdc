@@ -1,0 +1,66 @@
+---
+description: ZizkaDB testing conventions — per-layer test commands, integration test setup, and test file map
+globs: **/tests/**,**/*.test.ts,**/conftest.py,**/pytest.ini
+alwaysApply: false
+---
+
+# ZizkaDB Testing — Agent Guide
+
+## Per-layer test commands
+
+| Layer | Command | Requires running stack? |
+|---|---|---|
+| Python lint | `ruff check core/ sdk/python/ mcp/ integrations/` | No |
+| Core API unit | `pytest core/tests/ -m "not integration" -v` | No |
+| Core API integration | `ZIZKADB_RUN_INTEGRATION=1 pytest core/tests/ -m integration -v` | Yes |
+| Python SDK | `pytest sdk/python/tests/ -v` | No |
+| MCP server | `pytest mcp/tests/ -v` | No |
+| TypeScript SDK | `cd sdk/typescript && npm test` | No |
+| Dashboard | `cd dashboard && npm run lint && npm run build` | No |
+
+**There are no frontend unit tests.** The Next.js build is the dashboard gate.
+
+## Integration tests
+
+Integration tests need the full local stack running:
+```bash
+bash scripts/setup-local.sh          # start Postgres, Qdrant, Redis, API, dashboard
+ZIZKADB_RUN_INTEGRATION=1 pytest core/tests/test_integration_selfhost.py -v
+```
+
+## Test file map (core/tests/)
+
+| File | What it covers |
+|---|---|
+| `test_auth_flow.py` | OTP generation, JWT sign/verify, API key creation and auth |
+| `test_api_key_limit_endpoints.py` | Per-agent scoped key enforcement, tenant-wide key access |
+| `test_billing_status.py` | Billing status response shape, `has_access: True` stub |
+| `test_demo_requests.py` | Demo request form submission, honeypot, rate limiting |
+| `test_embedding_config.py` | Per-tenant embedding model configuration |
+| `test_embeddings.py` | Embedding generation + Redis cache |
+| `test_entitlements.py` | Plan cap checks, env-var override, kill switch |
+| `test_event_write.py` | Event ingestion pipeline (Postgres + Qdrant dual-write) |
+| `test_rate_limiting.py` | In-process rate limiter for community/demo/OTP routes |
+| `test_unit_memory_helpers.py` | `context_for`, `memory_diff`, `baseline` helper logic |
+| `test_smoke.py` | Live API health checks (`/health`, `/health/deep`) |
+| `test_integration_selfhost.py` | Full self-hosted stack integration |
+| `test_secret_fallback_security.py` | (All tests skip — tested function was removed) |
+
+## CI gates
+
+Every PR runs via `.github/workflows/ci.yml`:
+1. `ruff check core sdk/python mcp integrations`
+2. `pytest core/tests/ -m "not integration"` (unit only)
+3. `pytest sdk/python/tests/`
+4. `pytest mcp/tests/`
+5. `npm test` (TypeScript SDK)
+6. `npm run lint && npm run build` (dashboard)
+
+**A failing CI gate blocks merge.** Fix tests before pushing, not after.
+
+## Adding new tests
+
+- Python tests: use `pytest` + `pytest-asyncio`. Fixtures in `core/tests/conftest.py`.
+- Mark integration tests: `@pytest.mark.integration`
+- TypeScript SDK: Jest in `sdk/typescript/src/tests/`
+- MCP tests: pytest in `mcp/tests/test_server.py`

@@ -17,14 +17,14 @@ alwaysApply: false
 - Errors: `apiFetch` throws a normalized `Error`; catch and render into a local `error` string.
 
 ## Critical gotchas (do not break)
-- **No payment gate.** Signup: plan → consent → OTP → `/dashboard`. `postAuthRedirect` always returns `/dashboard`.
+- **No payment gate.** Signup: plan → consent → OTP → `/dashboard`. After OTP verify the user always lands on `/dashboard` — there is no checkout step.
 - **Auth split:** middleware reads the access-token cookie; client code reads `localStorage`. The refresh token is an HttpOnly cookie (backend). Keep both cookie + localStorage in sync via `setToken`/`clearToken`.
 - **Funnel state** lives in `sessionStorage` (`signup_plan`, `signup_consent_gdpr`, `signup_consent_marketing`); cleared after OTP verify.
 - Self-host `NEXT_PUBLIC_DEV_MODE=true` enables dev-token login and changes onboarding copy.
 - **API key limits (§7):** active keys per tenant are capped by plan (Self-Hosted 1 / Pro 3 / Team 10 / Enterprise 50; else unlimited) when `API_KEY_LIMITS_ENFORCED=true`. UI reads `useApiKeyQuota` — never hardcode limits.
 
 ## Testing / safety
-- There are **no frontend tests** and `apiFetch` is untyped. Prefer adding tests for pure helpers (`postAuthRedirect`, funnel guards) when touching them.
+- There are **no frontend tests** and `apiFetch` is untyped. Prefer adding tests for pure helpers (funnel guards) when touching them.
 
 ## Keep the KB in sync
 If you change billing/auth/the signup funnel, `lib/api.ts`, routes, a backend endpoint the dashboard calls, or the DB schema, **update `dashboard/DASHBOARD_KNOWLEDGE_BASE.md`** (esp. §7, §8, §17.3, §18, §19-21) in the same change.

@@ -1,0 +1,95 @@
+---
+description: ZizkaDB SDK (Python + TypeScript), integrations (LangChain/CrewAI), MCP server, and examples
+globs: sdk/**,integrations/**,mcp/**,examples/**
+alwaysApply: false
+---
+
+# ZizkaDB SDK, Integrations & MCP — Agent Guide
+
+## Python SDK (`sdk/python/`)
+
+**Package:** `zizkadb-sdk` on PyPI. Always async — `async with ZizkaDB(...) as db:`. No sync constructor.
+
+```python
+async with ZizkaDB(api_key="zizkadb_live_...") as db:
+    event = await db.log(agent="my-bot", event="step", data={...})
+    chain = await db.why(event.event_id)
+```
+
+- Error types: `AuthError`, `AgentScopeError`, `NotFoundError` (`zizkadb/exceptions.py`)
+- CLI: `zizkadb init my-agent --template <name>` — templates in `zizkadb/templates/`
+- Tests: `pytest sdk/python/tests/ -v`
+
+## TypeScript SDK (`sdk/typescript/`)
+
+**Package:** `zizkadb-sdk` on npm. Sync constructor — `new ZizkaDB({ apiKey: '...' })`.
+
+```typescript
+const db = new ZizkaDB({ apiKey: 'zizkadb_live_...' })
+const event = await db.log({ agent: 'my-bot', event: 'step', data: {} })
+```
+
+- **camelCase** everywhere: `parentId`, `eventId`, `sessionId` (Python SDK uses snake_case)
+- No LangChain or CrewAI adapters — TypeScript is HTTP-only
+- Tests: `npm test` inside `sdk/typescript/`
+
+## Integrations (`integrations/`)
+
+Two standalone packages: `zizkadb-langchain` and `zizkadb-crewai`. **Not yet on PyPI** — install via git URL.
+
+### Critical: code lives in two places — keep both in sync
+
+| Standalone (published package) | Bundled in SDK |
+|---|---|
+| `integrations/langchain/zizkadb_langchain/callbacks.py` | `sdk/python/zizkadb/integrations/langchain/callbacks.py` |
+| `integrations/crewai/zizkadb_crewai/logger.py` | `sdk/python/zizkadb/integrations/crewai/logger.py` |
+
+When editing integration logic, update both locations.
+
+Dev monorepo install:
+```bash
+pip install -e sdk/python -e integrations/langchain -e integrations/crewai
+```
+
+## MCP Server (`mcp/`)
+
+**License: MIT** (the only module in this repo that is not AGPL-3.0).
+
+```bash
+uvx zizkadb-mcp
+# Env: ZIZKADB_HOST, ZIZKADB_API_KEY
+# On localhost: dev key auto-injected — no API key needed
+```
+
+8 MCP tools in `zizkadb_mcp/server.py`: `log_event`, `query_why`, `query_at`, `search_events`, `context_for`, `query_events`, `list_agents`, `memory_diff`.
+
+Tests: `pytest mcp/tests/ -v` (also runs in CI).
+
+Cursor/Claude Desktop config: `.cursor/mcp.json.example`.
+
+## Examples (`examples/`)
+
+5 self-contained example agents, each with `.env.example`, `agent.py`, `requirements.txt`, `README.md`:
+- `minimal-python/` — bare-minimum Python
+- `openai-agent/` — OpenAI function calling
+- `langchain-agent/` — LangChain with `ZizkaDBCallbackHandler`
+- `crewai-agent/` — CrewAI with `ZizkaDBCrewLogger`
+- `mcp-cursor/` — Cursor MCP config
+
+Import paths in examples use standalone package names:
+```python
+from zizkadb_langchain import ZizkaDBCallbackHandler  # correct
+# NOT: from zizkadb.integrations.langchain import ...  # internal path — wrong for examples
+```
+
+`@main` git URLs in `requirements.txt` are moving targets — note this in PRs that change example dependencies.
+
+## Version bumps
+
+Bump these four files together when releasing:
+- `sdk/python/pyproject.toml`
+- `sdk/typescript/package.json`
+- `mcp/pyproject.toml`
+- `core/main.py` (`version=`)
+
+See `.cursor/skills/zizkadb-release/SKILL.md` for the full release workflow.

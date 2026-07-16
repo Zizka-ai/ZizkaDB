@@ -1,0 +1,72 @@
+---
+description: ZizkaDB FastAPI backend — conventions, auth dependency rules, asyncpg pattern, and testing for core/
+globs: core/**
+alwaysApply: false
+---
+
+# ZizkaDB Core Backend — Agent Guide
+
+**Read first:** `core/CLAUDE.md` has the router map, auth decision tree, services map, and test commands. `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` §17–21 covers the backend–dashboard contract. `docs/adr/` explains key architectural decisions.
+
+## Auth dependency decision tree
+
+| Route type | Dependency | Reason |
+|---|---|---|
+| SDK-callable (log events, search, memory, stats) | `Depends(get_tenant)` | Accepts API keys + JWTs |
+| Dashboard-only (billing, API key management, settings, account, agent delete) | `Depends(require_dashboard_session)` | JWT only — API keys must not manage keys or access user_id |
+| Per-agent analytics (stats, sessions, baseline, behavior-change, time-travel) | `Depends(get_tenant)` + `assert_agent_allowed(tenant, agent_id)` first line | Scoped-key isolation |
+| Admin panel | `require_admin` | Checks `FOUNDER_EMAIL` env var |
+
+All three dependency functions are in `core/api/deps.py`. Never swap `require_dashboard_session` → `get_tenant` on a management route — that is a security regression.
+
+## Database — asyncpg pattern
+
+```python
+from db.connection import get_pool
+
+pool = get_pool()  # always use the pool; never asyncpg.connect() directly
+
+# Simple query
+row = await pool.fetchrow("SELECT ... WHERE id = $1", id)
+
+# Multi-statement transaction (atomic ops like delete_agent)
+async with pool.acquire() as conn:
+    async with conn.transaction():
+        await conn.execute("UPDATE ...")
+        await conn.execute("DELETE ...")
+```
+
+Never use SQLAlchemy ORM. Never open a direct connection.
+
+## Shared utilities
+
+`core/api/utils.py` — use these, never duplicate:
+- `client_ip(request)` — real IP extraction (handles `X-Forwarded-For`)
+- `check_rate(key, store, limit, window_seconds)` — in-process rate limiter
+
+Rate limiting is in-process (Python module-level dict). State resets on restart and doesn't scale across uvicorn workers. See `docs/adr/005-in-process-rate-limiting.md`.
+
+## Schema migrations
+
+- Fresh install: `core/db/schema.sql` (Docker init, runs once)
+- Running install: `core/db/connection.py::init_db()` (idempotent `ALTER TABLE IF EXISTS`, every startup)
+- Named migrations: `core/db/migrations/002-007_*.sql` (applied manually)
+- Rule: always use `IF NOT EXISTS` / `IF EXISTS` — DDL runs on live databases
+
+## Entitlements
+
+`core/services/entitlements.py::PLAN_ENTITLEMENTS` is the **only** place that defines plan caps. Never hardcode plan limits in any other file. To override at runtime without a deploy: set `API_KEY_LIMIT_<PLAN>=N` env var and restart.
+
+## Event ingestion pipeline
+
+`core/services/event_write.py`:
+1. Postgres insert — must succeed (primary write)
+2. Qdrant upsert — non-fatal (logged and swallowed if Qdrant is down)
+
+## Lint and test
+
+```bash
+ruff check core/
+pytest core/tests/ -m "not integration" -v
+ZIZKADB_RUN_INTEGRATION=1 pytest core/tests/ -m integration -v  # needs running stack
+```

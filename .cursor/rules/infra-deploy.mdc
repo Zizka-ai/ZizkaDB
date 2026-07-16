@@ -1,0 +1,79 @@
+---
+description: ZizkaDB infrastructure, Docker Compose, deployment, CI/CD, and scripts
+globs: infra/**,scripts/**,.github/**
+alwaysApply: false
+---
+
+# ZizkaDB Infra & Deployment — Agent Guide
+
+## Docker Compose files
+
+| File | Purpose |
+|---|---|
+| `infra/docker-compose.yml` | **Production base** — used by deploy script |
+| `infra/docker-compose.dev.yml` | Dev overlay — adds `--reload` + `../core:/app` volume mount |
+| `infra/docker-compose.oss.yml` | OSS quickstart — GHCR pre-built images |
+| `infra/docker-compose.quickstart.yml` | Remote quickstart (no clone required) |
+| `infra/docker-compose.dashboard.yml` | Dashboard-only overlay |
+
+**Never add `--reload` or `../core:/app` volume mounts to `docker-compose.yml`** — those belong only in `docker-compose.dev.yml`. The production compose is also used to deploy managed cloud.
+
+Dev stack:
+```bash
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.dev.yml up -d
+```
+
+Production command in `docker-compose.yml`: `uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4`
+
+## Production deployment
+
+**Single EC2 instance** — no AWS ECS, EKS, Terraform, CodeDeploy, or buildspec files. Deploy is:
+```
+SSH → git pull → docker compose -f infra/docker-compose.yml up -d --build
+```
+
+Script: `infra/deploy-production.sh`
+
+## `DEPLOYMENT_MODE` — critical for self-hosters
+
+Defaults to `managed`. Self-hosters **must** set `DEPLOYMENT_MODE=self_hosted` in their `.env`, or plan entitlements resolve to `managed` plan caps instead of the self-hosted plan (1 API key cap).
+
+## Key environment variables
+
+Full list in `.env.example`. Most important:
+
+| Variable | Note |
+|---|---|
+| `DEPLOYMENT_MODE` | `managed` (default) or `self_hosted` |
+| `PUBLIC_API_URL` | Used by `core/api/community.py` for image URLs — NOT `API_URL` |
+| `FOUNDER_EMAIL` / `ADMIN_EMAIL` | Controls `/v1/admin` panel access |
+| `API_KEY_LIMITS_ENFORCED` | Kill switch for plan caps — defaults `false` |
+| `JWT_SECRET` | Must be changed from default — generate with `openssl rand -hex 32` |
+
+## CI/CD — two workflows only
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `.github/workflows/ci.yml` | PR + push to `main` | ruff lint, pytest (core + SDK + MCP), TypeScript SDK tests, dashboard lint + build |
+| `.github/workflows/publish-images.yml` | Push `v*` tag or manual dispatch | Builds Docker images, pushes to GHCR, makes packages public |
+
+There is no AWS pipeline, no CodeDeploy, no ECS task definition.
+
+## Scripts map
+
+| Script | What it does |
+|---|---|
+| `scripts/setup-local.sh` | Start local dev stack (API + dashboard) |
+| `scripts/quickstart.sh` | OSS quickstart for cloned repo |
+| `scripts/quickstart-remote.sh` | OSS quickstart without cloning — downloads config only |
+| `scripts/verify-release.sh` | Pre-publish gate (must pass before `publish-packages.sh`) |
+| `scripts/publish-packages.sh` | Publish `zizkadb-sdk` (PyPI + npm) and `zizkadb-mcp` (PyPI) |
+| `scripts/publish-integrations.sh` | Publish `zizkadb-langchain` and `zizkadb-crewai` to PyPI |
+| `scripts/reset-local-db.sh` | Wipe local Docker volumes — LOCAL DEV ONLY, refuses in production |
+| `scripts/smoke-test.sh` | Smoke test against a running stack |
+| `scripts/seed-support-bot-events.py` | Seed 50+ sessions for drift/baseline testing |
+| `scripts/github-setup.sh` | One-time repo init — already applied, kept for reference |
+
+## iCloud Drive warning
+
+**Never keep the repo inside `~/Desktop` or `~/Documents`** — iCloud syncs `.git/` and creates `filename 2` duplicate files in ref dirs (e.g., `refs/heads/main 2`), which are illegal git ref names and corrupt the repository. Move the repo to `~/code/` or add a `.nosync` suffix to opt out of iCloud sync.
