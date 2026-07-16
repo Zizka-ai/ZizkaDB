@@ -1,0 +1,62 @@
+# ADR-001: Causal Lineage via `parent_event_id` on the `events` Table
+
+**Status**: Accepted  
+**Date**: 2024
+
+---
+
+## Context
+
+ZizkaDB's core value proposition is answering "why did my agent do that?" — tracing the chain of decisions that led to any agent action. We needed a mechanism to represent causal relationships between events.
+
+Options considered:
+
+1. A separate `causality` or `event_links` table (`parent_id`, `child_id`, `relationship_type`)
+2. A `parent_event_id` foreign key directly on the `events` table
+3. A `causes` JSONB array on each event containing event IDs
+
+The primary query pattern is: given event E, walk backward through the chain of events that caused it — used by `db.why()`.
+
+---
+
+## Decision
+
+Store causal relationships as a self-referential foreign key `parent_event_id UUID REFERENCES events(event_id)` directly on the `events` table.
+
+The `db.why()` query uses a PostgreSQL **recursive CTE** starting from any event and following `parent_event_id` links backward:
+
+```sql
+WITH RECURSIVE causal_chain AS (
+    SELECT * FROM events WHERE event_id = $1
+    UNION ALL
+    SELECT e.* FROM events e
+    JOIN causal_chain c ON e.event_id = c.parent_event_id
+)
+SELECT * FROM causal_chain ORDER BY timestamp ASC;
+```
+
+---
+
+## Consequences
+
+**Better:**
+- Zero joins — the full causal chain is one recursive CTE on a single table
+- `parent_event_id` is indexed (`idx_events_parent`) for efficient lookup
+- Causality is captured at write time — SDKs pass `parent_id=` to `db.log()`
+- Schema is simple — one nullable column, no extra tables
+
+**Worse:**
+- Only supports tree-shaped causality (one parent per event) — not a DAG
+- Multi-parent causality (event caused by two prior events) cannot be represented without a separate table
+- Circular references would cause infinite recursion in the CTE (guarded by PostgreSQL's cycle detection)
+
+**Accepted limitations:**
+The vast majority of agent workflows produce linear or tree-shaped causal chains. Multi-parent causality (e.g., a decision that depends on two independent prior queries) is an edge case that can be handled at the application level by choosing the most direct parent. If DAG causality becomes a product requirement, an `event_parents` junction table can be added without removing `parent_event_id`.
+
+---
+
+## Alternatives considered
+
+**Separate `causality` table**: adds a join on every `db.why()` call; more flexible for DAGs but unnecessary complexity for the common case.
+
+**`causes` JSONB array**: makes the recursive CTE much harder to write; no foreign key constraint; harder to index.
