@@ -4,20 +4,64 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clearToken } from "@/lib/auth";
 import { BrandLogo } from "@/components/BrandLogo";
-import { Search, Settings, LogOut, Cpu, GitBranch } from "lucide-react";
+import { Search, Settings, LogOut, Cpu, GitBranch, Bug } from "lucide-react";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { TenantPlanBanner } from "@/components/TenantPlanBanner";
 
-const nav = [
+type NavLink = { href: string; label: string; icon: React.ElementType };
+type NavGroup = { label: string; icon: React.ElementType; children: NavLink[] };
+type NavEntry = NavLink | NavGroup;
+
+const nav: NavEntry[] = [
   { href: "/dashboard", label: "Agents", icon: Cpu },
   { href: "/dashboard/search", label: "Search", icon: Search },
-  { href: "/dashboard/debugging/why", label: "Why", icon: GitBranch },
+  {
+    label: "Debugging",
+    icon: Bug,
+    children: [
+      { href: "/dashboard/debugging/why", label: "Why", icon: GitBranch },
+    ],
+  },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
+
+function isGroup(entry: NavEntry): entry is NavGroup {
+  return "children" in entry;
+}
+
+// The mobile bottom bar can't nest, so flatten groups to their leaf links.
+const mobileLinks: NavLink[] = nav.flatMap((e) => (isGroup(e) ? e.children : [e]));
 
 function isNavActive(pathname: string, href: string): boolean {
   return (
     pathname === href || (href !== "/dashboard" && pathname.startsWith(href))
+  );
+}
+
+function SidebarLink({
+  link,
+  active,
+  indent,
+}: {
+  link: NavLink;
+  active: boolean;
+  indent?: boolean;
+}) {
+  const Icon = link.icon;
+  return (
+    <Link
+      href={link.href}
+      className={`flex items-center gap-2.5 ${
+        indent ? "pl-9" : "pl-3"
+      } pr-3 py-2 rounded-lg text-sm transition`}
+      style={{
+        color: active ? "#fff" : "#e5e5e5",
+        background: active ? "#1a1a1a" : "transparent",
+      }}
+    >
+      <Icon size={15} />
+      {link.label}
+    </Link>
   );
 }
 
@@ -47,24 +91,36 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
-          {nav.map(({ href, label, icon: Icon }) => {
-            const active = isNavActive(pathname, href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition"
-                style={{
-                  color: active ? "#fff" : "#e5e5e5",
-                  background: active ? "#1a1a1a" : "transparent",
-                }}
-              >
-                <Icon size={15} />
-                {label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
+          {nav.map((entry) =>
+            isGroup(entry) ? (
+              <div key={entry.label} className="pt-3">
+                <div
+                  className="flex items-center gap-2 px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider"
+                  style={{ color: "#666" }}
+                >
+                  <entry.icon size={13} />
+                  {entry.label}
+                </div>
+                <div className="space-y-0.5">
+                  {entry.children.map((child) => (
+                    <SidebarLink
+                      key={child.href}
+                      link={child}
+                      active={isNavActive(pathname, child.href)}
+                      indent
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <SidebarLink
+                key={entry.href}
+                link={entry}
+                active={isNavActive(pathname, entry.href)}
+              />
+            ),
+          )}
         </nav>
 
         <div className="px-3 py-4 border-t" style={{ borderColor: "#1f1f1f" }}>
@@ -103,17 +159,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           className="flex sm:hidden border-t"
           style={{ background: "#0d0d0d", borderColor: "#1f1f1f" }}
         >
-          {nav.map(({ href, label, icon: Icon }) => {
-            const active = isNavActive(pathname, href);
+          {mobileLinks.map((link) => {
+            const active = isNavActive(pathname, link.href);
+            const Icon = link.icon;
             return (
               <Link
-                key={href}
-                href={href}
+                key={link.href}
+                href={link.href}
                 className="flex-1 flex flex-col items-center gap-1 py-3 text-xs"
                 style={{ color: active ? "#22c55e" : "#e5e5e5" }}
               >
                 <Icon size={18} />
-                {label}
+                {link.label}
               </Link>
             );
           })}

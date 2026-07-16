@@ -705,8 +705,12 @@ Exhaustive behavior per file (state, effects, API order, branches, edge cases, n
   `navigator.clipboard` isn't guaranteed (non-secure context).
 - **`parent_id` linking:** when a step's `parent_id` is in the loaded chain it renders as a
   click-to-scroll jump; otherwise plain text (not a broken link).
-- **Nav:** `DashboardShell.tsx`'s shared `nav` array — `{ href: "/dashboard/debugging/why",
-  label: "Why", icon: GitBranch }`.
+- **Nav:** `DashboardShell.tsx` renders a grouped nav — a **Debugging** section (`Bug` icon,
+  non-clickable label) containing the **Why** link (`GitBranch`) → `/dashboard/debugging/why`.
+  The `nav` array holds flat `NavLink`s and `NavGroup`s (`{ label, icon, children }`); the
+  desktop sidebar renders groups as an indented section, and the mobile bottom bar flattens
+  every group to its leaf links (`mobileLinks`). Future debugging tools (at/search/memory-diff)
+  slot into the same Debugging group.
 
 ### 19.4 Settings — `app/dashboard/settings/page.tsx`
 
