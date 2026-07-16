@@ -16,6 +16,7 @@ import {
   Loader2,
   Target,
   Flag,
+  Clock,
 } from "lucide-react";
 
 const UUID_RE =
@@ -25,8 +26,10 @@ const UUID_RE =
 // think about a "depth" knob — the full story is always captured.
 const MAX_DEPTH = 50;
 
+// ── helpers ───────────────────────────────────────────────────────────────────
+
 function isErrorEvent(eventType: string): boolean {
-  const t = eventType.toLowerCase();
+  const t = (eventType || "").toLowerCase();
   return t.includes("error") || t.includes("fail");
 }
 
@@ -37,17 +40,74 @@ function firstString(...vals: unknown[]): string | null {
   return null;
 }
 
-function formatDelta(ms: number): string {
-  if (ms < 1000) return `+${Math.max(0, Math.round(ms))}ms`;
+function validDate(ts: string): Date | null {
+  const d = new Date(ts);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function fmtAbs(ts: string): string {
+  const d = validDate(ts);
+  return d ? format(d, "yyyy-MM-dd HH:mm:ss.SSS") : ts || "unknown time";
+}
+
+function fmtDelta(ms: number | null): string | null {
+  if (ms === null || ms < 0) return null;
+  if (ms < 1000) return `+${Math.round(ms)}ms`;
   if (ms < 60_000) return `+${(ms / 1000).toFixed(1)}s`;
   return `+${(ms / 60_000).toFixed(1)}m`;
 }
 
-function formatSpan(ms: number): string {
-  if (ms < 1000) return `${Math.max(0, Math.round(ms))}ms`;
+function fmtSpan(ms: number | null): string {
+  if (ms === null || ms < 0) return "—";
+  if (ms < 1000) return `${Math.round(ms)}ms`;
   if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
-  return `${(ms / 60_000).toFixed(1)}m`;
+  if (ms < 3_600_000) return `${(ms / 60_000).toFixed(1)}m`;
+  return `${(ms / 3_600_000).toFixed(1)}h`;
 }
+
+function previewValue(v: unknown): string {
+  if (v === null || v === undefined) return "null";
+  if (typeof v === "string") return v.length > 48 ? v.slice(0, 48) + "…" : v;
+  if (Array.isArray(v)) return `[${v.length} item${v.length === 1 ? "" : "s"}]`;
+  if (typeof v === "object") return "{…}";
+  return String(v);
+}
+
+// One-line human summary of an event's payload — the "what happened".
+function summarizeData(data: unknown): string {
+  if (!data || typeof data !== "object") return "";
+  const rec = data as Record<string, unknown>;
+  const errMsg = firstString(rec.error, rec.message);
+  if (errMsg) return errMsg;
+  const entries = Object.entries(rec);
+  if (entries.length === 0) return "";
+  return entries
+    .slice(0, 3)
+    .map(([k, v]) => `${k}: ${previewValue(v)}`)
+    .join("  ·  ");
+}
+
+// Map raw fetch errors to friendly, actionable copy.
+function friendlyError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  const m = msg.toLowerCase();
+  if (m.includes("event not found") || m.includes("not found")) {
+    return "No event found with that ID in this workspace. Double-check the ID and try again.";
+  }
+  if (
+    m.includes("failed to fetch") ||
+    m.includes("networkerror") ||
+    m.includes("load failed")
+  ) {
+    return "Couldn't reach the server. Check that the ZizkaDB API is running, then retry.";
+  }
+  if (m.includes("invalid token") || m.includes("401") || m.includes("unauthorized")) {
+    return "Your session expired. Please sign in again.";
+  }
+  return msg || "Something went wrong loading the causal chain.";
+}
+
+// ── page ────────────────────────────────────────────────────────────────────────
 
 export default function WhyPage() {
   return (
@@ -59,8 +119,8 @@ export default function WhyPage() {
 
 function WhyFallback() {
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <p style={{ color: "#e5e5e5" }}>Loading…</p>
+    <div className="p-6 sm:p-8 max-w-4xl mx-auto">
+      <p style={{ color: "#a3a3a3" }}>Loading…</p>
     </div>
   );
 }
@@ -93,7 +153,9 @@ function WhyPageInner() {
 
     const trimmed = urlEventId.trim();
     if (!UUID_RE.test(trimmed)) {
-      setError("That doesn't look like a valid event ID (expected a UUID).");
+      setError(
+        "That doesn't look like a valid event ID. It should be a UUID like 5cdb3f8c-3a85-46df-8034-184fb89a66a8.",
+      );
       setChain(null);
       return;
     }
@@ -108,20 +170,18 @@ function WhyPageInner() {
         setChain(result);
         // Open the payloads that matter for root-causing by default: every
         // error/fail step plus the event the user searched. Clean steps stay
-        // collapsed so the story reads top-to-bottom without scrolling walls.
-        const openByDefault = new Set<string>();
+        // collapsed so the story reads top-to-bottom.
+        const open = new Set<string>();
         for (const e of result.chain) {
-          if (isErrorEvent(e.event)) openByDefault.add(e.event_id);
+          if (isErrorEvent(e.event)) open.add(e.event_id);
         }
         if (result.chain.length > 0) {
-          openByDefault.add(result.chain[result.chain.length - 1].event_id);
+          open.add(result.chain[result.chain.length - 1].event_id);
         }
-        setExpanded(openByDefault);
+        setExpanded(open);
       } catch (err) {
         if (cancelled) return;
-        setError(
-          err instanceof Error ? err.message : "Failed to load causal chain.",
-        );
+        setError(friendlyError(err));
         setChain(null);
       } finally {
         if (!cancelled) setLoading(false);
@@ -138,8 +198,7 @@ function WhyPageInner() {
     [chain],
   );
 
-  // The root cause is the earliest (lowest in the chain) error/fail event.
-  // -1 means the chain contains no error at all.
+  // Root cause = the earliest (lowest-in-chain) error/fail event. -1 = no error.
   const rootCauseIndex = useMemo(() => {
     if (!chain) return -1;
     return chain.chain.findIndex((e) => isErrorEvent(e.event));
@@ -152,7 +211,8 @@ function WhyPageInner() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    navigateTo(eventIdInput.trim());
+    const v = eventIdInput.trim();
+    if (v) navigateTo(v);
   }
 
   function traceEvent(eventId: string) {
@@ -163,9 +223,10 @@ function WhyPageInner() {
   function jumpToNode(eventId: string) {
     const el = document.getElementById(`why-node-${eventId}`);
     if (!el) return;
+    setExpanded((prev) => new Set(prev).add(eventId));
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     setHighlighted(eventId);
-    setTimeout(() => setHighlighted((h) => (h === eventId ? null : h)), 1500);
+    setTimeout(() => setHighlighted((h) => (h === eventId ? null : h)), 1600);
   }
 
   async function copyText(text: string, key: string) {
@@ -188,32 +249,36 @@ function WhyPageInner() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-6 sm:p-8 max-w-4xl mx-auto">
+      {/* Header */}
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <GitBranch size={16} style={{ color: "#22c55e" }} />
+        <div className="flex items-center gap-2 mb-1.5">
+          <GitBranch size={17} style={{ color: "#22c55e" }} />
           <h1 className="text-white font-semibold text-xl">Why — root cause</h1>
         </div>
-        <p className="text-sm" style={{ color: "#e5e5e5" }}>
+        <p className="text-sm leading-relaxed" style={{ color: "#a3a3a3" }}>
           Paste an error&apos;s event ID. Every event records the{" "}
-          <span className="font-mono" style={{ color: "#a3a3a3" }}>
+          <span className="font-mono" style={{ color: "#d4d4d4" }}>
             parent_id
           </span>{" "}
-          of what caused it, so the trace walks that chain back to where it all
+          of what caused it, so the trace walks that chain back to where it
           started — then tells the story from the beginning down to the failure.
         </p>
       </div>
 
+      {/* Input */}
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 mb-6">
         <input
           value={eventIdInput}
           onChange={(e) => setEventIdInput(e.target.value)}
           placeholder="Error event ID (e.g. 5cdb3f8c-3a85-46df-8034-184fb89a66a8)"
           autoFocus
+          spellCheck={false}
+          aria-label="Error event ID"
           className="flex-1 rounded-xl px-4 py-3 text-sm font-mono text-white outline-none transition"
-          style={{ background: "#111", border: "1px solid #1f1f1f" }}
+          style={{ background: "#111", border: "1px solid #262626" }}
           onFocus={(e) => (e.target.style.borderColor = "#22c55e")}
-          onBlur={(e) => (e.target.style.borderColor = "#1f1f1f")}
+          onBlur={(e) => (e.target.style.borderColor = "#262626")}
         />
         <button
           type="submit"
@@ -229,39 +294,44 @@ function WhyPageInner() {
         </button>
       </form>
 
+      {/* Error */}
       {error && (
         <div
-          className="flex items-start gap-2 rounded-xl px-4 py-3 mb-6 text-sm"
-          style={{
-            background: "#2a1a1a",
-            border: "1px solid #3a1f1f",
-            color: "#f87171",
-          }}
+          className="flex items-start gap-2.5 rounded-xl px-4 py-3 mb-6 text-sm"
+          style={{ background: "#1f1414", border: "1px solid #3a1f1f", color: "#f87171" }}
         >
           <AlertCircle size={15} className="mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
+      {/* Loading skeleton */}
+      {loading && !chain && (
+        <div className="flex items-center gap-2 text-sm py-8" style={{ color: "#a3a3a3" }}>
+          <Loader2 size={14} className="animate-spin" />
+          Walking the causal chain…
+        </div>
+      )}
+
+      {/* Result */}
       {chain && chain.chain.length > 0 && (
         <>
           <StorySummary
             chain={chain}
             rootCauseIndex={rootCauseIndex}
+            copiedKey={copiedKey}
             onCopyLink={() => copyText(window.location.href, "share-link")}
             onCopyChain={() =>
               copyText(JSON.stringify(chain.chain, null, 2), "chain-json")
             }
-            copiedKey={copiedKey}
           />
 
-          <div className="mt-6">
+          <div className="mt-5">
             {chain.chain.map((event, i) => {
               const prev = i > 0 ? chain.chain[i - 1] : null;
-              const deltaMs = prev
-                ? new Date(event.timestamp).getTime() -
-                  new Date(prev.timestamp).getTime()
-                : 0;
+              const a = prev ? validDate(prev.timestamp) : null;
+              const b = validDate(event.timestamp);
+              const deltaMs = a && b ? b.getTime() - a.getTime() : null;
               return (
                 <StoryStep
                   key={event.event_id}
@@ -293,75 +363,87 @@ function WhyPageInner() {
         </>
       )}
 
+      {/* Empty */}
       {!chain && !loading && !error && (
-        <div className="text-center py-16 text-sm" style={{ color: "#e5e5e5" }}>
-          Enter an error event ID above to trace its root cause.
+        <div
+          className="text-center py-16 px-6 rounded-xl text-sm"
+          style={{ background: "#0d0d0d", border: "1px dashed #262626", color: "#a3a3a3" }}
+        >
+          Enter an error event ID above to trace its root cause and see the full
+          story of how it happened.
         </div>
       )}
     </div>
   );
 }
 
+// ── summary banner ──────────────────────────────────────────────────────────────
+
 function StorySummary({
   chain,
   rootCauseIndex,
+  copiedKey,
   onCopyLink,
   onCopyChain,
-  copiedKey,
 }: {
   chain: WhyChain;
   rootCauseIndex: number;
+  copiedKey: string | null;
   onCopyLink: () => void;
   onCopyChain: () => void;
-  copiedKey: string | null;
 }) {
   const events = chain.chain;
   const origin = events[0];
+  const last = events[events.length - 1];
   const total = events.length;
   const rootCause = rootCauseIndex >= 0 ? events[rootCauseIndex] : null;
   const parentLinks = total - 1;
 
-  const spanMs =
-    new Date(events[total - 1].timestamp).getTime() -
-    new Date(origin.timestamp).getTime();
+  const oDate = validDate(origin.timestamp);
+  const lDate = validDate(last.timestamp);
+  const spanMs = oDate && lDate ? lDate.getTime() - oDate.getTime() : null;
 
   const errorMsg = rootCause
-    ? firstString(rootCause.data?.error, rootCause.data?.message)
+    ? firstString(
+        (rootCause.data as Record<string, unknown> | null)?.error,
+        (rootCause.data as Record<string, unknown> | null)?.message,
+      )
     : null;
+
+  const accent = rootCause ? "#f87171" : "#22c55e";
 
   return (
     <div
       className="rounded-xl p-5"
-      style={{
-        background: "#111",
-        border: `1px solid ${rootCause ? "#3a1f1f" : "#1f2a1f"}`,
-      }}
+      style={{ background: "#111", border: `1px solid ${rootCause ? "#3a1f1f" : "#1f2a1f"}` }}
     >
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-2.5">
         {rootCause ? (
-          <Target size={15} style={{ color: "#f87171" }} />
+          <Target size={15} style={{ color: accent }} />
         ) : (
-          <Flag size={15} style={{ color: "#22c55e" }} />
+          <Flag size={15} style={{ color: accent }} />
         )}
         <span
-          className="text-xs font-semibold uppercase tracking-wide"
-          style={{ color: rootCause ? "#f87171" : "#22c55e" }}
+          className="text-xs font-semibold uppercase tracking-wider"
+          style={{ color: accent }}
         >
           {rootCause ? "Root cause" : "No error detected"}
         </span>
       </div>
 
-      {/* Narrated story line */}
       <p className="text-sm leading-relaxed" style={{ color: "#e5e5e5" }}>
         This flow began with{" "}
-        <span className="font-mono" style={{ color: "#fff" }}>
+        <span className="font-mono px-1 rounded" style={{ background: "#1a1a1a", color: "#fff" }}>
           {origin.event}
         </span>{" "}
         and ran {total} step{total !== 1 ? "s" : ""}
         {rootCause ? (
           <>
             , failing at step {rootCauseIndex + 1} —{" "}
-            <span className="font-mono" style={{ color: "#f87171" }}>
+            <span
+              className="font-mono px-1 rounded"
+              style={{ background: "#2a1414", color: "#f87171" }}
+            >
               {rootCause.event}
             </span>
             {errorMsg ? <>: {errorMsg}</> : null}.
@@ -371,38 +453,45 @@ function StorySummary({
         )}
       </p>
 
-      {/* At-a-glance stats */}
-      <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-xs" style={{ color: "#a3a3a3" }}>
-        <span>
-          <span style={{ color: "#666" }}>steps:</span> {total}
+      <div
+        className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-3.5 text-xs"
+        style={{ color: "#a3a3a3" }}
+      >
+        <span className="flex items-center gap-1.5">
+          <GitBranch size={12} style={{ color: "#666" }} />
+          {total} step{total !== 1 ? "s" : ""}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Clock size={12} style={{ color: "#666" }} />
+          {fmtSpan(spanMs)}
         </span>
         <span>
-          <span style={{ color: "#666" }}>span:</span> {formatSpan(spanMs)}
-        </span>
-        <span>
-          <span style={{ color: "#666" }}>agent:</span>{" "}
-          <span className="font-mono">{origin.agent}</span>
+          <span style={{ color: "#666" }}>agent</span>{" "}
+          <span className="font-mono" style={{ color: "#d4d4d4" }}>
+            {origin.agent}
+          </span>
         </span>
         {origin.session_id && (
           <span>
-            <span style={{ color: "#666" }}>session:</span>{" "}
-            <span className="font-mono">{origin.session_id}</span>
+            <span style={{ color: "#666" }}>session</span>{" "}
+            <span className="font-mono" style={{ color: "#d4d4d4" }}>
+              {origin.session_id}
+            </span>
           </span>
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-3 mt-4">
+      <div
+        className="flex flex-wrap items-center justify-between gap-3 mt-4 pt-3.5"
+        style={{ borderTop: "1px solid #1f1f1f" }}
+      >
         <span className="text-xs" style={{ color: "#666" }}>
           Traced {parentLinks} parent link{parentLinks !== 1 ? "s" : ""} from the
           event you entered.
         </span>
         <div className="flex gap-2 shrink-0">
-          <CopyButton
-            label="Copy link"
-            onClick={onCopyLink}
-            copied={copiedKey === "share-link"}
-          />
-          <CopyButton
+          <MiniButton label="Copy link" onClick={onCopyLink} copied={copiedKey === "share-link"} />
+          <MiniButton
             label="Copy chain JSON"
             onClick={onCopyChain}
             copied={copiedKey === "chain-json"}
@@ -412,6 +501,8 @@ function StorySummary({
     </div>
   );
 }
+
+// ── one step in the story timeline ───────────────────────────────────────────────
 
 function StoryStep({
   event,
@@ -439,7 +530,7 @@ function StoryStep({
   isSearched: boolean;
   isRootCause: boolean;
   isError: boolean;
-  deltaMs: number;
+  deltaMs: number | null;
   showDelta: boolean;
   isExpanded: boolean;
   isHighlighted: boolean;
@@ -455,155 +546,169 @@ function StoryStep({
   const parentKey = `parent-${event.event_id}`;
   const sessionKey = `session-${event.event_id}`;
   const isLast = index === total - 1;
+  const summary = summarizeData(event.data);
+  const delta = fmtDelta(deltaMs);
+  const flagged = isRootCause || isError;
 
-  const accent = isRootCause
-    ? "#f87171"
-    : isError
-      ? "#f87171"
+  const accent = flagged ? "#f87171" : isOrigin ? "#22c55e" : "#3f3f46";
+  const borderColor = isHighlighted
+    ? "#22c55e"
+    : flagged
+      ? "#3a1f1f"
       : isOrigin
-        ? "#22c55e"
-        : "#2a2a2a";
+        ? "#1f2a1f"
+        : "#1f1f1f";
 
   return (
     <div className="flex gap-3">
-      {/* Timeline rail: step number dot + connector line to the next step */}
-      <div className="flex flex-col items-center shrink-0">
+      {/* Timeline rail */}
+      <div className="flex flex-col items-center shrink-0" style={{ width: 28 }}>
         <div
           className="flex items-center justify-center rounded-full text-xs font-mono font-semibold"
           style={{
-            width: 26,
-            height: 26,
+            width: 28,
+            height: 28,
             background: "#0a0a0a",
             border: `1px solid ${accent}`,
-            color: accent === "#2a2a2a" ? "#e5e5e5" : accent,
+            color: accent === "#3f3f46" ? "#a3a3a3" : accent,
           }}
         >
           {index + 1}
         </div>
         {!isLast && (
-          <div className="w-px flex-1 my-1" style={{ background: "#2a2a2a", minHeight: 24 }} />
+          <div className="w-px flex-1 my-1" style={{ background: "#262626", minHeight: 20 }} />
         )}
       </div>
 
-      {/* Step content */}
+      {/* Card */}
       <div
         id={`why-node-${event.event_id}`}
-        className="rounded-xl p-4 mb-3 flex-1 min-w-0 transition"
-        style={{
-          background: "#111",
-          border: `1px solid ${
-            isHighlighted
-              ? "#22c55e"
-              : isRootCause || isError
-                ? "#3a1f1f"
-                : isOrigin
-                  ? "#1f2a1f"
-                  : "#1f1f1f"
-          }`,
-        }}
+        className="rounded-xl flex-1 min-w-0 mb-3 transition"
+        style={{ background: "#111", border: `1px solid ${borderColor}` }}
       >
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span
-            className="text-sm font-mono font-medium px-2 py-0.5 rounded"
-            style={{ background: "#1a1a1a", color: "#e5e5e5" }}
-          >
-            {event.event}
-          </span>
-          {isOrigin && <Badge color="#22c55e" background="#1a2a1a" label="Origin" icon={<Flag size={10} />} />}
-          {isRootCause && (
-            <Badge color="#f87171" background="#2a1a1a" label="Root cause" icon={<Target size={10} />} />
-          )}
-          {isError && (
-            <Badge color="#f87171" background="#2a1a1a" label="Error" icon={<AlertCircle size={10} />} />
-          )}
-          {isSearched && (
-            <Badge color="#a3a3a3" background="#1a1a1a" label="You searched this" />
-          )}
-          <span className="text-xs font-mono ml-auto" style={{ color: "#e5e5e5" }}>
-            {showDelta && (
-              <span style={{ color: "#666" }} className="mr-2">
-                {formatDelta(deltaMs)}
-              </span>
-            )}
-            {format(new Date(event.timestamp), "yyyy-MM-dd HH:mm:ss.SSS")}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 mb-3">
-          <FieldRow label="agent" value={event.agent} />
-          <FieldRow label="sequence_no" value={String(event.sequence_no)} />
-          <FieldRow
-            label="event_id"
-            value={event.event_id}
-            copyKey={idKey}
-            copiedKey={copiedKey}
-            onCopy={() => onCopy(event.event_id, idKey)}
-          />
-          <FieldRow
-            label="parent_id"
-            value={event.parent_id ?? "— (origin, no parent)"}
-            copyKey={event.parent_id ? parentKey : undefined}
-            copiedKey={copiedKey}
-            onCopy={
-              event.parent_id
-                ? () => onCopy(event.parent_id as string, parentKey)
-                : undefined
-            }
-            onJump={event.parent_id && parentInChain ? onJumpToParent : undefined}
-          />
-          <FieldRow
-            label="session_id"
-            value={event.session_id ?? "—"}
-            copyKey={event.session_id ? sessionKey : undefined}
-            copiedKey={copiedKey}
-            onCopy={
-              event.session_id
-                ? () => onCopy(event.session_id as string, sessionKey)
-                : undefined
-            }
-          />
-        </div>
-
-        <div className="flex items-center gap-3 mb-2">
-          <button
-            onClick={onToggleExpand}
-            className="flex items-center gap-1 text-xs transition"
-            style={{ color: "#e5e5e5" }}
-          >
-            {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            data
-          </button>
-          <CopyButton
-            label="Copy event JSON"
-            onClick={() => onCopy(JSON.stringify(event, null, 2), jsonKey)}
-            copied={copiedKey === jsonKey}
-          />
-          {!isOrigin && (
-            <button
-              onClick={onTrace}
-              className="flex items-center gap-1 text-xs ml-auto transition"
-              style={{ color: "#22c55e" }}
+        {/* Clickable summary header (whole header toggles details) */}
+        <button
+          onClick={onToggleExpand}
+          className="w-full text-left px-4 py-3.5"
+          aria-expanded={isExpanded}
+        >
+          {/* Row 1: event type + role badges */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className="text-sm font-mono font-medium truncate"
+              style={{ color: flagged ? "#f87171" : "#f5f5f5", maxWidth: "100%" }}
             >
-              Trace this instead
-              <ArrowUpRight size={12} />
-            </button>
-          )}
-        </div>
+              {event.event}
+            </span>
+            {isOrigin && <Badge color="#22c55e" background="#14241a" label="Origin" icon={<Flag size={9} />} />}
+            {isRootCause && (
+              <Badge color="#f87171" background="#2a1414" label="Root cause" icon={<Target size={9} />} />
+            )}
+            {isError && (
+              <Badge color="#f87171" background="#2a1414" label="Error" icon={<AlertCircle size={9} />} />
+            )}
+            {isSearched && <Badge color="#a3a3a3" background="#1a1a1a" label="You searched this" />}
+          </div>
 
+          {/* Row 2: what happened */}
+          {summary && (
+            <div
+              className="text-xs mt-1.5 truncate"
+              style={{ color: flagged ? "#fca5a5" : "#a3a3a3" }}
+            >
+              {summary}
+            </div>
+          )}
+
+          {/* Row 3: supporting values (always visible) + expand chevron */}
+          <div className="flex items-center gap-2 mt-2 text-xs" style={{ color: "#737373" }}>
+            <span className="font-mono truncate">
+              {event.agent} · seq {event.sequence_no} · {fmtAbs(event.timestamp)}
+              {showDelta && delta ? ` · ${delta}` : ""}
+            </span>
+            <span className="flex items-center gap-0.5 ml-auto shrink-0" style={{ color: "#a3a3a3" }}>
+              {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+              Details
+            </span>
+          </div>
+        </button>
+
+        {/* Expanded details */}
         {isExpanded && (
-          <pre
-            className="text-xs font-mono rounded-lg p-3 overflow-x-auto"
-            style={{ background: "#0a0a0a", color: "#e5e5e5" }}
-          >
-            {JSON.stringify(event.data, null, 2)}
-          </pre>
+          <div className="px-4 pb-4" style={{ borderTop: "1px solid #1a1a1a" }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 pt-3 mb-3">
+              <FieldRow
+                label="event_id"
+                value={event.event_id}
+                copyKey={idKey}
+                copiedKey={copiedKey}
+                onCopy={() => onCopy(event.event_id, idKey)}
+              />
+              <FieldRow
+                label="parent_id"
+                value={event.parent_id ?? "— (origin, no parent)"}
+                copyKey={event.parent_id ? parentKey : undefined}
+                copiedKey={copiedKey}
+                onCopy={
+                  event.parent_id
+                    ? () => onCopy(event.parent_id as string, parentKey)
+                    : undefined
+                }
+                onJump={event.parent_id && parentInChain ? onJumpToParent : undefined}
+                jumpTitle="Jump to the event this was caused by"
+              />
+              <FieldRow
+                label="session_id"
+                value={event.session_id ?? "—"}
+                copyKey={event.session_id ? sessionKey : undefined}
+                copiedKey={copiedKey}
+                onCopy={
+                  event.session_id
+                    ? () => onCopy(event.session_id as string, sessionKey)
+                    : undefined
+                }
+              />
+              <FieldRow label="sequence_no" value={String(event.sequence_no)} />
+            </div>
+
+            <div className="text-xs mb-1.5" style={{ color: "#666" }}>
+              data
+            </div>
+            <pre
+              className="text-xs font-mono rounded-lg p-3 overflow-auto"
+              style={{ background: "#0a0a0a", color: "#d4d4d4", maxHeight: 320 }}
+            >
+              {JSON.stringify(event.data ?? {}, null, 2)}
+            </pre>
+
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <MiniButton
+                label="Copy event JSON"
+                onClick={() => onCopy(JSON.stringify(event, null, 2), jsonKey)}
+                copied={copiedKey === jsonKey}
+              />
+              {!isOrigin && (
+                <button
+                  onClick={onTrace}
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg transition ml-auto"
+                  style={{ background: "#14241a", border: "1px solid #1f3a24", color: "#22c55e" }}
+                  title="Re-run the trace starting from this event"
+                >
+                  Trace from here
+                  <ArrowUpRight size={12} />
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function CopyButton({
+// ── small shared bits ────────────────────────────────────────────────────────────
+
+function MiniButton({
   label,
   onClick,
   copied,
@@ -616,11 +721,7 @@ function CopyButton({
     <button
       onClick={onClick}
       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition"
-      style={{
-        background: "#1a1a1a",
-        border: "1px solid #2a2a2a",
-        color: copied ? "#22c55e" : "#e5e5e5",
-      }}
+      style={{ background: "#1a1a1a", border: "1px solid #262626", color: copied ? "#22c55e" : "#d4d4d4" }}
     >
       {copied ? <Check size={12} /> : <Copy size={12} />}
       {copied ? "Copied" : label}
@@ -641,7 +742,7 @@ function Badge({
 }) {
   return (
     <span
-      className="flex items-center gap-1 text-xs px-2 py-0.5 rounded"
+      className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded shrink-0"
       style={{ background, color }}
     >
       {icon}
@@ -657,6 +758,7 @@ function FieldRow({
   copiedKey,
   onCopy,
   onJump,
+  jumpTitle,
 }: {
   label: string;
   value: string;
@@ -664,27 +766,29 @@ function FieldRow({
   copiedKey?: string | null;
   onCopy?: () => void;
   onJump?: () => void;
+  jumpTitle?: string;
 }) {
   return (
     <div className="flex items-start gap-2 text-xs">
-      <span className="font-mono shrink-0" style={{ color: "#666", minWidth: 90 }}>
+      <span className="font-mono shrink-0" style={{ color: "#666", minWidth: 84 }}>
         {label}
       </span>
       {onJump ? (
         <button
           onClick={onJump}
-          className="font-mono break-all text-left underline decoration-dotted"
-          style={{ color: "#e5e5e5" }}
+          title={jumpTitle}
+          className="font-mono break-all text-left underline decoration-dotted underline-offset-2"
+          style={{ color: "#d4d4d4" }}
         >
           {value}
         </button>
       ) : (
-        <span className="font-mono break-all" style={{ color: "#e5e5e5" }}>
+        <span className="font-mono break-all" style={{ color: "#d4d4d4" }}>
           {value}
         </span>
       )}
       {onCopy && (
-        <button onClick={onCopy} className="shrink-0" style={{ color: "#666" }}>
+        <button onClick={onCopy} className="shrink-0" style={{ color: "#666" }} title={`Copy ${label}`}>
           {copyKey && copiedKey === copyKey ? (
             <Check size={11} style={{ color: "#22c55e" }} />
           ) : (
