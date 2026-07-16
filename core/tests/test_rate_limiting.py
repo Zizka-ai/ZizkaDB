@@ -12,7 +12,10 @@ from api.auth import _otp_rate, _OTP_RATE_MAX, _OTP_RATE_WINDOW_SEC
 from api.demo_requests import _rate as demo_rate, RATE_MAX as DEMO_MAX, RATE_WINDOW_SEC as DEMO_WINDOW
 from api.community import _rate as community_rate, RATE_MAX_POSTS as COMM_MAX, RATE_WINDOW_SEC as COMM_WINDOW
 
-client = TestClient(app)
+# client_ip() only trusts X-Forwarded-For from a trusted proxy address (see
+# api/utils.py). Simulate the TestClient connecting from 127.0.0.1 so tests
+# that partition by x-forwarded-for continue to exercise that code path.
+client = TestClient(app, client=("127.0.0.1", 123))
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -35,8 +38,7 @@ class TestOTPRateLimiting:
             for _ in range(_OTP_RATE_MAX):
                 response = client.post("/v1/auth/request-otp", json={"email": "user@example.com"})
                 assert response.status_code == 200
-                assert response.json() == {"message": "Code sent"}
-            
+
             assert mock_request_otp.call_count == _OTP_RATE_MAX
 
     @patch("api.auth.email_exists", new_callable=AsyncMock)

@@ -1,0 +1,12 @@
+.git
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+tests/
+.env
+.env.*
+*.egg-info
+.ruff_cache
+CLAUDE.md
+README.md

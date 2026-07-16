@@ -66,24 +66,17 @@ async def request_otp_route(body: RequestOTPBody):
     email = body.email.lower().strip()
     _check_otp_rate_limit(email)
 
-    if body.intent == "signup" and await email_exists(email):
-        raise HTTPException(
-            status_code=409,
-            detail="This email is already registered. Please sign in instead.",
-        )
+    # Do not disclose whether the email is registered — both branches below
+    # return the same generic message regardless of account existence, to
+    # avoid user enumeration via this endpoint.
+    exists = await email_exists(email)
+    if (body.intent == "signup" and not exists) or (body.intent == "login" and exists):
+        try:
+            await request_otp(email)
+        except Exception as e:
+            log.error(f"request_otp failed for {email}: {e}")
 
-    if body.intent == "login" and not await email_exists(email):
-        raise HTTPException(
-            status_code=404,
-            detail="No account found for this email. Create an account to get started.",
-        )
-
-    try:
-        await request_otp(email)
-        return {"message": "Code sent"}
-    except Exception as e:
-        log.error(f"request_otp failed for {email}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to send code. Check server logs.")
+    return {"message": "If an account matches, a login code has been sent."}
 
 
 @router.post("/verify-otp")

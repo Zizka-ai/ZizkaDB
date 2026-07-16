@@ -358,8 +358,11 @@ def _send_otp_email_sync(email: str, otp: str) -> None:
     password = os.getenv("EMAIL_PASS")
 
     if not host or not user or not password:
-        log.warning("DEV OTP for %s: %s (set EMAIL_HOST / EMAIL_USER / EMAIL_PASS to send real emails)", email, otp)
-        return
+        if os.getenv("ENV", "development") == "development":
+            log.warning("DEV OTP for %s: %s (set EMAIL_HOST / EMAIL_USER / EMAIL_PASS to send real emails)", email, otp)
+            return
+        log.error("SMTP not configured — OTP could not be sent to %s. Set EMAIL_HOST / EMAIL_USER / EMAIL_PASS.", email)
+        raise RuntimeError("Email service not configured")
 
     port = int(os.getenv("EMAIL_PORT", 587))
     from_addr = os.getenv("EMAIL_FROM", f'"ZizkaDB" <{user}>')

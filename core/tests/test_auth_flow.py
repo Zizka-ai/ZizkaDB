@@ -28,14 +28,14 @@ class TestRequestOtpIntent:
 
     @patch("api.auth.request_otp", new_callable=AsyncMock)
     @patch("api.auth.email_exists", new_callable=AsyncMock)
-    def test_login_rejects_unknown_email(self, mock_exists, mock_request):
+    def test_login_unknown_email_returns_generic_response(self, mock_exists, mock_request):
+        """Unknown email must not be distinguishable from a known one (user enumeration)."""
         mock_exists.return_value = False
         res = client.post(
             "/v1/auth/request-otp",
             json={"email": "gone@example.com", "intent": "login"},
         )
-        assert res.status_code == 404
-        assert "No account found" in res.json()["detail"]
+        assert res.status_code == 200
         mock_request.assert_not_called()
 
     @patch("api.auth.request_otp", new_callable=AsyncMock)
@@ -51,14 +51,14 @@ class TestRequestOtpIntent:
 
     @patch("api.auth.request_otp", new_callable=AsyncMock)
     @patch("api.auth.email_exists", new_callable=AsyncMock)
-    def test_signup_rejects_existing_email(self, mock_exists, mock_request):
+    def test_signup_existing_email_returns_generic_response(self, mock_exists, mock_request):
+        """Existing email on signup must not be distinguishable from a new one (user enumeration)."""
         mock_exists.return_value = True
         res = client.post(
             "/v1/auth/request-otp",
             json={"email": "user@example.com", "intent": "signup"},
         )
-        assert res.status_code == 409
-        assert "already registered" in res.json()["detail"]
+        assert res.status_code == 200
         mock_request.assert_not_called()
 
     @patch("api.auth.request_otp", new_callable=AsyncMock)

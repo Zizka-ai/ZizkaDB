@@ -1,8 +1,10 @@
+import logging
 import os
 from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from services.auth import verify_api_key, decode_access_token
 
+logger = logging.getLogger(__name__)
 bearer = HTTPBearer()
 
 # Dev key: set DEV_API_KEY in .env for self-hosted local development.
@@ -57,14 +59,18 @@ def assert_agent_allowed(tenant: dict, agent_id: str) -> None:
 def _dev_key_accepted(token: str) -> bool:
     if _IS_PRODUCTION:
         return False
+    accepted = False
     if _DEV_API_KEY:
         if token == _DEV_API_KEY:
-            return True
+            accepted = True
         # Transition: old infra/.env used agdb_dev_local; SDK/MCP use zizkadb_dev_local.
-        if _DEV_API_KEY in _KNOWN_DEV_KEYS and token in _KNOWN_DEV_KEYS:
-            return True
-        return False
-    return token in _KNOWN_DEV_KEYS
+        elif _DEV_API_KEY in _KNOWN_DEV_KEYS and token in _KNOWN_DEV_KEYS:
+            accepted = True
+    else:
+        accepted = token in _KNOWN_DEV_KEYS
+    if accepted:
+        logger.warning("Dev API key accepted for request — must never happen in production (ENV=production).")
+    return accepted
 
 
 def dashboard_session_dependency(forbid_detail: str):

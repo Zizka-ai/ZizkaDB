@@ -30,6 +30,12 @@ if ! zizka_is_production; then
   [ "$ok" = "y" ] || [ "$ok" = "Y" ] || exit 1
 fi
 
+if [ "${NEXT_PUBLIC_DEV_MODE:-}" = "true" ]; then
+  echo "ERROR: NEXT_PUBLIC_DEV_MODE=true in infra/.env." >&2
+  echo "This bypasses dashboard login entirely — must be 'false' for any public deployment." >&2
+  exit 1
+fi
+
 zizka_require_deploy_confirm
 
 echo "════════════════════════════════════════════════════════"
@@ -48,11 +54,10 @@ git pull origin main
 
 echo "→ Step 3/5: Rebuild & restart API stack (no -v)"
 "${COMPOSE[@]}" up -d --build
-"${COMPOSE[@]}" restart api
 
 echo "→ Step 4/5: Wait for API health"
 for i in $(seq 1 30); do
-  if curl -sf http://127.0.0.1:8000/health >/dev/null 2>&1; then
+  if curl -sf http://127.0.0.1:8000/health/deep >/dev/null 2>&1; then
     break
   fi
   sleep 2
@@ -61,7 +66,7 @@ for i in $(seq 1 30); do
     exit 1
   fi
 done
-curl -sf http://127.0.0.1:8000/health && echo ""
+curl -sf http://127.0.0.1:8000/health/deep && echo ""
 
 echo "→ Step 5/5: Dashboard (PM2)"
 bash "$ROOT/infra/deploy-dashboard.sh"
@@ -75,7 +80,7 @@ echo "  Deploy complete"
 echo "════════════════════════════════════════════════════════"
 echo "  Users before: $USERS_BEFORE"
 echo "  Users after:  $USERS_AFTER"
-echo "  Health:       $(curl -sf http://127.0.0.1:8000/health || echo FAIL)"
+echo "  Health:       $(curl -sf http://127.0.0.1:8000/health/deep || echo FAIL)"
 echo ""
 
 if [ "$USERS_BEFORE" != "?" ] && [ "$USERS_AFTER" != "?" ] && [ "$USERS_BEFORE" -gt 0 ] 2>/dev/null && [ "$USERS_AFTER" = "0" ]; then

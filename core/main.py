@@ -29,6 +29,11 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if os.getenv("ENV") == "production" and os.getenv("DEV_API_KEY"):
+        raise RuntimeError(
+            "DEV_API_KEY must not be set when ENV=production. "
+            "Remove DEV_API_KEY from your .env before deploying publicly."
+        )
     await init_db()
     # Seed dev tenant for local self-host (ENV=development) or when DEV_API_KEY is set.
     if os.getenv("ENV", "development") == "development" or os.getenv("DEV_API_KEY"):
@@ -93,12 +98,18 @@ async def api_explorer_redirect():
     """Legacy URL; nginx may mis-route this unless ^~ /api-explorer is configured."""
     return RedirectResponse(url="/swagger")
 
+_cors_origins = [
+    origin.strip()
+    for origin in os.getenv("CORS_ORIGINS", "http://localhost:3001,http://localhost:3000").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Authorization", "Content-Type", "X-Api-Key"],
 )
 
 app.include_router(auth_router,      prefix="/v1/auth",      tags=["auth"])

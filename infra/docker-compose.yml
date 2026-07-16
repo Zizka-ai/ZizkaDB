@@ -4,6 +4,7 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: zizkadb_postgres
+    restart: unless-stopped
     # WARNING: docker compose down -v deletes ALL user accounts and events.
     # Production: use bash infra/deploy-production.sh — never -v.
     # Local reset only: bash scripts/reset-local-db.sh
@@ -12,7 +13,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zizkadb}
       POSTGRES_DB: ${POSTGRES_DB:-zizkadb}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../core/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
@@ -25,19 +26,26 @@ services:
   qdrant:
     image: qdrant/qdrant:v1.13.5
     container_name: zizkadb_qdrant
+    restart: unless-stopped
     ports:
-      - "6333:6333"
-      - "6334:6334"
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
     environment:
       QDRANT__SERVICE__GRPC_PORT: 6334
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/6333' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     container_name: zizkadb_redis
+    restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
@@ -52,6 +60,7 @@ services:
       context: ../core
       dockerfile: Dockerfile
     container_name: zizkadb_api
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
@@ -62,8 +71,13 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-in-production}
       ENV: ${ENV:-development}
-      # Local dev only — leave unset on managed cloud (ENV=production)
-      DEV_API_KEY: ${DEV_API_KEY:-zizkadb_dev_local}
+      # Local dev only — must be left unset (not even empty-string) in your
+      # infra/.env on managed cloud / any public deployment (ENV=production).
+      # No fallback default here on purpose: a compose `:-default` triggers on
+      # both "unset" and "empty string", so defaulting this would silently
+      # re-enable the dev bypass for anyone who set DEV_API_KEY= in their .env.
+      DEV_API_KEY: ${DEV_API_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3001,http://localhost:3000}
       # IMPORTANT FOR SELF-HOSTERS: set DEPLOYMENT_MODE=self_hosted in your
       # infra/.env (see .env.example). Without it, plan-based API key limits
       # are evaluated as if you are a managed-cloud tenant (default: "managed").
@@ -85,6 +99,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      qdrant:
         condition: service_healthy
     volumes:
       - community_uploads:/data/community_uploads
