@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from services.exceptions import not_found
+from services.exceptions import not_found, bad_request
 from typing import Any
 from uuid import UUID
 from datetime import datetime
@@ -137,7 +137,7 @@ async def why(
         try:
             UUID(parent_id)
         except ValueError:
-            raise HTTPException(status_code=400, detail="parent_id is not a valid UUID")
+            raise bad_request("parent_id is not a valid UUID")
 
     rows = await pool.fetch(
         """
@@ -179,10 +179,7 @@ async def why(
             else None
         )
         if actual_parent != parent_id:
-            raise HTTPException(
-                status_code=400,
-                detail="parent_id does not match this event's actual parent.",
-            )
+            raise bad_request("parent_id does not match this event's actual parent.")
 
     return {
         "event_id": event_id,
