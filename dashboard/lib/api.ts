@@ -181,8 +181,16 @@ export async function getEvents(
   return Array.isArray(data) ? data : data.events ?? []
 }
 
-export async function getWhyChain(token: string, eventId: string, depth?: number): Promise<WhyChain> {
-  const qs = depth ? `?depth=${depth}` : ''
+export async function getWhyChain(
+  token: string,
+  eventId: string,
+  depth?: number,
+  parentId?: string,
+): Promise<WhyChain> {
+  const params = new URLSearchParams()
+  if (depth) params.set('depth', String(depth))
+  if (parentId) params.set('parent_id', parentId)
+  const qs = params.toString() ? `?${params.toString()}` : ''
   return apiFetch(`/v1/events/${eventId}/why${qs}`, token)
 }
 

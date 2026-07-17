@@ -113,6 +113,15 @@ async def query_events(
 async def why(
     event_id: str,
     depth: int = Query(default=10, le=50),
+    parent_id: str | None = Query(
+        default=None,
+        description=(
+            "Optional integrity guard. When supplied, the trace only proceeds if this "
+            "event's real parent_event_id matches it; otherwise 400. Leave unset for "
+            "root/origin events (which have no parent). Tenant isolation is always "
+            "enforced regardless — this is an explicit assertion, not the access control."
+        ),
+    ),
     tenant: dict = Depends(get_tenant),
 ):
     pool = get_pool()
@@ -122,6 +131,12 @@ async def why(
         UUID(event_id)
     except ValueError:
         raise HTTPException(status_code=404, detail="Event not found")
+
+    if parent_id is not None:
+        try:
+            UUID(parent_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="parent_id is not a valid UUID")
 
     rows = await pool.fetch(
         """
@@ -151,6 +166,22 @@ async def why(
 
     if not rows:
         raise HTTPException(status_code=404, detail="Event not found")
+
+    # Integrity guard: the searched event's real parent must match the supplied
+    # parent_id. (Tenant isolation is already enforced by the query above — this
+    # is an explicit caller assertion, not the access-control boundary.)
+    if parent_id is not None:
+        searched = next((r for r in rows if str(r["event_id"]) == event_id), None)
+        actual_parent = (
+            str(searched["parent_event_id"])
+            if searched and searched["parent_event_id"]
+            else None
+        )
+        if actual_parent != parent_id:
+            raise HTTPException(
+                status_code=400,
+                detail="parent_id does not match this event's actual parent.",
+            )
 
     return {
         "event_id": event_id,

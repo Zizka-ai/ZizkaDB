@@ -518,7 +518,7 @@ Router prefixes are mounted in `core/main.py:66-79`.
 | Dashboard fn | Method · Path | Backend |
 |---|---|---|
 | `getEvents` | GET `/v1/events` | `events.py:64` |
-| `getWhyChain` | GET `/v1/events/{id}/why?depth=` | `events.py:123` — used by `agents/[id]/page.tsx`'s Why tab and the standalone `dashboard/debugging/why/page.tsx` screen (§19.x) |
+| `getWhyChain` | GET `/v1/events/{id}/why?depth=&parent_id=` | `events.py:123` — used by `agents/[id]/page.tsx`'s Why tab and the standalone `dashboard/debugging/why/page.tsx` screen (§19.3a). `parent_id` is an optional, server-enforced integrity guard (400 on mismatch); tenant isolation is the real boundary |
 | `timeTravel` | GET `/v1/events/at` | `events.py:173` |
 | `searchEvents` | POST `/v1/search` | `search.py:18` |
 | `getMemoryDiff` | GET `/v1/memory/diff/{sessionId}` | `memory.py:190` |
@@ -674,9 +674,13 @@ Exhaustive behavior per file (state, effects, API order, branches, edge cases, n
   page walks its `parent_id` chain via `getWhyChain` and presents the lineage as a
   **sequential, CloudWatch-style story timeline** from origin → failure, with the root cause
   called out. Distinct from the same `getWhyChain` call used as a tab in `agents/[id]/page.tsx`.
-- **Single input, no depth knob:** the only field is the error `event_id`. The client always
-  requests `getWhyChain(token, eventId, MAX_DEPTH=50)` internally, so the full lineage is
-  always captured — there is intentionally no user-facing "depth" control.
+- **Inputs, no depth knob:** the required field is the error `event_id`; a second **Parent
+  ID** field is an optional, server-enforced integrity guard. The client always requests
+  `getWhyChain(token, eventId, MAX_DEPTH=50, parentId?)` — full lineage always captured, no
+  user-facing "depth" control. When Parent ID is set, the backend (`events.py::why`,
+  `?parent_id=`) returns **400** unless it matches the event's real `parent_event_id`; blank =
+  normal trace (required for root/origin events, which have no parent). Tenant isolation is the
+  actual access boundary — the guard is an explicit caller assertion, not the security control.
 - **State:** `eventIdInput` (form), `chain: WhyChain | null`, `loading`, `error`,
   `expanded: Set<eventId>`, `copiedKey`, `highlighted`. Derived via `useMemo`: `loadedIds`,
   and `rootCauseIndex` = index of the **first** (earliest) event whose type matches the error

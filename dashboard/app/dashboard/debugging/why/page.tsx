@@ -104,6 +104,12 @@ function friendlyError(err: unknown): string {
   if (m.includes("invalid token") || m.includes("401") || m.includes("unauthorized")) {
     return "Your session expired. Please sign in again.";
   }
+  if (m.includes("does not match")) {
+    return "The Parent ID doesn't match this event's actual parent. Double-check you're tracing the right event — or leave Parent ID blank for a root/origin event (one with no parent).";
+  }
+  if (m.includes("parent_id is not a valid uuid")) {
+    return "The Parent ID isn't a valid UUID. Paste the parent_id exactly, or leave it blank.";
+  }
   return msg || "Something went wrong loading the causal chain.";
 }
 
@@ -130,8 +136,10 @@ function WhyPageInner() {
   const searchParams = useSearchParams();
 
   const urlEventId = searchParams.get("event_id") ?? "";
+  const urlParentId = searchParams.get("parent_id") ?? "";
 
   const [eventIdInput, setEventIdInput] = useState(urlEventId);
+  const [parentIdInput, setParentIdInput] = useState(urlParentId);
   const [chain, setChain] = useState<WhyChain | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -160,12 +168,26 @@ function WhyPageInner() {
       return;
     }
 
+    const parentTrimmed = urlParentId.trim();
+    if (parentTrimmed && !UUID_RE.test(parentTrimmed)) {
+      setError(
+        "The Parent ID isn't a valid UUID. Paste the parent_id exactly, or leave it blank.",
+      );
+      setChain(null);
+      return;
+    }
+
     (async () => {
       setLoading(true);
       setError("");
       try {
         const token = requireAuth();
-        const result = await getWhyChain(token, trimmed, MAX_DEPTH);
+        const result = await getWhyChain(
+          token,
+          trimmed,
+          MAX_DEPTH,
+          parentTrimmed || undefined,
+        );
         if (cancelled) return;
         setChain(result);
         // Open the payloads that matter for root-causing by default: every
@@ -191,7 +213,7 @@ function WhyPageInner() {
     return () => {
       cancelled = true;
     };
-  }, [urlEventId]);
+  }, [urlEventId, urlParentId]);
 
   const loadedIds = useMemo(
     () => new Set((chain?.chain ?? []).map((e) => e.event_id)),
@@ -204,20 +226,24 @@ function WhyPageInner() {
     return chain.chain.findIndex((e) => isErrorEvent(e.event));
   }, [chain]);
 
-  function navigateTo(eventId: string) {
+  function navigateTo(eventId: string, parentId?: string) {
     const params = new URLSearchParams({ event_id: eventId });
+    if (parentId) params.set("parent_id", parentId);
     router.push(`/dashboard/debugging/why?${params.toString()}`);
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const v = eventIdInput.trim();
-    if (v) navigateTo(v);
+    if (v) navigateTo(v, parentIdInput.trim() || undefined);
   }
 
-  function traceEvent(eventId: string) {
+  // Re-trace from a node. Carries that node's own parent_id so the integrity
+  // guard applies automatically; origin nodes (no parent) re-trace unguarded.
+  function traceEvent(eventId: string, parentId?: string) {
     setEventIdInput(eventId);
-    navigateTo(eventId);
+    setParentIdInput(parentId ?? "");
+    navigateTo(eventId, parentId);
   }
 
   function jumpToNode(eventId: string) {
@@ -267,32 +293,53 @@ function WhyPageInner() {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2 mb-6">
-        <input
-          value={eventIdInput}
-          onChange={(e) => setEventIdInput(e.target.value)}
-          placeholder="Error event ID (e.g. 5cdb3f8c-3a85-46df-8034-184fb89a66a8)"
-          autoFocus
-          spellCheck={false}
-          aria-label="Error event ID"
-          className="flex-1 rounded-xl px-4 py-3 text-sm font-mono text-white outline-none transition"
-          style={{ background: "#111", border: "1px solid #262626" }}
-          onFocus={(e) => (e.target.style.borderColor = "#22c55e")}
-          onBlur={(e) => (e.target.style.borderColor = "#262626")}
-        />
-        <button
-          type="submit"
-          disabled={loading || !eventIdInput.trim()}
-          className="rounded-xl px-6 py-3 text-sm font-medium text-black disabled:opacity-40 transition shrink-0"
-          style={{ background: "#22c55e" }}
-        >
-          {loading ? (
-            <Loader2 size={14} className="animate-spin mx-auto" />
-          ) : (
-            "Trace root cause"
-          )}
-        </button>
+      <form onSubmit={handleSubmit} className="mb-2">
+        <div className="flex flex-col gap-2">
+          <input
+            value={eventIdInput}
+            onChange={(e) => setEventIdInput(e.target.value)}
+            placeholder="Error event ID (e.g. 5cdb3f8c-3a85-46df-8034-184fb89a66a8)"
+            autoFocus
+            spellCheck={false}
+            aria-label="Error event ID"
+            className="w-full rounded-xl px-4 py-3 text-sm font-mono text-white outline-none transition"
+            style={{ background: "#111", border: "1px solid #262626" }}
+            onFocus={(e) => (e.target.style.borderColor = "#22c55e")}
+            onBlur={(e) => (e.target.style.borderColor = "#262626")}
+          />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              value={parentIdInput}
+              onChange={(e) => setParentIdInput(e.target.value)}
+              placeholder="Parent ID — optional integrity check (leave blank for a root event)"
+              spellCheck={false}
+              aria-label="Parent ID (optional integrity check)"
+              className="flex-1 rounded-xl px-4 py-3 text-sm font-mono text-white outline-none transition"
+              style={{ background: "#0d0d0d", border: "1px solid #1f1f1f" }}
+              onFocus={(e) => (e.target.style.borderColor = "#3f3f46")}
+              onBlur={(e) => (e.target.style.borderColor = "#1f1f1f")}
+            />
+            <button
+              type="submit"
+              disabled={loading || !eventIdInput.trim()}
+              className="rounded-xl px-6 py-3 text-sm font-medium text-black disabled:opacity-40 transition shrink-0"
+              style={{ background: "#22c55e" }}
+            >
+              {loading ? (
+                <Loader2 size={14} className="animate-spin mx-auto" />
+              ) : (
+                "Trace root cause"
+              )}
+            </button>
+          </div>
+        </div>
       </form>
+      <p className="text-xs mb-6" style={{ color: "#666" }}>
+        Parent ID is an optional guard: when set, the trace only runs if it
+        matches the event&apos;s real parent (enforced server-side). Your account
+        boundary always applies regardless — you can never trace another
+        tenant&apos;s events.
+      </p>
 
       {/* Error */}
       {error && (
@@ -352,7 +399,9 @@ function WhyPageInner() {
                   }
                   onToggleExpand={() => toggleExpanded(event.event_id)}
                   onCopy={copyText}
-                  onTrace={() => traceEvent(event.event_id)}
+                  onTrace={() =>
+                    traceEvent(event.event_id, event.parent_id ?? undefined)
+                  }
                   onJumpToParent={() =>
                     event.parent_id && jumpToNode(event.parent_id)
                   }
