@@ -9,15 +9,16 @@ import logging
 import os
 import re
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, File, Query, Request, UploadFile
+from services.exceptions import bad_request, not_found
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from api.utils import check_rate, client_ip
 from db.connection import get_pool
+from services.rate_limiter import RateLimiter, InMemoryStorage, SlidingWindowStrategy
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -27,10 +28,17 @@ MAX_UPLOAD_BYTES = 3 * 1024 * 1024
 ALLOWED_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 CATEGORIES = {"question", "experience", "showcase"}
 
-# Simple in-memory rate limit: IP -> list of timestamps
-_rate: dict[str, list[float]] = {}
+
 RATE_WINDOW_SEC = 3600
 RATE_MAX_POSTS = 10
+
+community_limiter = RateLimiter(
+    limit=RATE_MAX_POSTS,
+    window_sec=RATE_WINDOW_SEC,
+    storage=InMemoryStorage(),
+    strategy=SlidingWindowStrategy(),
+    detail="Too many posts. Try again later."
+)
 
 
 class CreatePostBody(BaseModel):
@@ -48,7 +56,6 @@ class CreateReplyBody(BaseModel):
     author_email: str | None = Field(default=None, max_length=255)
     body: str = Field(min_length=2, max_length=8000)
     website: str | None = None
-
 
 
 
@@ -108,7 +115,7 @@ async def get_post(post_id: str, request: Request):
     try:
         pid = uuid.UUID(post_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Post not found")
+        raise not_found("Post not found")
 
     post = await pool.fetchrow(
         """
@@ -119,7 +126,7 @@ async def get_post(post_id: str, request: Request):
         pid,
     )
     if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
+        raise not_found("Post not found")
 
     replies = await pool.fetch(
         """
@@ -155,11 +162,10 @@ async def get_post(post_id: str, request: Request):
 @router.post("/posts", status_code=201)
 async def create_post(body: CreatePostBody, request: Request):
     if body.website:
-        raise HTTPException(status_code=400, detail="Invalid submission")
+        raise bad_request("Invalid submission")
     if body.category not in CATEGORIES:
-        raise HTTPException(status_code=400, detail="Invalid category")
-
-    check_rate(_rate, client_ip(request), RATE_WINDOW_SEC, RATE_MAX_POSTS, "Too many posts. Try again later.")
+        raise bad_request("Invalid category")
+    await community_limiter.check(client_ip(request))
     pool = get_pool()
     urls = [u for u in body.image_urls if isinstance(u, str) and u.startswith("/v1/community/media/")][:6]
 
@@ -184,20 +190,19 @@ async def create_post(body: CreatePostBody, request: Request):
 @router.post("/posts/{post_id}/replies", status_code=201)
 async def create_reply(post_id: str, body: CreateReplyBody, request: Request):
     if body.website:
-        raise HTTPException(status_code=400, detail="Invalid submission")
-
-    check_rate(_rate, client_ip(request), RATE_WINDOW_SEC, RATE_MAX_POSTS, "Too many posts. Try again later.")
+        raise bad_request("Invalid submission")
+    await community_limiter.check(client_ip(request))
     pool = get_pool()
     try:
         pid = uuid.UUID(post_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Post not found")
+        raise not_found("Post not found")
 
     exists = await pool.fetchval(
         "SELECT 1 FROM community_posts WHERE post_id = $1", pid,
     )
     if not exists:
-        raise HTTPException(status_code=404, detail="Post not found")
+        raise not_found("Post not found")
 
     row = await pool.fetchrow(
         """
@@ -223,18 +228,18 @@ async def create_reply(post_id: str, body: CreateReplyBody, request: Request):
 
 @router.post("/upload")
 async def upload_image(request: Request, file: UploadFile = File(...)):
-    check_rate(_rate, client_ip(request) + ":upload", RATE_WINDOW_SEC, RATE_MAX_POSTS, "Too many uploads. Try again later.")
+    await community_limiter.check(client_ip(request) + ":upload")
 
     if not file.filename:
-        raise HTTPException(status_code=400, detail="No file")
+        raise bad_request("No file")
 
     ext = Path(file.filename).suffix.lower()
     if ext not in ALLOWED_EXT:
-        raise HTTPException(status_code=400, detail="Use PNG, JPG, WEBP, or GIF")
+        raise bad_request("Use PNG, JPG, WEBP, or GIF")
 
     data = await file.read()
     if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=400, detail="Image must be under 3MB")
+        raise bad_request("Image must be under 3MB")
 
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     name = f"{uuid.uuid4().hex}{ext}"
@@ -248,10 +253,10 @@ async def upload_image(request: Request, file: UploadFile = File(...)):
 async def serve_media(filename: str):
     safe = re.sub(r"[^a-zA-Z0-9._-]", "", filename)
     if not safe or safe != filename:
-        raise HTTPException(status_code=404, detail="Not found")
+        raise not_found("Not found")
     path = UPLOAD_DIR / safe
     if not path.is_file():
-        raise HTTPException(status_code=404, detail="Not found")
+        raise not_found("Not found")
     media = {
         ".png": "image/png",
         ".jpg": "image/jpeg",

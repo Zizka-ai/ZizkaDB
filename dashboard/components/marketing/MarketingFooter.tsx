@@ -52,18 +52,10 @@ export function MarketingFooter() {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <a
-              href="https://github.com/Zizka-ai/ZizkaDB"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}
-            >
-              GitHub →
-            </a>
-            <a
               href={ZIZKADB_COMPANY.zizkaAiUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ fontSize: 13, color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}
+              style={{ fontSize: 14, color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}
             >
               zizka.ai →
             </a>

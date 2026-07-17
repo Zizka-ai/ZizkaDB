@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from services.exceptions import bad_request, internal_error
 from pydantic import BaseModel, field_validator
 
 from api.deps import require_dashboard_session
@@ -43,7 +44,7 @@ async def choose_plan(body: SelectPlanBody, tenant: dict = Depends(require_dashb
         row = await select_plan(user_id=tenant["user_id"], plan=body.plan)
         return billing_status_payload(row)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise bad_request(str(e))
     except Exception as e:
         log.error("select plan failed: %s", e)
-        raise HTTPException(status_code=500, detail="Could not save plan. Try again.")
+        raise internal_error("Could not save plan. Try again.")

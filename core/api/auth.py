@@ -3,7 +3,14 @@ import time
 import logging
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, Response, Depends
+from services.exceptions import (
+    conflict,
+    not_found,
+    internal_error,
+    unauthorized,
+    forbidden,
+)
 from pydantic import BaseModel, EmailStr
 from services.auth import request_otp, verify_otp, _issue_tokens, email_exists
 from services.api_keys import (
@@ -13,8 +20,8 @@ from services.api_keys import (
     revoke_api_key_record,
 )
 from api.deps import get_tenant, require_dashboard_session
-from fastapi import Depends
 from db.connection import get_pool
+from services.rate_limiter import RateLimiter, InMemoryStorage, SlidingWindowStrategy
 from services.event_write import write_event
 
 router = APIRouter()
@@ -23,21 +30,15 @@ log = logging.getLogger(__name__)
 # Per-email OTP request limits (in-memory; resets after window)
 _OTP_RATE_WINDOW_SEC = 15 * 60   # 15 minutes
 _OTP_RATE_MAX = 10               # max requests per email per window
-_otp_rate: dict[str, list[float]] = {}
 
+otp_limiter = RateLimiter(
+    limit=_OTP_RATE_MAX,
+    window_sec=_OTP_RATE_WINDOW_SEC,
+    storage=InMemoryStorage(),
+    strategy=SlidingWindowStrategy(),
+    detail="Too many code requests. Wait 15 minutes and try again."
+)
 
-def _check_otp_rate_limit(email: str) -> None:
-    key = email.lower().strip()
-    now = time.time()
-    window_start = now - _OTP_RATE_WINDOW_SEC
-    hits = [t for t in _otp_rate.get(key, []) if t > window_start]
-    if len(hits) >= _OTP_RATE_MAX:
-        raise HTTPException(
-            status_code=429,
-            detail="Too many code requests. Wait 15 minutes and try again.",
-        )
-    hits.append(now)
-    _otp_rate[key] = hits
 
 _DEV_TENANT_ID = "00000000-0000-0000-0000-000000000001"
 _DEV_USER_ID   = "00000000-0000-0000-0000-000000000001"
@@ -64,18 +65,16 @@ class CreateAPIKeyBody(BaseModel):
 @router.post("/request-otp")
 async def request_otp_route(body: RequestOTPBody):
     email = body.email.lower().strip()
-    _check_otp_rate_limit(email)
+    await otp_limiter.check(email)
 
     if body.intent == "signup" and await email_exists(email):
-        raise HTTPException(
-            status_code=409,
-            detail="This email is already registered. Please sign in instead.",
+        raise conflict(
+            "This email is already registered. Please sign in instead."
         )
 
     if body.intent == "login" and not await email_exists(email):
-        raise HTTPException(
-            status_code=404,
-            detail="No account found for this email. Create an account to get started.",
+        raise not_found(
+            "No account found for this email. Create an account to get started."
         )
 
     try:
@@ -83,7 +82,7 @@ async def request_otp_route(body: RequestOTPBody):
         return {"message": "Code sent"}
     except Exception as e:
         log.error(f"request_otp failed for {email}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to send code. Check server logs.")
+        raise internal_error("Failed to send code. Check server logs.")
 
 
 @router.post("/verify-otp")
@@ -98,12 +97,11 @@ async def verify_otp_route(body: VerifyOTPBody, response: Response):
             marketing_consent=body.marketing_consent,
         )
     except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        raise unauthorized(str(e))
     except Exception as e:
         log.exception("verify_otp failed for %s: %s", email, e)
-        raise HTTPException(
-            status_code=500,
-            detail="Could not complete account setup. Please request a new code and try again.",
+        raise internal_error(
+            "Could not complete account setup. Please request a new code and try again."
         )
 
     from services.billing import billing_status_payload, fetch_user_billing
@@ -196,7 +194,7 @@ async def revoke_api_key(
     """Revoke an API key. The key stops working immediately."""
     pool = get_pool()
     if not await revoke_api_key_record(pool, tenant["tenant_id"], key_id):
-        raise HTTPException(status_code=404, detail="API key not found")
+        raise not_found("API key not found")
     return {"revoked": True, "key_id": key_id}
 
 
@@ -208,7 +206,7 @@ async def dev_token_route():
     is accessible without email / signup.
     """
     if os.getenv("ENV", "development") != "development":
-        raise HTTPException(status_code=403, detail="Not available in production")
+        raise forbidden("Not available in production")
 
     pool = get_pool()
     await _ensure_dev_tenant(pool)

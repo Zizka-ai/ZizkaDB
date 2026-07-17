@@ -1,6 +1,7 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from services.exceptions import bad_request
 from pydantic import BaseModel
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
@@ -29,12 +30,9 @@ async def semantic_search(
 
     embedding = await generate_embedding(body.query, tenant_id)
     if not embedding:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "Embedding generation failed. Configure embeddings in Dashboard → Settings "
-                "(platform key or your OpenAI API key)."
-            ),
+        raise bad_request(
+            "Embedding generation failed. Configure embeddings in Dashboard → Settings "
+            "(platform key or your OpenAI API key)."
         )
 
     qdrant = get_qdrant()

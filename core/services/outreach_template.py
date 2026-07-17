@@ -32,6 +32,8 @@ def build_outreach_html(
     image_caption: Optional[str],
     cta_label: Optional[str],
     cta_url: Optional[str],
+    discord_cta_label: Optional[str] = None,
+    discord_cta_url: Optional[str] = None,
     github_url: str,
     pixel_url: str,
     sign_off: str,
@@ -56,15 +58,30 @@ def build_outreach_html(
         </div>
         """
 
-    cta_block = ""
+    buttons = []
     if cta_label and cta_url:
-        cta_block = f"""
-        <div style="margin:28px 0 8px;text-align:center;">
-          <a href="{_escape(cta_url)}"
+        buttons.append(
+            f"""<a href="{_escape(cta_url)}"
              style="display:inline-block;background:#22c55e;color:#0a0a0a;text-decoration:none;
                     font-weight:700;font-size:14px;padding:12px 22px;border-radius:8px;">
             {_escape(cta_label)}
-          </a>
+          </a>"""
+        )
+    if discord_cta_label and discord_cta_url:
+        buttons.append(
+            f"""<a href="{_escape(discord_cta_url)}"
+             style="display:inline-block;background:#5865F2;color:#ffffff;text-decoration:none;
+                    font-weight:700;font-size:14px;padding:12px 22px;border-radius:8px;">
+            {_escape(discord_cta_label)}
+          </a>"""
+        )
+
+    cta_block = ""
+    if buttons:
+        spacer = '<div style="height:12px;line-height:12px;font-size:12px;">&nbsp;</div>'
+        cta_block = f"""
+        <div style="margin:28px 0 8px;text-align:center;">
+          {spacer.join(buttons)}
         </div>
         """
 
@@ -126,6 +143,8 @@ def build_outreach_text(
     image_url: Optional[str],
     cta_label: Optional[str],
     cta_url: Optional[str],
+    discord_cta_label: Optional[str] = None,
+    discord_cta_url: Optional[str] = None,
     github_url: str,
     sign_off: str,
 ) -> str:
@@ -136,6 +155,9 @@ def build_outreach_text(
         lines.append("")
     if cta_label and cta_url:
         lines.append(f"{cta_label}: {cta_url}")
+        lines.append("")
+    if discord_cta_label and discord_cta_url:
+        lines.append(f"{discord_cta_label}: {discord_cta_url}")
         lines.append("")
     lines.append(f"GitHub: {github_url}")
     lines.append("")

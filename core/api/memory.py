@@ -7,7 +7,8 @@ replacement for LLM-provided memory:
   DELETE /v1/memory/forget →  GDPR forget by any metadata field
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
+from services.exceptions import bad_request, not_found
 from pydantic import BaseModel
 from typing import Any
 import json
@@ -78,8 +79,7 @@ async def get_context(
     semantic_rows = []
     embedding = await generate_embedding(body.task, tenant_id)
     if not embedding:
-        raise HTTPException(
-            status_code=400,
+        raise bad_request(
             detail=(
                 "Embedding generation failed. Configure embeddings in Dashboard → Settings "
                 "(platform key or your OpenAI API key)."
@@ -223,7 +223,7 @@ async def session_diff(
     )
 
     if not rows:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise not_found("Session not found")
 
     agent_id = rows[0]["agent_id"]
     events = []

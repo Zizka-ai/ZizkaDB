@@ -22,12 +22,13 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Query, Security
+from fastapi import APIRouter, Depends, Query, Security
+from services.exceptions import not_found, internal_error, unauthorized
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr
 
 from db.connection import get_pool
-from api.auth import _check_otp_rate_limit
+from api.auth import otp_limiter
 from services.auth import JWT_SECRET, request_otp, verify_otp
 
 router = APIRouter()
@@ -74,14 +75,14 @@ async def require_admin(
     credentials: HTTPAuthorizationCredentials = Security(bearer),
 ) -> dict:
     if not credentials:
-        raise HTTPException(status_code=404, detail="Not Found")
+        raise not_found("Not Found")
     try:
         payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=["HS256"])
     except Exception:
-        raise HTTPException(status_code=404, detail="Not Found")
+        raise not_found("Not Found")
 
     if not payload.get("is_admin") or not _is_admin_email(payload.get("email", "")):
-        raise HTTPException(status_code=404, detail="Not Found")
+        raise not_found("Not Found")
     return payload
 
 
@@ -90,27 +91,27 @@ async def require_admin(
 @router.post("/auth/request-otp")
 async def admin_request_otp(body: AdminOTPRequest):
     if not _is_admin_email(body.email):
-        raise HTTPException(status_code=404, detail="Not Found")
-    _check_otp_rate_limit(ADMIN_EMAIL)
+        raise not_found("Not Found")
+    await otp_limiter.check(ADMIN_EMAIL)
     try:
         await request_otp(ADMIN_EMAIL)
     except Exception as e:
         log.error(f"admin OTP send failed: {e}")
-        raise HTTPException(status_code=500, detail="Failed to send code")
+        raise internal_error("Failed to send code")
     return {"message": "Code sent"}
 
 
 @router.post("/auth/verify-otp")
 async def admin_verify_otp(body: AdminOTPVerify):
     if not _is_admin_email(body.email):
-        raise HTTPException(status_code=404, detail="Not Found")
+        raise not_found("Not Found")
     try:
         # We reuse verify_otp() to validate + consume the OTP record.
         # We discard its returned tokens; admin gets a separately minted
         # token with is_admin=true and no tenant context.
         await verify_otp(ADMIN_EMAIL, body.otp, intent="login")
     except ValueError as e:
-        raise HTTPException(status_code=401, detail=str(e))
+        raise unauthorized(str(e))
 
     return {"access_token": _issue_admin_token(), "token_type": "bearer"}
 

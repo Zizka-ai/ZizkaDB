@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
-from api.demo_requests import _rate as demo_rate
+from api.demo_requests import demo_limiter
 from main import app
 
 client = TestClient(app)
@@ -35,7 +35,8 @@ def _mock_pool_row():
 
 class TestDemoRequests:
     def setup_method(self):
-        demo_rate.clear()
+        with demo_limiter.storage._lock:
+            demo_limiter.storage._data.clear()
 
     @patch("api.demo_requests.get_pool")
     def test_create_minimal_fields(self, mock_get_pool):
@@ -68,7 +69,8 @@ class TestDemoRequests:
     def test_valid_sources_accepted(self, mock_get_pool):
         mock_get_pool.return_value = _mock_pool_row()
         for source in ("enterprise", "landing", "newsletter"):
-            demo_rate.clear()
+            with demo_limiter.storage._lock:
+                demo_limiter.storage._data.clear()
             response = client.post(
                 "/v1/demo-requests",
                 json={**VALID_PAYLOAD, "source": source},

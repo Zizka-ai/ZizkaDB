@@ -186,6 +186,8 @@ async def init_db():
             image_caption   TEXT,
             cta_label       VARCHAR(80),
             cta_url         TEXT,
+            discord_cta_label VARCHAR(80),
+            discord_cta_url TEXT,
             github_url      TEXT,
             sign_off        TEXT,
             status          VARCHAR(32) NOT NULL DEFAULT 'queued',
@@ -210,6 +212,13 @@ async def init_db():
         );
         CREATE INDEX IF NOT EXISTS idx_email_outreach_opens_send
             ON email_outreach_opens (send_id, opened_at DESC);
+    """)
+
+    await _pg_pool.execute("""
+        ALTER TABLE email_outreach_sends
+            ADD COLUMN IF NOT EXISTS discord_cta_label VARCHAR(80);
+        ALTER TABLE email_outreach_sends
+            ADD COLUMN IF NOT EXISTS discord_cta_url TEXT;
     """)
 
     _redis = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))

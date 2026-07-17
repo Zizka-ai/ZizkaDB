@@ -533,6 +533,8 @@ export interface OutreachComposePayload {
   image_caption?: string
   cta_label?: string
   cta_url?: string
+  discord_cta_label?: string
+  discord_cta_url?: string
   github_url?: string
   sign_off?: string
 }

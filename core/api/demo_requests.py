@@ -5,20 +5,29 @@ Public demo request form — landing page "Book demo" submissions.
 from __future__ import annotations
 
 import logging
-
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Request, status
+from services.exceptions import make_exception, bad_request
 from pydantic import BaseModel, EmailStr, Field
 
-from api.utils import check_rate, client_ip
+from api.utils import client_ip
 from db.connection import get_pool
+from services.rate_limiter import RateLimiter, InMemoryStorage, SlidingWindowStrategy
 
 router = APIRouter()
 log = logging.getLogger(__name__)
 
-_rate: dict[str, list[float]] = {}
+
 RATE_WINDOW_SEC = 3600
 RATE_MAX = 8
 VALID_SOURCES = frozenset({"enterprise", "landing", "newsletter"})
+
+demo_limiter = RateLimiter(
+    limit=RATE_MAX,
+    window_sec=RATE_WINDOW_SEC,
+    storage=InMemoryStorage(),
+    strategy=SlidingWindowStrategy(),
+    detail="Too many requests. Try again later."
+)
 
 
 class CreateDemoRequestBody(BaseModel):
@@ -34,17 +43,18 @@ class CreateDemoRequestBody(BaseModel):
 
 
 
+
 @router.post("", status_code=201)
 async def create_demo_request(body: CreateDemoRequestBody, request: Request):
     if body.botcheck:
-        raise HTTPException(status_code=400, detail="Invalid submission")
+        raise bad_request("Invalid submission")
 
     ip = client_ip(request)
-    check_rate(_rate, ip, RATE_WINDOW_SEC, RATE_MAX)
+    await demo_limiter.check(ip)
 
     source = (body.source.strip() or None) if body.source else None
     if source and source not in VALID_SOURCES:
-        raise HTTPException(status_code=422, detail="Invalid source")
+        raise make_exception(status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid source")
 
     pool = get_pool()
     row = await pool.fetchrow(

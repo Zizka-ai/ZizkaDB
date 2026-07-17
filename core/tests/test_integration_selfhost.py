@@ -80,7 +80,7 @@ async def test_memory_context_and_forget(api_headers):
                 "data": {"user_id": forget_value, "note": "memory integration"},
             },
         )
-        assert log_response.status_code == 200
+        assert log_response.status_code == 201
 
         context_response = await client.post(
             "/v1/memory/context",

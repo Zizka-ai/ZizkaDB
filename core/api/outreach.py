@@ -30,6 +30,8 @@ public_router = APIRouter()
 
 DAILY_SEND_LIMIT = int(os.getenv("OUTREACH_DAILY_LIMIT", "100"))
 GITHUB_DEFAULT = "https://github.com/Zizka-ai/ZizkaDB"
+DISCORD_DEFAULT = "https://discord.gg/EBjAABKkh"
+DISCORD_LABEL_DEFAULT = "Join our Discord community"
 
 # 1×1 transparent GIF
 _PIXEL_GIF = (
@@ -51,6 +53,8 @@ class OutreachSendRequest(BaseModel):
     image_caption: Optional[str] = Field(None, max_length=300)
     cta_label: Optional[str] = Field("Star on GitHub", max_length=80)
     cta_url: Optional[str] = Field(GITHUB_DEFAULT, max_length=500)
+    discord_cta_label: Optional[str] = Field(DISCORD_LABEL_DEFAULT, max_length=80)
+    discord_cta_url: Optional[str] = Field(DISCORD_DEFAULT, max_length=500)
     github_url: str = Field(GITHUB_DEFAULT, max_length=500)
     sign_off: str = Field(
         "Best,\nFellow Developer,\nMir",
@@ -65,6 +69,8 @@ class OutreachPreviewRequest(BaseModel):
     image_caption: Optional[str] = Field(None, max_length=300)
     cta_label: Optional[str] = Field("Star on GitHub", max_length=80)
     cta_url: Optional[str] = Field(GITHUB_DEFAULT, max_length=500)
+    discord_cta_label: Optional[str] = Field(DISCORD_LABEL_DEFAULT, max_length=80)
+    discord_cta_url: Optional[str] = Field(DISCORD_DEFAULT, max_length=500)
     github_url: str = Field(GITHUB_DEFAULT, max_length=500)
     sign_off: str = Field(
         "Best,\nFellow Developer,\nMir",
@@ -158,6 +164,8 @@ async def outreach_preview(body: OutreachPreviewRequest, _: dict = Depends(requi
         image_caption=body.image_caption,
         cta_label=body.cta_label,
         cta_url=body.cta_url,
+        discord_cta_label=body.discord_cta_label,
+        discord_cta_url=body.discord_cta_url,
         github_url=body.github_url,
         pixel_url=pixel_url,
         sign_off=body.sign_off,
@@ -168,6 +176,8 @@ async def outreach_preview(body: OutreachPreviewRequest, _: dict = Depends(requi
         image_url=body.image_url,
         cta_label=body.cta_label,
         cta_url=body.cta_url,
+        discord_cta_label=body.discord_cta_label,
+        discord_cta_url=body.discord_cta_url,
         github_url=body.github_url,
         sign_off=body.sign_off,
     )
@@ -193,6 +203,8 @@ async def outreach_send(body: OutreachSendRequest, _: dict = Depends(require_adm
         image_caption=body.image_caption,
         cta_label=body.cta_label,
         cta_url=body.cta_url,
+        discord_cta_label=body.discord_cta_label,
+        discord_cta_url=body.discord_cta_url,
         github_url=body.github_url,
         pixel_url=pixel_url,
         sign_off=body.sign_off,
@@ -203,6 +215,8 @@ async def outreach_send(body: OutreachSendRequest, _: dict = Depends(require_adm
         image_url=body.image_url,
         cta_label=body.cta_label,
         cta_url=body.cta_url,
+        discord_cta_label=body.discord_cta_label,
+        discord_cta_url=body.discord_cta_url,
         github_url=body.github_url,
         sign_off=body.sign_off,
     )
@@ -211,8 +225,9 @@ async def outreach_send(body: OutreachSendRequest, _: dict = Depends(require_adm
         """
         INSERT INTO email_outreach_sends (
             send_id, to_email, subject, recipient_name, body_text, html_body,
-            image_url, image_caption, cta_label, cta_url, github_url, sign_off, status
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'queued')
+            image_url, image_caption, cta_label, cta_url,
+            discord_cta_label, discord_cta_url, github_url, sign_off, status
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'queued')
         """,
         send_id,
         body.to_email.lower().strip(),
@@ -224,6 +239,8 @@ async def outreach_send(body: OutreachSendRequest, _: dict = Depends(require_adm
         (body.image_caption or "").strip() or None,
         (body.cta_label or "").strip() or None,
         (body.cta_url or "").strip() or None,
+        (body.discord_cta_label or "").strip() or None,
+        (body.discord_cta_url or "").strip() or None,
         body.github_url.strip(),
         body.sign_off.strip(),
     )

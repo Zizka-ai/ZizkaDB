@@ -237,6 +237,8 @@ CREATE TABLE IF NOT EXISTS email_outreach_sends (
     image_caption   TEXT,
     cta_label       VARCHAR(80),
     cta_url         TEXT,
+    discord_cta_label VARCHAR(80),
+    discord_cta_url TEXT,
     github_url      TEXT,
     sign_off        TEXT,
     status          VARCHAR(32) NOT NULL DEFAULT 'queued',

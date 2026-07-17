@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
-from api.auth import _otp_rate
+from api.auth import otp_limiter
 from services.auth import (
     _LOGIN_NO_ACCOUNT,
     _SIGNUP_ALREADY_REGISTERED,
@@ -24,7 +24,8 @@ TEST_OTP_ROW = {"otp_id": "otp-1", "otp_hash": TEST_OTP_HASH}
 
 class TestRequestOtpIntent:
     def setup_method(self):
-        _otp_rate.clear()
+        import asyncio
+        asyncio.run(otp_limiter.storage.clear())
 
     @patch("api.auth.request_otp", new_callable=AsyncMock)
     @patch("api.auth.email_exists", new_callable=AsyncMock)

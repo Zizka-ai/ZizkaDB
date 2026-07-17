@@ -2,7 +2,8 @@ import json
 import re
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
+from services.exceptions import bad_request, conflict, not_found
 from pydantic import BaseModel, Field
 
 from api.deps import assert_agent_allowed, get_tenant, require_dashboard_session
@@ -23,9 +24,8 @@ _AGENT_ID_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,254}$")
 def _validate_agent_id(agent_id: str) -> str:
     agent_id = agent_id.strip()
     if not agent_id or not _AGENT_ID_RE.match(agent_id):
-        raise HTTPException(
-            status_code=400,
-            detail="agent_id must be 1–255 chars: letters, numbers, dots, dashes, underscores",
+        raise bad_request(
+            "agent_id must be 1–255 chars: letters, numbers, dots, dashes, underscores"
         )
     return agent_id
 
@@ -95,7 +95,7 @@ async def create_agent(
                 tenant_id, agent_id,
             )
             if existing:
-                raise HTTPException(status_code=409, detail="Agent already exists")
+                raise conflict("Agent already exists")
 
             await assert_and_reserve_api_key_slot(conn, tenant_id=tenant_id)
 
@@ -137,7 +137,7 @@ async def delete_agent(
         tenant_id, agent_id,
     )
     if not row:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise not_found("Agent not found")
 
     async with pool.acquire() as conn:
         async with conn.transaction():
@@ -175,7 +175,7 @@ async def test_agent_event(
         tenant_id, agent_id,
     )
     if not exists:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise not_found("Agent not found")
 
     result = await write_event(
         tenant_id=tenant_id,
@@ -204,7 +204,7 @@ async def list_agent_api_keys(
         tenant_id, agent_id,
     )
     if not exists:
-        raise HTTPException(status_code=404, detail="Agent not found")
+        raise not_found("Agent not found")
 
     return await list_api_keys_for_agent(pool, tenant_id, agent_id)
 
@@ -226,7 +226,7 @@ async def create_agent_api_key(
                 tenant_id, agent_id,
             )
             if not exists:
-                raise HTTPException(status_code=404, detail="Agent not found")
+                raise not_found("Agent not found")
 
             await assert_and_reserve_api_key_slot(conn, tenant_id=tenant_id)
 
@@ -249,7 +249,7 @@ async def revoke_agent_api_key(
     tenant_id = tenant["tenant_id"]
 
     if not await revoke_api_key_record(pool, tenant_id, key_id, agent_id):
-        raise HTTPException(status_code=404, detail="API key not found")
+        raise not_found("API key not found")
     return {"revoked": True, "key_id": key_id, "agent": agent_id}
 
 
@@ -692,12 +692,12 @@ async def agent_behavior_change(
         win_end   = now
     else:
         if not from_ts or not to_ts:
-            raise HTTPException(status_code=400, detail="from_ts and to_ts are required for custom window")
+            raise bad_request(detail="from_ts and to_ts are required for custom window")
         try:
             win_start = datetime.fromisoformat(from_ts.replace("Z", "+00:00")).replace(tzinfo=None)
             win_end   = datetime.fromisoformat(to_ts.replace("Z", "+00:00")).replace(tzinfo=None)
         except ValueError:
-            raise HTTPException(status_code=400, detail="from_ts / to_ts must be ISO 8601 timestamps")
+            raise bad_request(detail="from_ts / to_ts must be ISO 8601 timestamps")
 
     baseline_count = await pool.fetchval(
         "SELECT COUNT(*) FROM events WHERE tenant_id = $1 AND agent_id = $2 AND timestamp < $3",

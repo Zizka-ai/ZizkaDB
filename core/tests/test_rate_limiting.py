@@ -3,14 +3,22 @@ Unit tests for ZizkaDB Core API rate limiters.
 Tests cover OTP request limits, Demo request limits, and Community board limits.
 """
 
+import asyncio
+import time
+import fakeredis.aioredis
 from unittest.mock import patch, AsyncMock, MagicMock
 from datetime import datetime, timezone
 from fastapi.testclient import TestClient
-
 from main import app
-from api.auth import _otp_rate, _OTP_RATE_MAX, _OTP_RATE_WINDOW_SEC
-from api.demo_requests import _rate as demo_rate, RATE_MAX as DEMO_MAX, RATE_WINDOW_SEC as DEMO_WINDOW
-from api.community import _rate as community_rate, RATE_MAX_POSTS as COMM_MAX, RATE_WINDOW_SEC as COMM_WINDOW
+from api.auth import otp_limiter, _OTP_RATE_MAX, _OTP_RATE_WINDOW_SEC
+from api.demo_requests import demo_limiter, RATE_MAX as DEMO_MAX, RATE_WINDOW_SEC as DEMO_WINDOW
+from api.community import community_limiter, RATE_MAX_POSTS as COMM_MAX, RATE_WINDOW_SEC as COMM_WINDOW
+from services.rate_limiter import (
+    InMemoryStorage,
+    RedisStorage,
+    FixedWindowStrategy,
+    RateLimiter
+)
 
 client = TestClient(app)
 
@@ -21,8 +29,8 @@ client = TestClient(app)
 
 class TestOTPRateLimiting:
     def setup_method(self):
-        # Clear the in-memory rate dictionary before each test
-        _otp_rate.clear()
+        # Clear the centralized storage before each test
+        asyncio.run(otp_limiter.storage.clear())
 
     @patch("api.auth.email_exists", new_callable=AsyncMock)
     @patch("api.auth.request_otp", new_callable=AsyncMock)
@@ -109,7 +117,7 @@ class TestOTPRateLimiting:
 
 class TestDemoRequestsRateLimiting:
     def setup_method(self):
-        demo_rate.clear()
+        asyncio.run(demo_limiter.storage.clear())
 
     @patch("api.demo_requests.get_pool")
     def test_demo_requests_under_limit(self, mock_get_pool):
@@ -263,7 +271,7 @@ class TestDemoRequestsRateLimiting:
 
 class TestCommunityRateLimiting:
     def setup_method(self):
-        community_rate.clear()
+        asyncio.run(community_limiter.storage.clear())
 
     @patch("api.community.get_pool")
     def test_community_posts_under_limit(self, mock_get_pool):
@@ -348,3 +356,102 @@ class TestCommunityRateLimiting:
                 "body": "This is a detailed description of my question."
             })
             assert response.status_code == 201
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Centralized Rate Limiter Features Tests
+# ──────────────────────────────────────────────────────────────────────────────
+
+class TestRateLimiterFeatures:
+    def test_in_memory_lazy_cleanup(self):
+        storage = InMemoryStorage(enable_cleanup=True, cleanup_method="lazy")
+        asyncio.run(storage.record_hit("test-key", 1000.0, 60))
+        assert "test-key" in storage._data
+        
+        hits = asyncio.run(storage.get_hits("test-key", window_sec=0))
+        assert hits == []
+        assert "test-key" not in storage._data
+
+    def test_in_memory_periodic_cleanup(self):
+        import time
+        storage = InMemoryStorage(
+            enable_cleanup=True,
+            cleanup_method="periodic",
+            default_ttl_sec=0.01,
+            cleanup_interval_sec=0.01
+        )
+        asyncio.run(storage.record_hit("test-key", time.time(), 60))
+        assert "test-key" in storage._data
+        
+        time.sleep(0.08)
+        assert "test-key" not in storage._data
+        storage.close()
+
+    def test_fixed_window_strategy(self):
+        storage = InMemoryStorage()
+        limiter = RateLimiter(
+            limit=2,
+            window_sec=60,
+            storage=storage,
+            strategy=FixedWindowStrategy()
+        )
+        
+        asyncio.run(limiter.check("user-1"))
+        asyncio.run(limiter.check("user-1"))
+        
+        from fastapi import HTTPException
+        import pytest
+        with pytest.raises(HTTPException) as exc:
+            asyncio.run(limiter.check("user-1"))
+        assert exc.value.status_code == 429
+
+    @patch("services.rate_limiter.get_redis")
+    def test_redis_storage(self, mock_get_redis):
+        mock_redis = MagicMock()
+        mock_redis.zremrangebyscore = AsyncMock()
+        mock_redis.zrange = AsyncMock(return_value=[(b"1000.0:123", 1000.0)])
+        mock_redis.zadd = AsyncMock()
+        mock_redis.expire = AsyncMock()
+        mock_get_redis.return_value = mock_redis
+        
+        storage = RedisStorage(key_prefix="ratelimit-test")
+        
+        asyncio.run(storage.record_hit("user-1", 1000.0, 60))
+        mock_redis.zadd.assert_called_once()
+        mock_redis.expire.assert_called_once()
+        
+        hits = asyncio.run(storage.get_hits("user-1", 60))
+        assert hits == [1000.0]
+        mock_redis.zremrangebyscore.assert_called_once()
+        mock_redis.zrange.assert_called_once()
+
+    @patch("services.rate_limiter.get_redis")
+    def test_redis_storage_concurrency(self, mock_get_redis):
+        """
+        Verify that multiple concurrent calls to record_hit() do not generate
+        an identical member string, and ZADD silently treated the second
+        call as an update to the first rather than a new entry --
+        undercounting real request volume and letting far more requests
+        through than the configured limit.
+        """
+        fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=True)
+        mock_get_redis.return_value = fake_redis
+
+        storage = RedisStorage(key_prefix="ratelimit-concurrency-test")
+
+        async def fire_concurrent_hits(n: int, timestamp: float) -> int:
+            await asyncio.gather(*(
+                storage.record_hit("concurrent-key", timestamp, 60) for _ in range(n)
+            ))
+            hits = await storage.get_hits("concurrent-key", 60)
+            return len(hits)
+
+        n_requests = 50
+        recorded = asyncio.run(fire_concurrent_hits(n_requests, time.time()))
+        assert recorded == n_requests, (
+            f"expected all {n_requests} concurrent hits to be recorded distinctly, "
+            f"got {recorded} -- record_hit()'s member string is colliding under "
+            f"concurrency again"
+        )
+
+

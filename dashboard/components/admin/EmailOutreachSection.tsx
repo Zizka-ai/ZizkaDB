@@ -67,6 +67,8 @@ export function EmailOutreachSection({ token }: { token: string }) {
   );
   const [ctaLabel, setCtaLabel] = useState("Star on GitHub");
   const [ctaUrl, setCtaUrl] = useState("https://github.com/Zizka-ai/ZizkaDB");
+  const [discordCtaLabel, setDiscordCtaLabel] = useState("Join our Discord community");
+  const [discordCtaUrl, setDiscordCtaUrl] = useState("https://discord.gg/EBjAABKkh");
   const [githubUrl, setGithubUrl] = useState("https://github.com/Zizka-ai/ZizkaDB");
   const [signOff, setSignOff] = useState("Best,\nFellow Developer,\nMir");
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
@@ -98,6 +100,8 @@ export function EmailOutreachSection({ token }: { token: string }) {
     image_caption: imageCaption.trim() || undefined,
     cta_label: ctaLabel.trim() || undefined,
     cta_url: ctaUrl.trim() || undefined,
+    discord_cta_label: discordCtaLabel.trim() || undefined,
+    discord_cta_url: discordCtaUrl.trim() || undefined,
     github_url: githubUrl.trim() || "https://github.com/Zizka-ai/ZizkaDB",
     sign_off: signOff,
   });
@@ -114,6 +118,8 @@ export function EmailOutreachSection({ token }: { token: string }) {
         image_caption: imageCaption.trim() || undefined,
         cta_label: ctaLabel.trim() || undefined,
         cta_url: ctaUrl.trim() || undefined,
+        discord_cta_label: discordCtaLabel.trim() || undefined,
+        discord_cta_url: discordCtaUrl.trim() || undefined,
         github_url: githubUrl.trim() || "https://github.com/Zizka-ai/ZizkaDB",
         sign_off: signOff,
       });
@@ -285,6 +291,23 @@ export function EmailOutreachSection({ token }: { token: string }) {
             </Field>
             <Field label="CTA URL">
               <input value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} style={inputStyle} />
+            </Field>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 12 }}>
+            <Field label="Discord CTA label">
+              <input
+                value={discordCtaLabel}
+                onChange={(e) => setDiscordCtaLabel(e.target.value)}
+                style={inputStyle}
+              />
+            </Field>
+            <Field label="Discord CTA URL">
+              <input
+                value={discordCtaUrl}
+                onChange={(e) => setDiscordCtaUrl(e.target.value)}
+                style={inputStyle}
+              />
             </Field>
           </div>
 

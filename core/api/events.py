@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
+from services.exceptions import not_found
 from typing import Any
 from uuid import UUID
 from datetime import datetime
@@ -130,7 +131,7 @@ async def why(
     try:
         UUID(event_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise not_found("Event not found")
 
     if parent_id is not None:
         try:
@@ -165,7 +166,7 @@ async def why(
     )
 
     if not rows:
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise not_found("Event not found")
 
     # Integrity guard: the searched event's real parent must match the supplied
     # parent_id. (Tenant isolation is already enforced by the query above — this
