@@ -76,6 +76,20 @@ export function EmailOutreachSection({ token }: { token: string }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("outreach_prefill");
+      if (!raw) return;
+      const data = JSON.parse(raw) as { email?: string; name?: string };
+      if (data.email) setToEmail(data.email);
+      if (data.name) setRecipientName(data.name);
+      sessionStorage.removeItem("outreach_prefill");
+      setMsg(`Prefilled from Developer Leads: ${data.email || ""}`);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const refresh = useCallback(() => {
     adminOutreachStats(token)
       .then(setStats)

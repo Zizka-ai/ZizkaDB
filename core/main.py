@@ -17,6 +17,7 @@ from api.telemetry import router as telemetry_router
 from api.admin import router as admin_router
 from api.outreach import admin_router as outreach_admin_router
 from api.outreach import public_router as outreach_public_router
+from api.developer_leads import admin_router as leads_admin_router
 from api.stats import router as stats_router
 from api.billing_checkout import router as billing_checkout_router
 from api.community import router as community_router
@@ -111,6 +112,7 @@ app.include_router(memory_router,    prefix="/v1/memory",    tags=["memory"])
 app.include_router(telemetry_router, prefix="/v1/telemetry", tags=["telemetry"])
 app.include_router(admin_router,     prefix="/v1/admin",     include_in_schema=False)
 app.include_router(outreach_admin_router, prefix="/v1/admin", include_in_schema=False)
+app.include_router(leads_admin_router, prefix="/v1/admin", include_in_schema=False)
 app.include_router(outreach_public_router, prefix="/v1/outreach", tags=["outreach"])
 app.include_router(stats_router,     prefix="/v1/stats",     tags=["stats"])
 app.include_router(billing_checkout_router, prefix="/v1/billing", tags=["billing"])

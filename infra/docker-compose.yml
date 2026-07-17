@@ -81,6 +81,8 @@ services:
       DASHBOARD_URL: ${DASHBOARD_URL:-https://db.zizka.ai}
       TRIAL_DAYS: ${TRIAL_DAYS:-30}
       COMMUNITY_UPLOAD_DIR: /data/community_uploads
+      GITHUB_LEADS_TOKEN: ${GITHUB_LEADS_TOKEN:-}
+      LEADS_DAILY_LIMIT: ${LEADS_DAILY_LIMIT:-100}
     depends_on:
       postgres:
         condition: service_healthy

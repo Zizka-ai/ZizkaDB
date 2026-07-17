@@ -19,9 +19,10 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { setAdminToken, clearAdminToken, getAdminToken } from "@/lib/auth";
 import { FOUNDER_EMAIL, POLL_INTERVAL_MS, OTP_LENGTH } from "@/lib/constants";
 import { EmailOutreachSection } from "@/components/admin/EmailOutreachSection";
+import { DeveloperLeadsSection } from "@/components/admin/DeveloperLeadsSection";
 
 
-type Section = 'subscribers' | 'managed' | 'telemetry' | 'demo_requests' | 'marketing_subscriptions' | 'outreach'
+type Section = 'subscribers' | 'managed' | 'telemetry' | 'demo_requests' | 'marketing_subscriptions' | 'outreach' | 'leads'
 
 interface Overview {
   telemetry: { total_installs?: number; active_7d?: number; active_24h?: number; total_pings?: number }
@@ -509,6 +510,7 @@ function Dashboard({
             { key: 'demo_requests', label: 'Demo requests' },
             { key: 'marketing_subscriptions', label: 'Marketing Material Subscriptions' },
             { key: 'outreach', label: 'Email Outreach' },
+            { key: 'leads', label: 'Developer Leads' },
           ] as { key: Section; label: string }[]).map((t) => (
             <button key={t.key} onClick={() => setSection(t.key)}
                     style={{
@@ -544,6 +546,12 @@ function Dashboard({
         {section === 'demo_requests' && <DemoRequestsSection token={token} />}
         {section === 'marketing_subscriptions' && <MarketingSubscriptionsSection token={token} />}
         {section === 'outreach' && <EmailOutreachSection token={token} />}
+        {section === 'leads' && (
+          <DeveloperLeadsSection
+            token={token}
+            onOpenOutreach={() => setSection('outreach')}
+          />
+        )}
       </div>
     </div>
   );

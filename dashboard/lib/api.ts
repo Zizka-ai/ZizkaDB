@@ -565,6 +565,85 @@ export async function adminOutreachSend(
   })
 }
 
+// ── Admin developer leads ─────────────────────────────────────────────────────
+
+export interface LeadsStats {
+  imported_today: number
+  daily_limit: number
+  remaining_today: number
+  total: number
+  status_new: number
+  approved: number
+  rejected: number
+  contacted: number
+  token_configured: boolean
+  default_keywords: string
+}
+
+export interface DeveloperLead {
+  lead_id: string
+  email: string
+  name: string | null
+  github_username: string | null
+  profile_url: string | null
+  bio: string | null
+  location: string | null
+  country_code: string
+  matched_keyword: string | null
+  matched_repo: string | null
+  signal: string | null
+  match_reason: string | null
+  status: string
+  created_at: string | null
+}
+
+export async function adminLeadsStats(token: string): Promise<LeadsStats> {
+  return apiFetch('/v1/admin/leads/stats', token)
+}
+
+export async function adminLeadsCountries(token: string): Promise<{ code: string; name: string }[]> {
+  return apiFetch('/v1/admin/leads/countries', token)
+}
+
+export async function adminLeadsList(
+  token: string,
+  params: { status?: string; search?: string; limit?: number } = {},
+): Promise<DeveloperLead[]> {
+  const qs = new URLSearchParams()
+  if (params.status?.trim()) qs.set('status', params.status.trim())
+  if (params.search?.trim()) qs.set('search', params.search.trim())
+  if (params.limit) qs.set('limit', String(params.limit))
+  const q = qs.toString()
+  return apiFetch(`/v1/admin/leads${q ? `?${q}` : ''}`, token)
+}
+
+export async function adminLeadsFind(
+  token: string,
+  body: { keywords: string; country_code: string },
+): Promise<{
+  run_id: string
+  found: number
+  inserted: number
+  remaining_today: number
+  meta: Record<string, number>
+}> {
+  return apiFetch('/v1/admin/leads/find', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export async function adminLeadsUpdateStatus(
+  token: string,
+  leadId: string,
+  status: string,
+): Promise<{ lead_id: string; email: string; name: string | null; status: string }> {
+  return apiFetch(`/v1/admin/leads/${encodeURIComponent(leadId)}`, token, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  })
+}
+
 export async function getApiKeys(token: string) {
   return apiFetch('/v1/auth/api-keys', token)
 }
