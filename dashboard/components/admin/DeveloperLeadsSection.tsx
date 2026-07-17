@@ -120,7 +120,7 @@ export function DeveloperLeadsSection({
     }
   };
 
-  const useInOutreach = (lead: DeveloperLead) => {
+  const openInOutreach = (lead: DeveloperLead) => {
     try {
       sessionStorage.setItem(
         "outreach_prefill",
@@ -312,7 +312,7 @@ export function DeveloperLeadsSection({
                     </td>
                     <td style={{ ...td, textAlign: "right" }}>
                       <div style={{ display: "inline-flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                        <button type="button" style={btnTiny()} onClick={() => useInOutreach(l)}>
+                        <button type="button" style={btnTiny()} onClick={() => openInOutreach(l)}>
                           Use in Outreach
                         </button>
                         {l.status !== "approved" && (
