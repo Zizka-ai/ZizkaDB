@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clearToken } from "@/lib/auth";
 import { BrandLogo } from "@/components/BrandLogo";
-import { Search, Settings, LogOut, Cpu, GitBranch, GitFork, Bug } from "lucide-react";
+import { Search, Settings, LogOut, Cpu, GitBranch, GitFork, AlertTriangle, Bug } from "lucide-react";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { TenantPlanBanner } from "@/components/TenantPlanBanner";
 
@@ -21,6 +21,7 @@ const nav: NavEntry[] = [
     children: [
       { href: "/dashboard/debugging/why", label: "Causal Trace", icon: GitBranch },
       { href: "/dashboard/debugging/impact", label: "Impact Trace", icon: GitFork },
+      { href: "/dashboard/debugging/errors", label: "Error Explorer", icon: AlertTriangle },
     ],
   },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },

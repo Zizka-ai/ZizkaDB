@@ -214,6 +214,38 @@ export async function getImpactChain(
   return apiFetch(`/v1/events/${eventId}/impact${qs}`, token)
 }
 
+export interface ErrorGroup {
+  signature: string
+  event_type: string
+  error: string | null
+  count: number
+  agents_affected: number
+  sessions_affected: number
+  first_seen: string | null
+  last_seen: string | null
+  sample_event_ids: string[]
+  agents: string[]
+}
+
+export interface ErrorReport {
+  window: string
+  agent: string | null
+  group_count: number
+  total_errors: number
+  groups: ErrorGroup[]
+}
+
+export async function getErrors(
+  token: string,
+  opts: { window?: string; agent?: string } = {},
+): Promise<ErrorReport> {
+  const params = new URLSearchParams()
+  if (opts.window) params.set('window', opts.window)
+  if (opts.agent) params.set('agent', opts.agent)
+  const qs = params.toString() ? `?${params.toString()}` : ''
+  return apiFetch(`/v1/events/errors${qs}`, token)
+}
+
 // The backend's search response shape isn't fully pinned down (some call
 // sites defensively handle both `{ results: [...] }` and a bare array) — kept
 // loosely typed here rather than forcing a shape that would fight that
