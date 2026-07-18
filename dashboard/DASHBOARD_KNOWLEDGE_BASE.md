@@ -668,7 +668,12 @@ Exhaustive behavior per file (state, effects, API order, branches, edge cases, n
 - **Branches:** submit disabled if `loading || !query.trim()` (`:65`); empty-after-search state (`:74-78`); score badge if `event.score !== undefined` (`:103-107`); example queries when `!searched` (`:115-138`, buttons only set `query`).
 - **Rules:** empty query no-ops (`:26`); no page-load auth redirect (relies on layout gate + `requireAuth` on submit).
 
-### 19.3a Why — root cause — `app/dashboard/debugging/why/page.tsx`
+### 19.3a Causal Trace — `app/dashboard/debugging/why/page.tsx`
+
+> Display name is **"Causal Trace"** (sidebar label + page `<h1>`). The route stays
+> `/dashboard/debugging/why` for deep-link stability; the SDK method (`db.why()`), API path
+> (`/v1/events/{id}/why`), and client fn (`getWhyChain`) keep the "why" identifier.
+
 
 - **Purpose:** standalone, error-focused root-cause tool. Paste an error's `event_id`; the
   page walks its `parent_id` chain via `getWhyChain` and presents the lineage as a

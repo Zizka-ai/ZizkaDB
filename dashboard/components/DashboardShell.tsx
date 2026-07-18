@@ -19,7 +19,7 @@ const nav: NavEntry[] = [
     label: "Debugging",
     icon: Bug,
     children: [
-      { href: "/dashboard/debugging/why", label: "Why", icon: GitBranch },
+      { href: "/dashboard/debugging/why", label: "Causal Trace", icon: GitBranch },
     ],
   },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },

@@ -280,7 +280,7 @@ function WhyPageInner() {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1.5">
           <GitBranch size={17} style={{ color: "#22c55e" }} />
-          <h1 className="text-white font-semibold text-xl">Why</h1>
+          <h1 className="text-white font-semibold text-xl">Causal Trace</h1>
         </div>
         <p className="text-sm leading-relaxed" style={{ color: "#a3a3a3" }}>
           Trace any event back through its causal chain. Each event records the{" "}
