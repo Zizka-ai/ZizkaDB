@@ -14,7 +14,7 @@ from typing import Any
 import json
 import logging
 
-from api.deps import get_tenant
+from api.deps import get_tenant, assert_agent_allowed
 from db.connection import get_pool, get_qdrant
 from services.embeddings import generate_embedding
 
@@ -60,6 +60,8 @@ async def get_context(
         ]
     """
     tenant_id = tenant["tenant_id"]
+    # Agent-scoped keys may only read their own agent's memory.
+    assert_agent_allowed(tenant, body.agent)
     pool = get_pool()
 
     # 1. Recent events — always include these for temporal grounding
@@ -226,6 +228,8 @@ async def session_diff(
         raise not_found("Session not found")
 
     agent_id = rows[0]["agent_id"]
+    # Agent-scoped keys may only inspect their own agent's sessions.
+    assert_agent_allowed(tenant, agent_id)
     events = []
     event_types: dict[str, int] = {}
     has_error = False
@@ -321,14 +325,19 @@ async def forget(
     tenant_id = tenant["tenant_id"]
     pool = get_pool()
 
+    # Agent-scoped keys may only forget their own agent's events (unscoped
+    # keys / dashboard JWTs delete across the whole tenant as before).
+    scoped_agent = tenant.get("agent_id")
+
     # Find matching event IDs
     rows = await pool.fetch(
         """
         SELECT event_id FROM events
         WHERE tenant_id = $1
           AND data->$2 = to_jsonb($3::text)
+          AND ($4::text IS NULL OR agent_id = $4)
         """,
-        tenant_id, body.filter_key, body.filter_value,
+        tenant_id, body.filter_key, body.filter_value, scoped_agent,
     )
 
     if not rows:

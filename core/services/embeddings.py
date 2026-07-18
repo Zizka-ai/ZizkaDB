@@ -1,3 +1,4 @@
+import hashlib
 import httpx
 import json
 import logging
@@ -34,7 +35,11 @@ async def generate_embedding_with_config(
         )
         return None
 
-    cache_key = f"emb:{config.provider}:{config.model}:{hash(text)}"
+    # sha256 (not the builtin hash()) so the key is stable across processes —
+    # hash() is salted per-process (PYTHONHASHSEED), so with multiple workers
+    # the same text produced different keys and the cache almost never hit.
+    text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+    cache_key = f"emb:{config.provider}:{config.model}:{text_hash}"
 
     try:
         redis = get_redis()
