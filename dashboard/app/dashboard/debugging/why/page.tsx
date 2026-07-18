@@ -280,66 +280,86 @@ function WhyPageInner() {
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-1.5">
           <GitBranch size={17} style={{ color: "#22c55e" }} />
-          <h1 className="text-white font-semibold text-xl">Why — root cause</h1>
+          <h1 className="text-white font-semibold text-xl">Why</h1>
         </div>
         <p className="text-sm leading-relaxed" style={{ color: "#a3a3a3" }}>
-          Paste an error&apos;s event ID. Every event records the{" "}
+          Trace any event back through its causal chain. Each event records the{" "}
           <span className="font-mono" style={{ color: "#d4d4d4" }}>
             parent_id
           </span>{" "}
-          of what caused it, so the trace walks that chain back to where it
-          started — then tells the story from the beginning down to the failure.
+          of what caused it, so the trace walks that chain to the origin and lays
+          out the full sequence in order.
         </p>
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="mb-2">
-        <div className="flex flex-col gap-2">
-          <input
-            value={eventIdInput}
-            onChange={(e) => setEventIdInput(e.target.value)}
-            placeholder="Error event ID (e.g. 5cdb3f8c-3a85-46df-8034-184fb89a66a8)"
-            autoFocus
-            spellCheck={false}
-            aria-label="Error event ID"
-            className="w-full rounded-xl px-4 py-3 text-sm font-mono text-white outline-none transition"
-            style={{ background: "#111", border: "1px solid #262626" }}
-            onFocus={(e) => (e.target.style.borderColor = "#22c55e")}
-            onBlur={(e) => (e.target.style.borderColor = "#262626")}
-          />
+      <form onSubmit={handleSubmit} className="mb-6 space-y-4">
+        {/* Event ID + action */}
+        <div>
+          <label
+            htmlFor="why-event-id"
+            className="block text-xs font-medium mb-1.5"
+            style={{ color: "#d4d4d4" }}
+          >
+            Event ID
+          </label>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
-              value={parentIdInput}
-              onChange={(e) => setParentIdInput(e.target.value)}
-              placeholder="Parent ID — optional integrity check (leave blank for a root event)"
+              id="why-event-id"
+              value={eventIdInput}
+              onChange={(e) => setEventIdInput(e.target.value)}
+              placeholder="5cdb3f8c-3a85-46df-8034-184fb89a66a8"
+              autoFocus
               spellCheck={false}
-              aria-label="Parent ID (optional integrity check)"
-              className="flex-1 rounded-xl px-4 py-3 text-sm font-mono text-white outline-none transition"
-              style={{ background: "#0d0d0d", border: "1px solid #1f1f1f" }}
-              onFocus={(e) => (e.target.style.borderColor = "#3f3f46")}
-              onBlur={(e) => (e.target.style.borderColor = "#1f1f1f")}
+              className="flex-1 rounded-lg px-3.5 py-2.5 text-sm font-mono text-white outline-none transition"
+              style={{ background: "#0d0d0d", border: "1px solid #262626" }}
+              onFocus={(e) => (e.target.style.borderColor = "#22c55e")}
+              onBlur={(e) => (e.target.style.borderColor = "#262626")}
             />
             <button
               type="submit"
               disabled={loading || !eventIdInput.trim()}
-              className="rounded-xl px-6 py-3 text-sm font-medium text-black disabled:opacity-40 transition shrink-0"
+              className="rounded-lg px-6 py-2.5 text-sm font-medium text-black disabled:opacity-40 transition shrink-0"
               style={{ background: "#22c55e" }}
             >
               {loading ? (
                 <Loader2 size={14} className="animate-spin mx-auto" />
               ) : (
-                "Trace root cause"
+                "Trace"
               )}
             </button>
           </div>
         </div>
+
+        {/* Parent ID (optional) */}
+        <div>
+          <label
+            htmlFor="why-parent-id"
+            className="flex items-center gap-2 text-xs font-medium mb-1.5"
+            style={{ color: "#d4d4d4" }}
+          >
+            Parent ID
+            <span className="font-normal" style={{ color: "#666" }}>
+              optional
+            </span>
+          </label>
+          <input
+            id="why-parent-id"
+            value={parentIdInput}
+            onChange={(e) => setParentIdInput(e.target.value)}
+            placeholder="Paste to verify the event's parent — leave blank for a root event"
+            spellCheck={false}
+            className="w-full rounded-lg px-3.5 py-2.5 text-sm font-mono text-white outline-none transition"
+            style={{ background: "#0d0d0d", border: "1px solid #262626" }}
+            onFocus={(e) => (e.target.style.borderColor = "#22c55e")}
+            onBlur={(e) => (e.target.style.borderColor = "#262626")}
+          />
+          <p className="text-xs mt-1.5" style={{ color: "#666" }}>
+            An integrity check: the trace runs only if this matches the event&apos;s
+            real parent.
+          </p>
+        </div>
       </form>
-      <p className="text-xs mb-6" style={{ color: "#666" }}>
-        Parent ID is an optional guard: when set, the trace only runs if it
-        matches the event&apos;s real parent (enforced server-side). Your account
-        boundary always applies regardless — you can never trace another
-        tenant&apos;s events.
-      </p>
 
       {/* Error */}
       {error && (
@@ -418,8 +438,7 @@ function WhyPageInner() {
           className="text-center py-16 px-6 rounded-xl text-sm"
           style={{ background: "#0d0d0d", border: "1px dashed #262626", color: "#a3a3a3" }}
         >
-          Enter an error event ID above to trace its root cause and see the full
-          story of how it happened.
+          Enter an event ID above to trace its causal history.
         </div>
       )}
     </div>
