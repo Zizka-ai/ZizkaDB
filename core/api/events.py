@@ -168,11 +168,18 @@ async def why(
     if not rows:
         raise not_found("Event not found")
 
+    searched = next((r for r in rows if str(r["event_id"]) == event_id), None)
+
+    # Agent-scope enforcement: an agent-scoped API key may only trace events
+    # belonging to its bound agent (tenant isolation is already enforced by the
+    # query; this closes the per-agent gap for scoped keys).
+    if searched is not None:
+        assert_agent_allowed(tenant, searched["agent_id"])
+
     # Integrity guard: the searched event's real parent must match the supplied
     # parent_id. (Tenant isolation is already enforced by the query above — this
     # is an explicit caller assertion, not the access-control boundary.)
     if parent_id is not None:
-        searched = next((r for r in rows if str(r["event_id"]) == event_id), None)
         actual_parent = (
             str(searched["parent_event_id"])
             if searched and searched["parent_event_id"]
@@ -185,6 +192,69 @@ async def why(
         "event_id": event_id,
         "chain_length": len(rows),
         "chain": [_format_event(r) for r in rows],
+    }
+
+
+# ─────────────────────────────────────────
+# IMPACT — GET /v1/events/{id}/impact
+# Walk the causal graph DOWNSTREAM: what did this event cause?
+# (mirror of /why, which walks upstream to the origin)
+# ─────────────────────────────────────────
+
+@router.get("/{event_id}/impact")
+async def impact(
+    event_id: str,
+    depth: int = Query(default=10, le=50),
+    tenant: dict = Depends(get_tenant),
+):
+    pool = get_pool()
+    tenant_id = tenant["tenant_id"]
+
+    try:
+        UUID(event_id)
+    except ValueError:
+        raise not_found("Event not found")
+
+    # Recursive DOWNSTREAM walk: start at the event, follow children via
+    # parent_event_id (the reverse of /why). Fan-out is bounded by depth; the
+    # flat rows carry `depth` so the client can render the tree.
+    rows = await pool.fetch(
+        """
+        WITH RECURSIVE impact_tree AS (
+            SELECT
+                event_id, agent_id, timestamp, event_type,
+                data, parent_event_id, session_id, sequence_no,
+                0 AS depth
+            FROM events
+            WHERE event_id = $1 AND tenant_id = $2
+
+            UNION ALL
+
+            SELECT
+                e.event_id, e.agent_id, e.timestamp, e.event_type,
+                e.data, e.parent_event_id, e.session_id, e.sequence_no,
+                it.depth + 1
+            FROM events e
+            INNER JOIN impact_tree it ON e.parent_event_id = it.event_id
+            WHERE e.tenant_id = $2 AND it.depth < $3
+        )
+        SELECT * FROM impact_tree
+        ORDER BY depth ASC, timestamp ASC
+        """,
+        event_id, tenant_id, depth,
+    )
+
+    if not rows:
+        raise not_found("Event not found")
+
+    root = next((r for r in rows if str(r["event_id"]) == event_id), None)
+    if root is not None:
+        assert_agent_allowed(tenant, root["agent_id"])
+
+    return {
+        "event_id": event_id,
+        "node_count": len(rows),
+        "nodes": [{**_format_event(r), "depth": r["depth"]} for r in rows],
     }
 
 
