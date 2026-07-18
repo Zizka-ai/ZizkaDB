@@ -156,6 +156,16 @@ export interface WhyChain {
   chain: AgentEvent[]
 }
 
+export interface ImpactNode extends AgentEvent {
+  depth: number
+}
+
+export interface ImpactTree {
+  event_id: string
+  node_count: number
+  nodes: ImpactNode[]
+}
+
 export interface AgentSession {
   session_id: string
   event_count: number
@@ -192,6 +202,16 @@ export async function getWhyChain(
   if (parentId) params.set('parent_id', parentId)
   const qs = params.toString() ? `?${params.toString()}` : ''
   return apiFetch(`/v1/events/${eventId}/why${qs}`, token)
+}
+
+// Downstream mirror of getWhyChain: what an event caused (children walk).
+export async function getImpactChain(
+  token: string,
+  eventId: string,
+  depth?: number,
+): Promise<ImpactTree> {
+  const qs = depth ? `?depth=${depth}` : ''
+  return apiFetch(`/v1/events/${eventId}/impact${qs}`, token)
 }
 
 // The backend's search response shape isn't fully pinned down (some call
