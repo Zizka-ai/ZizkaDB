@@ -5,7 +5,7 @@ services:
     image: pgvector/pgvector:pg16
     container_name: zizkadb_postgres
     # WARNING: docker compose down -v deletes ALL user accounts and events.
-    # Production: use bash infra/deploy-production.sh — never -v.
+    # Never use -v on a machine with data you care about.
     # Local reset only: bash scripts/reset-local-db.sh
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-zizkadb}
@@ -80,18 +80,14 @@ services:
       PUBLIC_API_URL: ${PUBLIC_API_URL:-https://db.zizka.ai}
       DASHBOARD_URL: ${DASHBOARD_URL:-https://db.zizka.ai}
       TRIAL_DAYS: ${TRIAL_DAYS:-30}
-      COMMUNITY_UPLOAD_DIR: /data/community_uploads
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - community_uploads:/data/community_uploads
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 
 volumes:
   postgres_data:
   qdrant_data:
   redis_data:
-  community_uploads:

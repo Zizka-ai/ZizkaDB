@@ -10,7 +10,7 @@
 [![npm](https://img.shields.io/npm/v/zizkadb-sdk?label=npm)](https://www.npmjs.com/package/zizkadb-sdk)
 [![MCP](https://img.shields.io/pypi/v/zizkadb-mcp?label=MCP)](https://pypi.org/project/zizkadb-mcp/)
 
-[Get started](#get-started) · [SDKs](#sdks) · [Docs](https://db.zizka.ai/docs) · [Community](https://db.zizka.ai/community)
+[Get started](#get-started) · [SDKs](#sdks) · [Wiki](https://github.com/Zizka-ai/ZizkaDB/wiki) · [Managed cloud](https://db.zizka.ai)
 
 </div>
 
@@ -26,6 +26,10 @@ ZizkaDB is a database built specifically for AI agents. It gives you:
 - **Semantic search** — search your agent's entire history in plain English (`db.search()`)
 
 No more guessing. No more digging through logs.
+
+> **This repository is the open-source product runtime** (API, self-host dashboard, SDKs, MCP, examples).  
+> Managed cloud marketing pages and the operator admin panel live in a **private** repo (`zizkadb-cloud`) and are **not** part of a public clone.  
+> All product links on GitHub point here: **https://github.com/Zizka-ai/ZizkaDB**
 
 <p align="center">
   <img src="docs/assets/gallery-why.png" alt="Causal chain view in the ZizkaDB dashboard" width="32%"/>
@@ -46,7 +50,7 @@ No more guessing. No more digging through logs.
 | **Indie hackers & vibe-coders** | Two lines of code add full observability to any agent. No setup required on Zizka Cloud. |
 | **LangChain / CrewAI users** | Native adapters — pass a callback handler and every step is logged automatically |
 | **Enterprise & teams** | Self-hostable, open source (AGPL-3.0), GDPR-ready, audit logs, fleet dashboard |
-| **Investors & evaluators** | [Live demo →](https://db.zizka.ai) · [Docs →](https://db.zizka.ai/docs) · [Architecture →](https://github.com/Zizka-ai/ZizkaDB/wiki/Architecture) |  
+| **Investors & evaluators** | [Live cloud →](https://db.zizka.ai) · [Wiki →](https://github.com/Zizka-ai/ZizkaDB/wiki) · [Architecture →](https://github.com/Zizka-ai/ZizkaDB/wiki/Architecture) |  
 
 ---
 

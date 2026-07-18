@@ -95,7 +95,8 @@ ZIZKADB_RUN_INTEGRATION=1 .venv/bin/pytest -m integration core/tests/test_integr
 ## Production self-host
 
 ```bash
-bash infra/deploy-production.sh   # backup first — never uses docker compose down -v
+Self-host deploy uses `infra/deploy-selfhost.sh` and Docker Compose.
+Managed cloud (`db.zizka.ai`) deploys from the private `zizkadb-cloud` repository — not this public product repo.
 bash infra/deploy-selfhost.sh
 ```
 

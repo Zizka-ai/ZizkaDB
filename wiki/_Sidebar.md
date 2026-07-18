@@ -16,10 +16,9 @@
 
 ### Operations
 - [Self-Hosting](Self-Hosting)
-- [Production Deployment](Production-Deployment)
 - [Architecture](Architecture)
 
 ### External
-- [Docs site](https://db.zizka.ai/docs)
-- [Swagger](https://db.zizka.ai/swagger)
-- [Managed cloud](https://db.zizka.ai/signup)
+- [Managed cloud](https://db.zizka.ai)
+- [Swagger (cloud)](https://db.zizka.ai/swagger)
+- [GitHub](https://github.com/Zizka-ai/ZizkaDB)

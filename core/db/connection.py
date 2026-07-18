@@ -69,29 +69,6 @@ async def init_db():
     """)
 
     await _pg_pool.execute("""
-        CREATE TABLE IF NOT EXISTS community_posts (
-            post_id       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            author_name   VARCHAR(120) NOT NULL,
-            author_email  VARCHAR(255),
-            category      VARCHAR(32) NOT NULL DEFAULT 'question',
-            title         VARCHAR(300) NOT NULL,
-            body          TEXT NOT NULL,
-            image_urls    JSONB NOT NULL DEFAULT '[]'::jsonb,
-            reply_count   INTEGER NOT NULL DEFAULT 0,
-            created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        );
-        CREATE TABLE IF NOT EXISTS community_replies (
-            reply_id      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            post_id       UUID NOT NULL REFERENCES community_posts(post_id) ON DELETE CASCADE,
-            author_name   VARCHAR(120) NOT NULL,
-            author_email  VARCHAR(255),
-            body          TEXT NOT NULL,
-            created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        );
-    """)
-
-    await _pg_pool.execute("""
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS embedding_provider VARCHAR(32) NOT NULL DEFAULT 'openai';
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS embedding_model VARCHAR(64) NOT NULL DEFAULT 'text-embedding-3-small';
         ALTER TABLE tenants ADD COLUMN IF NOT EXISTS embedding_use_platform_key BOOLEAN NOT NULL DEFAULT TRUE;
@@ -132,93 +109,6 @@ async def init_db():
             last_seen    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             ping_count   INTEGER NOT NULL DEFAULT 1
         )
-    """)
-
-    await _pg_pool.execute("""
-        CREATE TABLE IF NOT EXISTS demo_requests (
-            request_id    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            first_name    VARCHAR(80) NOT NULL,
-            last_name     VARCHAR(80) NOT NULL,
-            company_name  VARCHAR(255) NOT NULL,
-            website       VARCHAR(500) NOT NULL,
-            ip_address    VARCHAR(64),
-            created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        );
-        CREATE INDEX IF NOT EXISTS idx_demo_requests_created
-            ON demo_requests (created_at DESC);
-    """)
-
-    await _pg_pool.execute("""
-        ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS email VARCHAR(255) NOT NULL DEFAULT '';
-    """)
-
-    await _pg_pool.execute("""
-        ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS position VARCHAR(120);
-        ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS source VARCHAR(64);
-    """)
-
-    # Marketing subscriptions (lead capture popup)
-    await _pg_pool.execute("""
-        CREATE TABLE IF NOT EXISTS marketing_subscriptions (
-            subscription_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            email           VARCHAR(255) NOT NULL,
-            source          VARCHAR(64)  NOT NULL DEFAULT 'popup',
-            ip_address      VARCHAR(64),
-            user_agent      TEXT,
-            created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        );
-        CREATE INDEX IF NOT EXISTS idx_marketing_subscriptions_created
-            ON marketing_subscriptions (created_at DESC);
-        CREATE UNIQUE INDEX IF NOT EXISTS uq_marketing_subscriptions_email
-            ON marketing_subscriptions (LOWER(email));
-    """)
-
-    # Admin email outreach (compose + open tracking)
-    await _pg_pool.execute("""
-        CREATE TABLE IF NOT EXISTS email_outreach_sends (
-            send_id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            to_email        VARCHAR(255) NOT NULL,
-            subject         TEXT NOT NULL,
-            recipient_name  VARCHAR(120),
-            body_text       TEXT NOT NULL,
-            html_body       TEXT NOT NULL,
-            image_url       TEXT,
-            image_caption   TEXT,
-            cta_label       VARCHAR(80),
-            cta_url         TEXT,
-            discord_cta_label VARCHAR(80),
-            discord_cta_url TEXT,
-            github_url      TEXT,
-            sign_off        TEXT,
-            status          VARCHAR(32) NOT NULL DEFAULT 'queued',
-            error           TEXT,
-            open_count      INTEGER NOT NULL DEFAULT 0,
-            opened_at       TIMESTAMPTZ,
-            sent_at         TIMESTAMPTZ,
-            created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
-        );
-        CREATE INDEX IF NOT EXISTS idx_email_outreach_sends_created
-            ON email_outreach_sends (created_at DESC);
-        CREATE INDEX IF NOT EXISTS idx_email_outreach_sends_sent_day
-            ON email_outreach_sends (sent_at DESC)
-            WHERE status = 'sent';
-
-        CREATE TABLE IF NOT EXISTS email_outreach_opens (
-            open_id     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            send_id     UUID NOT NULL REFERENCES email_outreach_sends(send_id) ON DELETE CASCADE,
-            opened_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            ip_address  VARCHAR(64),
-            user_agent  TEXT
-        );
-        CREATE INDEX IF NOT EXISTS idx_email_outreach_opens_send
-            ON email_outreach_opens (send_id, opened_at DESC);
-    """)
-
-    await _pg_pool.execute("""
-        ALTER TABLE email_outreach_sends
-            ADD COLUMN IF NOT EXISTS discord_cta_label VARCHAR(80);
-        ALTER TABLE email_outreach_sends
-            ADD COLUMN IF NOT EXISTS discord_cta_url TEXT;
     """)
 
     _redis = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))

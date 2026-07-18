@@ -14,14 +14,7 @@ from api.auth import router as auth_router
 from api.search import router as search_router
 from api.memory import router as memory_router
 from api.telemetry import router as telemetry_router
-from api.admin import router as admin_router
-from api.outreach import admin_router as outreach_admin_router
-from api.outreach import public_router as outreach_public_router
-from api.stats import router as stats_router
 from api.billing_checkout import router as billing_checkout_router
-from api.community import router as community_router
-from api.demo_requests import router as demo_requests_router
-from api.marketing_subscriptions import router as marketing_subscriptions_router
 from api.settings import router as settings_router
 from api.account import router as account_router
 
@@ -46,7 +39,6 @@ app = FastAPI(
     description="The operational database for AI agents",
     version="0.1.0",
     lifespan=lifespan,
-    # /swagger avoids nginx location /api/ rewriting /api-explorer → /v1/explorer
     docs_url=None,
     redoc_url=None,
     openapi_url="/openapi.json",
@@ -109,14 +101,7 @@ app.include_router(agents_router,    prefix="/v1/agents",    tags=["agents"])
 app.include_router(search_router,    prefix="/v1/search",    tags=["search"])
 app.include_router(memory_router,    prefix="/v1/memory",    tags=["memory"])
 app.include_router(telemetry_router, prefix="/v1/telemetry", tags=["telemetry"])
-app.include_router(admin_router,     prefix="/v1/admin",     include_in_schema=False)
-app.include_router(outreach_admin_router, prefix="/v1/admin", include_in_schema=False)
-app.include_router(outreach_public_router, prefix="/v1/outreach", tags=["outreach"])
-app.include_router(stats_router,     prefix="/v1/stats",     tags=["stats"])
 app.include_router(billing_checkout_router, prefix="/v1/billing", tags=["billing"])
-app.include_router(community_router, prefix="/v1/community", tags=["community"])
-app.include_router(demo_requests_router, prefix="/v1/demo-requests", tags=["demo"])
-app.include_router(marketing_subscriptions_router, prefix="/v1/marketing-subscriptions", tags=["marketing"])
 app.include_router(settings_router,  prefix="/v1/settings",  tags=["settings"])
 app.include_router(account_router,   prefix="/v1/account",   tags=["account"])
 

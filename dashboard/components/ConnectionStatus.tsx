@@ -169,7 +169,7 @@ asyncio.run(main())"`
         ) : (
           <>
             Dashboard empty but SDK works? Your SDK and login must share the same tenant — see{' '}
-            <a href="/docs" style={{ color: '#e5e5e5' }}>Self-host docs</a>.
+            <a href="https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting" style={{ color: '#e5e5e5' }}>Self-host docs</a>.
           </>
         )}
       </p>
