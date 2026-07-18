@@ -4,12 +4,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clearToken } from "@/lib/auth";
 import { BrandLogo } from "@/components/BrandLogo";
-import { Search, Settings, LogOut, Cpu, GitBranch, GitFork, AlertTriangle, Bug } from "lucide-react";
+import { Search, Settings, LogOut, Cpu, GitBranch, GitFork, AlertTriangle, Rewind, Layers, Bug } from "lucide-react";
 import { ConnectionStatus } from "@/components/ConnectionStatus";
 import { TenantPlanBanner } from "@/components/TenantPlanBanner";
 
 type NavLink = { href: string; label: string; icon: React.ElementType };
-type NavGroup = { label: string; icon: React.ElementType; children: NavLink[] };
+type NavGroup = { label: string; icon: React.ElementType; href?: string; children: NavLink[] };
 type NavEntry = NavLink | NavGroup;
 
 const nav: NavEntry[] = [
@@ -18,10 +18,13 @@ const nav: NavEntry[] = [
   {
     label: "Debugging",
     icon: Bug,
+    href: "/dashboard/debugging",
     children: [
       { href: "/dashboard/debugging/why", label: "Causal Trace", icon: GitBranch },
       { href: "/dashboard/debugging/impact", label: "Impact Trace", icon: GitFork },
       { href: "/dashboard/debugging/errors", label: "Error Explorer", icon: AlertTriangle },
+      { href: "/dashboard/debugging/time-travel", label: "Time Travel", icon: Rewind },
+      { href: "/dashboard/debugging/sessions", label: "Session Insights", icon: Layers },
     ],
   },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
@@ -97,13 +100,24 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           {nav.map((entry) =>
             isGroup(entry) ? (
               <div key={entry.label} className="pt-3">
-                <div
-                  className="flex items-center gap-2 px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider"
-                  style={{ color: "#666" }}
-                >
-                  <entry.icon size={13} />
-                  {entry.label}
-                </div>
+                {entry.href ? (
+                  <Link
+                    href={entry.href}
+                    className="flex items-center gap-2 px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider transition"
+                    style={{ color: isNavActive(pathname, entry.href) ? "#a3a3a3" : "#666" }}
+                  >
+                    <entry.icon size={13} />
+                    {entry.label}
+                  </Link>
+                ) : (
+                  <div
+                    className="flex items-center gap-2 px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider"
+                    style={{ color: "#666" }}
+                  >
+                    <entry.icon size={13} />
+                    {entry.label}
+                  </div>
+                )}
                 <div className="space-y-0.5">
                   {entry.children.map((child) => (
                     <SidebarLink
