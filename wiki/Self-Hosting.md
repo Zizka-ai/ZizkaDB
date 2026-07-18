@@ -102,6 +102,19 @@ bash infra/deploy-selfhost.sh
 
 **Never** `docker compose down -v` on a server with real users.
 
+## Staging (prod-like rehearsal)
+
+Same host can run a second Compose project with isolated volumes and ports. Templates and deploy order: [docs/staging.md](../docs/staging.md).
+
+```bash
+export COMPOSE_PROJECT_NAME=zizkadb-staging
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.staging.yml \
+  --env-file infra/.env.staging up -d --build
+ZIZKADB_API_KEY='...' bash scripts/smoke-test.sh https://staging-db.zizka.ai
+```
+
+Use `ENV=production`, `NEXT_PUBLIC_DEV_MODE=false`, and **different** JWT secrets than production.
+
 Local laptop reset only:
 
 ```bash

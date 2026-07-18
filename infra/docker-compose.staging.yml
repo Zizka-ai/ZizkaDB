@@ -1,0 +1,66 @@
+# Staging overlay — same shape as prod, isolated data + ports.
+#
+# From repo root (or infra/), with a dedicated env file:
+#
+#   export COMPOSE_PROJECT_NAME=zizkadb-staging
+#   docker compose \
+#     -f infra/docker-compose.yml \
+#     -f infra/docker-compose.staging.yml \
+#     --env-file infra/.env.staging \
+#     up -d --build
+#
+# NEVER point DATABASE_URL / volumes at production data.
+# NEVER run `docker compose down -v` against the prod project by mistake —
+# always set COMPOSE_PROJECT_NAME=zizkadb-staging for this stack.
+
+services:
+  postgres:
+    container_name: zizkadb_staging_postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - staging_postgres_data:/var/lib/postgresql/data
+      - ../core/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+
+  qdrant:
+    container_name: zizkadb_staging_qdrant
+    ports:
+      - "6335:6333"
+      - "6336:6334"
+    volumes:
+      - staging_qdrant_data:/qdrant/storage
+
+  redis:
+    container_name: zizkadb_staging_redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - staging_redis_data:/data
+
+  api:
+    container_name: zizkadb_staging_api
+    ports:
+      - "8001:8000"
+    environment:
+      ENV: ${ENV:-production}
+      # Must be unset in infra/.env.staging — empty default avoids compose injecting the prod default key
+      DEV_API_KEY: ${DEV_API_KEY:-}
+      OTP_RATE_LIMIT_STORAGE: ${OTP_RATE_LIMIT_STORAGE:-redis}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-https://staging-db.zizka.ai}
+      DASHBOARD_URL: ${DASHBOARD_URL:-https://staging-db.zizka.ai}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in infra/.env.staging}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in infra/.env.staging}
+    volumes:
+      - staging_community_uploads:/data/community_uploads
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+
+volumes:
+  staging_postgres_data:
+  staging_qdrant_data:
+  staging_redis_data:
+  staging_community_uploads:
+  # Suppress inheriting prod volume names from the base file for this project
+  postgres_data:
+  qdrant_data:
+  redis_data:
+  community_uploads:
