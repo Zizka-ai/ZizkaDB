@@ -259,6 +259,87 @@ async def impact(
 
 
 # ─────────────────────────────────────────
+# ERROR EXPLORER — GET /v1/events/errors
+# Group failures across agents into a triage queue
+# ─────────────────────────────────────────
+
+_WINDOW_INTERVALS = {"24h": "24 hours", "7d": "7 days", "30d": "30 days"}
+
+
+@router.get("/errors")
+async def list_errors(
+    agent: str | None = Query(default=None),
+    window: str = Query(default="7d", pattern="^(24h|7d|30d|all)$"),
+    limit: int = Query(default=20, le=100),
+    tenant: dict = Depends(get_tenant),
+):
+    """Group error/fail events into signatures for triage.
+
+    An event counts as an error when its type contains "error"/"fail" (same
+    heuristic as memory diff) or its data has an `error` key. Groups by
+    (event_type, data->>'error') with counts, affected agents/sessions, first/
+    last seen, and a few sample event ids to trace.
+    """
+    pool = get_pool()
+    tenant_id = tenant["tenant_id"]
+
+    # Agent scope: honor an explicit ?agent= and always the scoped key's agent.
+    effective_agent = agent or tenant.get("agent_id")
+    if effective_agent:
+        assert_agent_allowed(tenant, effective_agent)
+
+    interval = _WINDOW_INTERVALS.get(window)  # None for "all"
+
+    rows = await pool.fetch(
+        """
+        SELECT
+            event_type,
+            COALESCE(data->>'error', '') AS error_key,
+            COUNT(*)                       AS count,
+            COUNT(DISTINCT agent_id)       AS agents_affected,
+            COUNT(DISTINCT session_id)     AS sessions_affected,
+            MIN(timestamp)                 AS first_seen,
+            MAX(timestamp)                 AS last_seen,
+            (array_agg(event_id ORDER BY timestamp DESC))[1:3]  AS sample_ids,
+            (array_agg(DISTINCT agent_id))[1:5]                 AS agents
+        FROM events
+        WHERE tenant_id = $1
+          AND (event_type ILIKE '%error%' OR event_type ILIKE '%fail%' OR data ? 'error')
+          AND ($2::text IS NULL OR agent_id = $2)
+          AND ($3::text IS NULL OR timestamp >= NOW() - $3::interval)
+        GROUP BY event_type, COALESCE(data->>'error', '')
+        ORDER BY count DESC, last_seen DESC
+        LIMIT $4
+        """,
+        tenant_id, effective_agent, interval, limit,
+    )
+
+    groups = []
+    for r in rows:
+        error_key = r["error_key"] or None
+        groups.append({
+            "signature": r["event_type"] + (f": {error_key}" if error_key else ""),
+            "event_type": r["event_type"],
+            "error": error_key,
+            "count": r["count"],
+            "agents_affected": r["agents_affected"],
+            "sessions_affected": r["sessions_affected"],
+            "first_seen": r["first_seen"].isoformat() if r["first_seen"] else None,
+            "last_seen": r["last_seen"].isoformat() if r["last_seen"] else None,
+            "sample_event_ids": [str(e) for e in (r["sample_ids"] or [])],
+            "agents": [a for a in (r["agents"] or []) if a],
+        })
+
+    return {
+        "window": window,
+        "agent": effective_agent,
+        "group_count": len(groups),
+        "total_errors": sum(g["count"] for g in groups),
+        "groups": groups,
+    }
+
+
+# ─────────────────────────────────────────
 # TIME TRAVEL — GET /v1/events/at
 # Reconstruct agent state at a given time
 # ─────────────────────────────────────────
