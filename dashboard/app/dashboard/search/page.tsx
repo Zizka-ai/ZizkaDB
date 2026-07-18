@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { searchEvents } from "@/lib/api";
 import { requireAuth } from "@/lib/auth";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 
 interface Event {
@@ -20,18 +21,33 @@ export default function SearchPage() {
   const [results, setResults] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [error, setError] = useState<"embeddings" | "network" | "other" | "">("");
+  const [errorMsg, setErrorMsg] = useState("");
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     if (!query.trim()) return;
     setLoading(true);
     setSearched(true);
+    setError("");
     try {
       const token = requireAuth();
       const res = await searchEvents(token, query);
       setResults(Array.isArray(res) ? res : (res?.results ?? []));
-    } catch {
+    } catch (err) {
       setResults([]);
+      const msg = err instanceof Error ? err.message : "";
+      const m = msg.toLowerCase();
+      // The API returns a clear 400 when embeddings aren't configured — surface
+      // it instead of silently showing "No results" (which looks broken).
+      if (m.includes("embedding") || m.includes("configure")) {
+        setError("embeddings");
+      } else if (m.includes("failed to fetch") || m.includes("networkerror") || m.includes("load failed")) {
+        setError("network");
+      } else {
+        setError("other");
+        setErrorMsg(msg || "Something went wrong running the search.");
+      }
     } finally {
       setLoading(false);
     }
@@ -75,8 +91,54 @@ export default function SearchPage() {
         </button>
       </form>
 
+      {/* Error / setup states */}
+      {!loading && error === "embeddings" && (
+        <div
+          className="rounded-xl px-4 py-3.5 mb-6 text-sm"
+          style={{ background: "#1f1a10", border: "1px solid #3a2f1a", color: "#fbbf24" }}
+        >
+          <div className="flex items-start gap-2.5">
+            <AlertCircle size={15} className="mt-0.5 shrink-0" />
+            <div>
+              <p className="font-medium mb-1" style={{ color: "#fcd34d" }}>
+                Semantic search needs embeddings
+              </p>
+              <p style={{ color: "#d4d4d4" }}>
+                Add an OpenAI key in{" "}
+                <Link
+                  href="/dashboard/settings"
+                  className="underline decoration-dotted underline-offset-2"
+                  style={{ color: "#fcd34d" }}
+                >
+                  Settings → Embeddings
+                </Link>{" "}
+                to enable natural-language search. Logging and Causal Trace work without it.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      {!loading && error === "network" && (
+        <div
+          className="flex items-start gap-2.5 rounded-xl px-4 py-3 mb-6 text-sm"
+          style={{ background: "#1f1414", border: "1px solid #3a1f1f", color: "#f87171" }}
+        >
+          <AlertCircle size={15} className="mt-0.5 shrink-0" />
+          <span>Couldn&apos;t reach the server. Check that the ZizkaDB API is running, then retry.</span>
+        </div>
+      )}
+      {!loading && error === "other" && (
+        <div
+          className="flex items-start gap-2.5 rounded-xl px-4 py-3 mb-6 text-sm"
+          style={{ background: "#1f1414", border: "1px solid #3a1f1f", color: "#f87171" }}
+        >
+          <AlertCircle size={15} className="mt-0.5 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       {/* Results */}
-      {searched && !loading && results.length === 0 && (
+      {searched && !loading && !error && results.length === 0 && (
         <div className="text-center py-12" style={{ color: "#e5e5e5" }}>
           No results for &quot;{query}&quot;
         </div>
