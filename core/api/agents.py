@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from datetime import datetime, timedelta, timezone
 
@@ -7,7 +8,9 @@ from services.exceptions import bad_request, conflict, not_found
 from pydantic import BaseModel, Field
 
 from api.deps import assert_agent_allowed, get_tenant, require_dashboard_session
-from db.connection import get_pool
+from db.connection import get_pool, get_qdrant
+
+log = logging.getLogger(__name__)
 from services.api_keys import (
     assert_and_reserve_api_key_slot,
     create_api_key_record,
@@ -139,6 +142,38 @@ async def delete_agent(
     if not row:
         raise not_found("Agent not found")
 
+    # Collect event IDs before deletion so we can clean Qdrant vectors
+    event_id_rows = await pool.fetch(
+        "SELECT event_id FROM events WHERE tenant_id = $1 AND agent_id = $2",
+        tenant_id, agent_id,
+    )
+    event_ids = [str(r["event_id"]) for r in event_id_rows]
+
+    # Delete vectors from Qdrant (best-effort with retry)
+    import asyncio
+    qdrant_ok = False
+    if event_ids:
+        try:
+            from qdrant_client.models import PointIdsList
+            qdrant = get_qdrant()
+            for attempt in range(3):
+                try:
+                    await qdrant.delete(
+                        collection_name="agent_events",
+                        points_selector=PointIdsList(points=event_ids),
+                    )
+                    qdrant_ok = True
+                    break
+                except Exception as e:
+                    log.warning(
+                        "Qdrant delete attempt %d/3 failed for agent %s: %s",
+                        attempt + 1, agent_id, e,
+                    )
+                    if attempt < 2:
+                        await asyncio.sleep(0.5 * (attempt + 1))
+        except Exception as e:
+            log.warning("Qdrant cleanup skipped for agent %s: %s", agent_id, e)
+
     async with pool.acquire() as conn:
         async with conn.transaction():
             await conn.execute(
@@ -157,6 +192,7 @@ async def delete_agent(
         "deleted": True,
         "agent": agent_id,
         "events_deleted": int(row["event_count"] or 0),
+        "qdrant_cleanup": qdrant_ok,
     }
 
 

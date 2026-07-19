@@ -362,41 +362,66 @@ async def forget(
     
     deleted = len(event_ids)
 
-    # Delete vectors from Qdrant
-    try:
-        from qdrant_client.models import PointIdsList
+    # Delete vectors from Qdrant (with retry to prevent ghost data)
+    import asyncio
+    from qdrant_client.models import PointIdsList
 
-        qdrant = get_qdrant()
+    qdrant = get_qdrant()
+    qdrant_ok = False
+    last_qdrant_err = None
 
-        await qdrant.delete(
-            collection_name="agent_events",
-            points_selector=PointIdsList(
-                points=[str(eid) for eid in event_ids]
-            ),
-        )
+    for attempt in range(3):
+        try:
+            await qdrant.delete(
+                collection_name="agent_events",
+                points_selector=PointIdsList(
+                    points=[str(eid) for eid in event_ids]
+                ),
+            )
+            qdrant_ok = True
+            break
+        except Exception as e:
+            last_qdrant_err = e
+            log.warning(
+                "Qdrant delete attempt %d/3 failed for tenant %s: %s",
+                attempt + 1,
+                tenant_id,
+                e,
+            )
+            if attempt < 2:
+                await asyncio.sleep(0.5 * (attempt + 1))
 
-    except Exception as e:
-        log.warning(
-            "Qdrant delete partial failure for tenant %s: %s",
+    if not qdrant_ok:
+        log.error(
+            "Qdrant delete FAILED after 3 attempts for tenant %s — "
+            "vectors may still exist in search index: %s",
             tenant_id,
-            e,
+            last_qdrant_err,
         )
 
     log.info(
-        "GDPR forget: tenant=%s key=%s value=%s deleted=%s",
+        "GDPR forget: tenant=%s key=%s value=%s deleted=%s qdrant_ok=%s",
         tenant_id,
         body.filter_key,
         body.filter_value,
         deleted,
+        qdrant_ok,
     )
+
+    message = f"Deleted {deleted} events."
+    if qdrant_ok:
+        message += " Vectors removed from search index."
+    else:
+        message += " WARNING: Vector cleanup failed — deleted events may still appear in search results."
 
     return {
         "deleted_events": deleted,
+        "qdrant_cleanup": qdrant_ok,
         "filter": {
             "key": body.filter_key,
             "value": body.filter_value,
         },
-        "message": f"Deleted {deleted} events. Vectors removed from search index.",
+        "message": message,
     }
 
 
