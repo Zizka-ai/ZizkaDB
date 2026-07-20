@@ -12,6 +12,8 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 from api.auth import otp_limiter, _otp_storage, _OTP_RATE_MAX, _OTP_RATE_WINDOW_SEC
+from api.deps import get_tenant
+from api import events as events_module
 from services.rate_limiter import (
     InMemoryStorage,
     RedisStorage,
@@ -214,6 +216,56 @@ class TestRateLimiterFeatures:
             f"concurrency again"
         )
 
+    def test_in_memory_check_and_increment_holds_limit_under_concurrency(self):
+        """
+        Plain get_hits() + record_hit() has a check-then-act race: concurrent
+        callers can all read the same under-limit count before any of them
+        records, so a burst can overshoot the limit. check_and_increment()
+        does both atomically under a single lock acquisition -- exactly
+        `limit` of N concurrent callers must be let through, never more.
+        """
+        storage = InMemoryStorage()
+        limit = 10
+
+        async def fire(n: int) -> int:
+            results = await asyncio.gather(*(
+                storage.check_and_increment("burst-key", limit, 60) for _ in range(n)
+            ))
+            return sum(1 for allowed, _hits in results if allowed)
+
+        allowed_count = asyncio.run(fire(50))
+        assert allowed_count == limit, (
+            f"expected exactly {limit} of 50 concurrent callers to be allowed, "
+            f"got {allowed_count} -- check_and_increment() is not holding the "
+            f"limit atomically"
+        )
+
+    def test_redis_check_and_increment_holds_limit_under_concurrency(self):
+        """Same guarantee as the in-memory case above, but against a real
+        (fake) Redis backend via the WATCH/MULTI/EXEC optimistic-lock loop."""
+        if fakeredis_aioredis is None:
+            pytest.skip("fakeredis not installed (see core/requirements-dev.txt)")
+
+        with patch("services.rate_limiter.get_redis") as mock_get_redis:
+            fake_redis = fakeredis_aioredis.FakeRedis(decode_responses=False)
+            mock_get_redis.return_value = fake_redis
+
+            storage = RedisStorage(key_prefix="ratelimit-atomic-test")
+            limit = 10
+
+            async def fire(n: int) -> int:
+                results = await asyncio.gather(*(
+                    storage.check_and_increment("burst-key", limit, 60) for _ in range(n)
+                ))
+                return sum(1 for allowed, _hits in results if allowed)
+
+            allowed_count = asyncio.run(fire(50))
+            assert allowed_count == limit, (
+                f"expected exactly {limit} of 50 concurrent callers to be allowed, "
+                f"got {allowed_count} -- the WATCH/MULTI/EXEC loop is not holding "
+                f"the limit atomically"
+            )
+
 
 class TestOtpStorageSelection:
     def test_explicit_redis(self, monkeypatch):
@@ -255,4 +307,145 @@ class TestOtpRateLimitFailClosed:
         assert response.status_code == 503
         assert "temporarily unavailable" in response.json()["detail"]
         mock_request_otp.assert_not_called()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Event Write Rate Limiting Tests (issue #3 -- Rate limit)
+# ──────────────────────────────────────────────────────────────────────────────
+
+class TestEventWriteRateLimiting:
+    def setup_method(self):
+        events_module.write_limiter.storage = InMemoryStorage()
+        asyncio.run(events_module.write_limiter.storage.clear())
+        app.dependency_overrides[get_tenant] = lambda: {"tenant_id": "rl-tenant"}
+
+    def teardown_method(self):
+        app.dependency_overrides.pop(get_tenant, None)
+
+    @patch("api.events.write_event", new_callable=AsyncMock)
+    def test_writes_under_limit_succeed(self, mock_write):
+        mock_write.return_value = {"event_id": "e1", "sequence_no": 1}
+        start_time = 1000000.0
+        with patch("time.time", return_value=start_time):
+            for _ in range(events_module._EVENTS_RATE_MAX):
+                response = client.post(
+                    "/v1/events",
+                    json={"agent": "agent1", "event": "test", "data": {}},
+                )
+                assert response.status_code == 201
+            assert mock_write.await_count == events_module._EVENTS_RATE_MAX
+
+    @patch("api.events.write_event", new_callable=AsyncMock)
+    def test_burst_exceeds_limit_returns_usable_429(self, mock_write):
+        """The 429 must be usable by clients: a structured body plus
+        standard rate-limit headers, not just a bare status code."""
+        mock_write.return_value = {"event_id": "e1", "sequence_no": 1}
+        start_time = 1000000.0
+        with patch("time.time", return_value=start_time):
+            for _ in range(events_module._EVENTS_RATE_MAX):
+                response = client.post(
+                    "/v1/events",
+                    json={"agent": "agent1", "event": "test", "data": {}},
+                )
+                assert response.status_code == 201
+
+            response = client.post(
+                "/v1/events",
+                json={"agent": "agent1", "event": "test", "data": {}},
+            )
+            assert response.status_code == 429
+
+            body = response.json()["detail"]
+            assert "Too many events" in body["message"]
+            assert body["retry_after_seconds"] == events_module._EVENTS_RATE_WINDOW_SEC
+            assert body["limit"] == events_module._EVENTS_RATE_MAX
+            assert body["window_seconds"] == events_module._EVENTS_RATE_WINDOW_SEC
+
+            assert response.headers["Retry-After"] == str(events_module._EVENTS_RATE_WINDOW_SEC)
+            assert response.headers["X-RateLimit-Limit"] == str(events_module._EVENTS_RATE_MAX)
+            assert response.headers["X-RateLimit-Remaining"] == "0"
+            assert response.headers["X-RateLimit-Reset"] == str(
+                int(start_time) + events_module._EVENTS_RATE_WINDOW_SEC
+            )
+            # The blocked request must not reach the write path.
+            assert mock_write.await_count == events_module._EVENTS_RATE_MAX
+
+    @patch("api.events.write_event", new_callable=AsyncMock)
+    def test_burst_recovers_after_window_rolls_over(self, mock_write):
+        mock_write.return_value = {"event_id": "e1", "sequence_no": 1}
+        current_time = [1000000.0]
+
+        with patch("time.time", side_effect=lambda: current_time[0]):
+            for _ in range(events_module._EVENTS_RATE_MAX):
+                response = client.post(
+                    "/v1/events",
+                    json={"agent": "agent1", "event": "test", "data": {}},
+                )
+                assert response.status_code == 201
+
+            blocked = client.post(
+                "/v1/events",
+                json={"agent": "agent1", "event": "test", "data": {}},
+            )
+            assert blocked.status_code == 429
+
+            current_time[0] += events_module._EVENTS_RATE_WINDOW_SEC + 1
+
+            response = client.post(
+                "/v1/events",
+                json={"agent": "agent1", "event": "test", "data": {}},
+            )
+            assert response.status_code == 201
+
+    @patch("api.events.write_event", new_callable=AsyncMock)
+    def test_partitioned_by_tenant_and_agent(self, mock_write):
+        mock_write.return_value = {"event_id": "e1", "sequence_no": 1}
+        start_time = 1000000.0
+        with patch("time.time", return_value=start_time):
+            for _ in range(events_module._EVENTS_RATE_MAX):
+                response = client.post(
+                    "/v1/events",
+                    json={"agent": "agent1", "event": "test", "data": {}},
+                )
+                assert response.status_code == 201
+
+            # (rl-tenant, agent1) is now at its limit
+            blocked = client.post(
+                "/v1/events",
+                json={"agent": "agent1", "event": "test", "data": {}},
+            )
+            assert blocked.status_code == 429
+
+            # a sibling agent under the *same* tenant has its own budget --
+            # one runaway agent must not starve another agent's writes.
+            response = client.post(
+                "/v1/events",
+                json={"agent": "agent2", "event": "test", "data": {}},
+            )
+            assert response.status_code == 201
+
+            # a different tenant is unaffected too
+            app.dependency_overrides[get_tenant] = lambda: {"tenant_id": "rl-tenant-2"}
+            response = client.post(
+                "/v1/events",
+                json={"agent": "agent1", "event": "test", "data": {}},
+            )
+            assert response.status_code == 201
+
+    @patch("api.events.write_event", new_callable=AsyncMock)
+    def test_limiter_backend_error_fails_open(self, mock_write):
+        """Unlike OTP (a brute-force guard), a rate-limit backend outage must
+        not block event ingestion — burst protection is best-effort here."""
+        mock_write.return_value = {"event_id": "e1", "sequence_no": 1}
+        events_module.write_limiter.storage = MagicMock()
+        events_module.write_limiter.storage.check_and_increment = AsyncMock(
+            side_effect=RuntimeError("redis down")
+        )
+
+        response = client.post(
+            "/v1/events",
+            json={"agent": "agent1", "event": "test", "data": {}},
+        )
+        assert response.status_code == 201
+        mock_write.assert_awaited_once()
 

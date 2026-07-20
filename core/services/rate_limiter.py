@@ -33,6 +33,24 @@ class RateLimitStorage(ABC):
         pass
 
     @abstractmethod
+    async def check_and_increment(
+        self, key: str, limit: int, window_sec: int
+    ) -> tuple[bool, list[float]]:
+        """
+        Atomically check whether ``key`` is under ``limit`` within ``window_sec``
+        and, if so, record a hit -- as a single indivisible operation.
+
+        Strategies must use this instead of composing ``get_hits`` +
+        ``record_hit``: that two-step sequence has a check-then-act race --
+        concurrent callers can all read the same under-limit count before any
+        of them records a hit, letting a burst overshoot the limit by up to
+        the burst size. Returns ``(allowed, hits)`` where ``hits`` are the
+        active timestamps within the window after the operation (including
+        the new hit when allowed).
+        """
+        pass
+
+    @abstractmethod
     async def clear(self) -> None:
         """Clear all rate limit entries (useful for test resets)."""
         pass
@@ -125,6 +143,26 @@ class InMemoryStorage(RateLimitStorage):
                 self._data[key] = []
             self._data[key].append(timestamp)
 
+    async def check_and_increment(
+        self, key: str, limit: int, window_sec: int
+    ) -> tuple[bool, list[float]]:
+        """
+        Atomic within this process: the read-compare-append sequence runs
+        entirely inside the lock with no ``await`` in between, so no other
+        coroutine can interleave. (Across multiple worker processes this
+        storage doesn't coordinate at all -- use ``RedisStorage`` in
+        production for that.)
+        """
+        now = time.time()
+        cutoff = now - window_sec
+        with self._lock:
+            hits = [t for t in self._data.get(key, []) if t > cutoff]
+            allowed = len(hits) < limit
+            if allowed:
+                hits.append(now)
+            self._data[key] = hits
+            return allowed, hits
+
     async def clear(self) -> None:
         """Clear all rate limit entries from memory."""
         with self._lock:
@@ -196,6 +234,59 @@ class RedisStorage(RateLimitStorage):
         # Set expiry to prevent memory leak
         await redis_client.expire(rkey, window_sec)
 
+    async def check_and_increment(
+        self, key: str, limit: int, window_sec: int, _max_retries: int = 5
+    ) -> tuple[bool, list[float]]:
+        """
+        Atomic via optimistic locking (WATCH/MULTI/EXEC): the prune-count-add
+        sequence is guarded by a WATCH on the key, so if another client
+        touches it between our read and our write, EXEC aborts (returns
+        ``None``) and we retry with a fresh read. This closes the
+        check-then-act race that plain ``get_hits`` + ``record_hit`` has
+        under concurrent load.
+
+        (A Lua ``EVAL`` script would do this in one round trip instead of
+        the WATCH retry loop, but the fakeredis backend this is tested
+        against doesn't implement scripting -- see core/tests/test_rate_limiting.py.)
+        """
+        redis_client = get_redis()
+        rkey = self._get_redis_key(key)
+
+        for _ in range(_max_retries):
+            now = time.time()
+            cutoff = now - window_sec
+            member = f"{now}:{uuid.uuid4().hex}"
+
+            async with redis_client.pipeline(transaction=True) as pipe:
+                await pipe.watch(rkey)
+                await pipe.zremrangebyscore(rkey, "-inf", cutoff)
+                count = await pipe.zcard(rkey)
+                oldest = await pipe.zrange(rkey, 0, 0, withscores=True)
+                allowed = count < limit
+
+                pipe.multi()
+                if allowed:
+                    pipe.zadd(rkey, {member: now})
+                    pipe.expire(rkey, window_sec)
+                result = await pipe.execute()
+
+            if result is None:
+                # Watched key changed concurrently -- another caller raced
+                # us between our read and our write. Retry with fresh state.
+                continue
+
+            hits = [oldest[0][1]] if oldest else []
+            if allowed:
+                hits.append(now)
+            return allowed, hits
+
+        # Sustained contention on one key across every retry is not a normal
+        # rate-limiting workload -- fail closed rather than let a caller
+        # bypass the limit after silently exhausting retries.
+        raise rate_limit_exceeded(
+            detail="Rate limiter temporarily unavailable due to contention. Please retry."
+        )
+
     async def clear(self) -> None:
         """Remove all rate limit keys matching the configured prefix from Redis."""
         redis_client = get_redis()
@@ -209,6 +300,24 @@ class RedisStorage(RateLimitStorage):
 # ──────────────────────────────────────────────────────────────────────────────
 # Rate Limiting Strategies
 # ──────────────────────────────────────────────────────────────────────────────
+
+
+def _rate_limit_headers(limit: int, retry_after_sec: float) -> dict[str, str]:
+    """
+    Build standard rate-limit headers for a 429 response.
+
+    ``Retry-After`` is what well-behaved HTTP clients (and SDKs) back off on;
+    the ``X-RateLimit-*`` triplet lets clients self-throttle before they hit
+    the limit at all. Without these, a 429 body's prose is the only signal
+    and callers are left guessing how long to wait.
+    """
+    retry_after = max(1, int(retry_after_sec + 0.999))  # round up, never 0
+    return {
+        "Retry-After": str(retry_after),
+        "X-RateLimit-Limit": str(limit),
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": str(int(time.time()) + retry_after),
+    }
 
 
 class RateLimitStrategy(ABC):
@@ -237,14 +346,15 @@ class SlidingWindowStrategy(RateLimitStrategy):
         Check the limit using a sliding window algorithm.
         Raises HTTPException 429 if the request count exceeds the limit.
         """
-        hits = await storage.get_hits(key, window_sec)
-        if len(hits) >= limit:
+        allowed, hits = await storage.check_and_increment(key, limit, window_sec)
+        if not allowed:
             logger.warning(
                 f"Rate limit exceeded (SlidingWindow) for key: {key} (limit={limit}, window={window_sec}s)"
             )
-            raise rate_limit_exceeded(detail=detail)
-
-        await storage.record_hit(key, time.time(), window_sec)
+            retry_after = (min(hits) + window_sec - time.time()) if hits else window_sec
+            raise rate_limit_exceeded(
+                detail=detail, headers=_rate_limit_headers(limit, retry_after)
+            )
 
 
 class FixedWindowStrategy(RateLimitStrategy):
@@ -265,14 +375,15 @@ class FixedWindowStrategy(RateLimitStrategy):
         window_start = int(now // window_sec)
         fixed_key = f"{key}:fixed:{window_start}"
 
-        hits = await storage.get_hits(fixed_key, window_sec)
-        if len(hits) >= limit:
+        allowed, _hits = await storage.check_and_increment(fixed_key, limit, window_sec)
+        if not allowed:
             logger.warning(
                 f"Rate limit exceeded (FixedWindow) for key: {key} (limit={limit}, window={window_sec}s)"
             )
-            raise rate_limit_exceeded(detail=detail)
-
-        await storage.record_hit(fixed_key, now, window_sec)
+            retry_after = (window_start + 1) * window_sec - now
+            raise rate_limit_exceeded(
+                detail=detail, headers=_rate_limit_headers(limit, retry_after)
+            )
 
 
 # ──────────────────────────────────────────────────────────────────────────────

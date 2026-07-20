@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, Query
+import os
+import logging
+
+from fastapi import APIRouter, Depends, Query, HTTPException
 from pydantic import BaseModel, Field
 from services.exceptions import not_found
 from typing import Any
@@ -9,8 +12,58 @@ import json
 from api.deps import get_tenant, assert_agent_allowed
 from db.connection import get_pool
 from services.event_write import write_event
+from services.exceptions import rate_limit_exceeded
+from services.rate_limiter import (
+    RateLimiter,
+    InMemoryStorage,
+    RedisStorage,
+    RateLimitStorage,
+    SlidingWindowStrategy,
+)
 
 router = APIRouter()
+log = logging.getLogger(__name__)
+
+# Per-agent burst limit on event writes (issue #3 -- Rate limit), keyed on
+# (tenant, agent) rather than tenant alone so one runaway agent can't starve
+# its sibling agents' write budget within the same tenant. Default allows
+# ~5 writes/sec sustained with headroom for bursts; tune via env without a
+# code change.
+#
+# 300/60s is a reasonable-sounding default, not a number benchmarked against
+# Postgres/Qdrant's actual write throughput -- issue #85 doesn't specify a
+# target either. Worth a maintainer call on the right ceiling before this
+# ships to production traffic.
+_EVENTS_RATE_WINDOW_SEC = int(os.getenv("EVENTS_RATE_LIMIT_WINDOW_SEC", "60"))
+_EVENTS_RATE_MAX = int(os.getenv("EVENTS_RATE_LIMIT_MAX", "300"))
+
+
+def _events_write_storage() -> RateLimitStorage:
+    """
+    EVENTS_RATE_LIMIT_STORAGE=redis|memory overrides the default. Default:
+    redis when ENV=production (shared across uvicorn workers — same
+    rationale as the OTP limiter, see api/auth.py::_otp_storage and
+    docs/adr/005-in-process-rate-limiting.md), memory otherwise (local dev
+    + unit tests).
+    """
+    choice = (os.getenv("EVENTS_RATE_LIMIT_STORAGE") or "").strip().lower()
+    if not choice:
+        choice = "redis" if os.getenv("ENV", "development") == "production" else "memory"
+    if choice == "redis":
+        return RedisStorage(key_prefix="events-write")
+    return InMemoryStorage()
+
+
+write_limiter = RateLimiter(
+    limit=_EVENTS_RATE_MAX,
+    window_sec=_EVENTS_RATE_WINDOW_SEC,
+    storage=_events_write_storage(),
+    strategy=SlidingWindowStrategy(),
+    detail=(
+        f"Too many events written for this agent. "
+        f"Limit is {_EVENTS_RATE_MAX} per {_EVENTS_RATE_WINDOW_SEC}s — see Retry-After header."
+    ),
+)
 
 
 # ─────────────────────────────────────────
@@ -36,6 +89,33 @@ async def log_event(
     tenant: dict = Depends(get_tenant),
 ):
     assert_agent_allowed(tenant, body.agent)
+
+    try:
+        await write_limiter.check(f"{tenant['tenant_id']}:{body.agent}")
+    except HTTPException as exc:
+        if exc.status_code == 429:
+            # Re-raise with a structured body (message + numeric fields) on
+            # top of the existing headers, instead of the shared limiter's
+            # plain-text `detail`. Done here rather than in rate_limiter.py
+            # so OTP -- which shares that limiter and asserts `detail` is a
+            # bare string -- is unaffected.
+            retry_after = int((exc.headers or {}).get("Retry-After", _EVENTS_RATE_WINDOW_SEC))
+            raise rate_limit_exceeded(
+                detail={
+                    "message": exc.detail,
+                    "retry_after_seconds": retry_after,
+                    "limit": _EVENTS_RATE_MAX,
+                    "window_seconds": _EVENTS_RATE_WINDOW_SEC,
+                },
+                headers=exc.headers,
+            ) from None
+        raise
+    except Exception:
+        # Fail open: unlike OTP (a brute-force guard), losing burst
+        # protection during a backend blip is cheaper than blocking all
+        # event ingestion because of it.
+        log.exception("Event rate limit backend unavailable; allowing write")
+
     return await write_event(
         tenant_id=tenant["tenant_id"],
         agent=body.agent,
