@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.openapi.docs import get_swagger_ui_html
 from contextlib import asynccontextmanager
 import logging
@@ -113,10 +113,14 @@ async def health():
 
 @app.get("/health/deep")
 async def health_deep():
+    """Per-subsystem health. Returns 503 (not 200) when any check fails, so
+    orchestrators that gate on status code — not response body — see the
+    failure instead of treating a degraded backend as healthy."""
     checks = {
         "postgres": await check_postgres(),
         "redis": await check_redis(),
         "qdrant": await check_qdrant(),
     }
-    status = "ok" if all(check.get("ok") for check in checks.values()) else "degraded"
-    return {"status": status, "checks": checks}
+    healthy = all(check.get("ok") for check in checks.values())
+    body = {"status": "ok" if healthy else "degraded", "checks": checks}
+    return JSONResponse(content=body, status_code=200 if healthy else 503)
