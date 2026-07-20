@@ -124,6 +124,14 @@ async def why(
     except ValueError:
         raise not_found("Event not found")
 
+    target = await pool.fetchrow(
+        "SELECT agent_id FROM events WHERE event_id = $1 AND tenant_id = $2",
+        event_id, tenant_id,
+    )
+    if not target:
+        raise not_found("Event not found")
+    assert_agent_allowed(tenant, target["agent_id"])
+
     rows = await pool.fetch(
         """
         WITH RECURSIVE causal_chain AS (

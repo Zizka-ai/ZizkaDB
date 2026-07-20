@@ -14,7 +14,7 @@ from typing import Any
 import json
 import logging
 
-from api.deps import get_tenant
+from api.deps import assert_agent_allowed, get_tenant
 from db.connection import get_pool, get_qdrant
 from services.embeddings import generate_embedding
 
@@ -59,6 +59,7 @@ async def get_context(
             {"role": "user", "content": user_message}
         ]
     """
+    assert_agent_allowed(tenant, body.agent)
     tenant_id = tenant["tenant_id"]
     pool = get_pool()
 
@@ -226,6 +227,7 @@ async def session_diff(
         raise not_found("Session not found")
 
     agent_id = rows[0]["agent_id"]
+    assert_agent_allowed(tenant, agent_id)
     events = []
     event_types: dict[str, int] = {}
     has_error = False
@@ -321,17 +323,25 @@ async def forget(
     tenant_id = tenant["tenant_id"]
     pool = get_pool()
 
+    # An agent-scoped API key must only ever be able to forget events that
+    # belong to its own agent -- otherwise a key minted for one agent could
+    # erase another agent's data in the same tenant. A tenant-wide key (no
+    # scoped agent_id) keeps the original tenant-wide GDPR erasure behavior.
+    scoped_agent = tenant.get("agent_id")
+    conditions = ["tenant_id = $1", "data->$2 = to_jsonb($3::text)"]
+    params: list = [tenant_id, body.filter_key, body.filter_value]
+    if scoped_agent:
+        conditions.append(f"agent_id = ${len(params) + 1}")
+        params.append(scoped_agent)
+
     # Find matching event IDs
     rows = await pool.fetch(
-        """
+        f"""
         SELECT event_id
         FROM events
-        WHERE tenant_id = $1
-          AND data->$2 = to_jsonb($3::text)
+        WHERE {" AND ".join(conditions)}
         """,
-        tenant_id,
-        body.filter_key,
-        body.filter_value,
+        *params,
     )
 
     if not rows:
