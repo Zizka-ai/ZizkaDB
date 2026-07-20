@@ -23,6 +23,19 @@ _DEV_TENANT = {
     "user_id": _DEV_USER_ID,
 }
 
+# Actionable 401 message for a rejected API key. New integrators (especially
+# self-hosters) otherwise just see "Invalid API key" with no idea what to check,
+# so spell out the header format, how to mint a key, and the self-host ENV gotcha
+# where a `production` instance rejects the built-in dev key.
+_INVALID_API_KEY_MESSAGE = (
+    "Invalid or revoked API key. Send it as 'Authorization: Bearer <api-key>'. "
+    "Create a key from the dashboard (Settings -> API Keys) or via POST /v1/auth/api-keys, "
+    "then pass it to the SDK as ZizkaDB(api_key='zizkadb_live_...'). "
+    "Self-hosting: keys are minted on your own instance, not db.zizka.ai. If you set "
+    "ENV=production the built-in dev key 'zizkadb_dev_local' is rejected -- use a real "
+    "key; for local development leave ENV=development so the dev key is accepted."
+)
+
 
 def looks_like_jwt(token: str) -> bool:
     """JWTs use three dot-separated segments; API keys do not."""
@@ -119,7 +132,7 @@ async def get_tenant(
         return tenant
 
     if not looks_like_jwt(token):
-        raise unauthorized(detail="Invalid or revoked API key")
+        raise unauthorized(detail=_INVALID_API_KEY_MESSAGE)
 
     # JWT (dashboard sessions)
     try:

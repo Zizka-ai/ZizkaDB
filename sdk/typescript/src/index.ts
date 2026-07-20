@@ -516,11 +516,36 @@ export class ZizkaDB {
     }
   }
 
+  private async authErrorMessage(res: Response): Promise<string> {
+    // A hardcoded "go to db.zizka.ai/dashboard" is wrong for a self-hoster whose
+    // keys live on their own instance, so tailor the message and surface the
+    // server's own guidance when it sends any.
+    let serverDetail: string | undefined
+    try {
+      const json = (await res.json()) as Record<string, unknown>
+      if (typeof json.detail === 'string') serverDetail = json.detail
+    } catch {}
+
+    let base: string
+    if (this.baseUrl === CLOUD_HOST) {
+      base = 'Invalid API key. Create an agent at db.zizka.ai/dashboard and copy its key.'
+    } else {
+      base =
+        `Invalid API key for the ZizkaDB instance at ${this.baseUrl}. ` +
+        'Mint a key on that instance (dashboard Settings -> API Keys or POST /v1/auth/api-keys) ' +
+        "and pass it as new ZizkaDB({ apiKey: '...' }). For local development, run the " +
+        `server with ENV=development and use the dev key '${DEFAULT_DEV_API_KEY}'.`
+    }
+
+    if (serverDetail && !base.includes(serverDetail)) {
+      return `${base}\nServer: ${serverDetail}`
+    }
+    return base
+  }
+
   private async handle(res: Response): Promise<unknown> {
     if (res.status === 401) {
-      throw new AuthError(
-        'Invalid API key. Create an agent at db.zizka.ai/dashboard and copy its key.',
-      )
+      throw new AuthError(await this.authErrorMessage(res))
     }
     if (res.status === 403) {
       let detail = res.statusText

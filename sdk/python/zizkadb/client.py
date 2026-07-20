@@ -503,12 +503,38 @@ class ZizkaDB:
             if not self._client:
                 await client.aclose()
 
+    def _auth_error_message(self, resp: httpx.Response) -> str:
+        """Build a clear 401 message tailored to cloud vs self-hosted.
+
+        A hardcoded "go to db.zizka.ai/dashboard" is wrong (and confusing) for a
+        self-hoster whose keys live on their own instance, so point them at the
+        right place and surface the server's own guidance when it sends any.
+        """
+        try:
+            detail = resp.json().get("detail")
+            # FastAPI sends a list for validation errors — only inline plain strings.
+            server_detail = detail if isinstance(detail, str) else None
+        except Exception:
+            server_detail = None
+
+        if self._base_url == CLOUD_HOST:
+            base = "Invalid API key. Create an agent at db.zizka.ai/dashboard and copy its key."
+        else:
+            base = (
+                f"Invalid API key for the ZizkaDB instance at {self._base_url}. "
+                "Mint a key on that instance (dashboard Settings -> API Keys or "
+                "POST /v1/auth/api-keys) and pass it as ZizkaDB(api_key='...'). For local "
+                "development, run the server with ENV=development and use the dev "
+                f"key '{DEFAULT_DEV_API_KEY}'."
+            )
+
+        if server_detail and server_detail not in base:
+            return f"{base}\nServer: {server_detail}"
+        return base
+
     def _handle(self, resp: httpx.Response) -> Any:
         if resp.status_code == 401:
-            raise AuthError(
-                "Invalid API key. Create an agent at db.zizka.ai/dashboard and copy its key.",
-                status_code=401,
-            )
+            raise AuthError(self._auth_error_message(resp), status_code=401)
         if resp.status_code == 403:
             try:
                 detail = resp.json().get("detail", resp.text)
