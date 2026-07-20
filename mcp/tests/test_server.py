@@ -8,6 +8,7 @@ mocked httpx responses. No running server or database required.
 from __future__ import annotations
 
 import json
+import httpx
 import pytest
 import importlib
 import sys
@@ -31,6 +32,16 @@ def _patch_api(body: dict | list, status: int = 200):
         "zizkadb_mcp.server._api",
         new=AsyncMock(return_value=body if status < 400 else {"error": str(body), "status": status}),
     )
+
+
+def _client(return_value=None, side_effect=None):
+    """Mock httpx.AsyncClient where every HTTP method shares the same stub."""
+    client = AsyncMock()
+    client.__aenter__ = AsyncMock(return_value=client)
+    client.__aexit__ = AsyncMock(return_value=None)
+    for method in ("get", "post", "request"):
+        setattr(client, method, AsyncMock(return_value=return_value, side_effect=side_effect))
+    return client
 
 
 # ── _api helper ────────────────────────────────────────────────────────────
@@ -269,3 +280,171 @@ class TestMemoryDiff:
             await memory_diff(session_id="sess/with/slashes")
 
         assert "sess/with/slashes" not in captured["path"]
+
+
+# ── Auth error clarity (issue #85, task 8) ─────────────────────────────────
+#
+# Connecting the MCP server with wrong credentials must produce obvious,
+# actionable errors — never raw JSON blobs, uncaught exceptions, or (worst)
+# silent empty responses.
+
+class TestAuthErrorClarity:
+    @pytest.mark.asyncio
+    async def test_401_surfaces_server_detail_and_cloud_hint(self, monkeypatch):
+        """Wrong key on cloud: the server's detail AND a remediation hint."""
+        monkeypatch.setattr("zizkadb_mcp.server._KEY", "bad_key")
+        monkeypatch.setattr("zizkadb_mcp.server._HOST", "https://db.zizka.ai")
+        resp = _mock_response(401, {"detail": "Invalid or revoked API key"})
+
+        with patch("zizkadb_mcp.server.httpx.AsyncClient", return_value=_client(return_value=resp)):
+            from zizkadb_mcp.server import _api
+            result = await _api("GET", "/events")
+
+        assert result["status"] == 401
+        assert "Invalid or revoked API key" in result["error"]  # server detail kept
+        assert "Authentication failed" in result["error"]
+        assert "db.zizka.ai" in result["error"]  # where to fix it
+        # Not the old raw-JSON-blob behaviour:
+        assert result["error"] != '{"detail": "Invalid or revoked API key"}'
+
+    @pytest.mark.asyncio
+    async def test_401_self_host_hint_on_localhost(self, monkeypatch):
+        """Wrong key on self-host: hint must point at the LOCAL dashboard,
+        not at the cloud signup page."""
+        monkeypatch.setattr("zizkadb_mcp.server._KEY", "bad_key")
+        monkeypatch.setattr("zizkadb_mcp.server._HOST", "http://localhost:8000")
+        resp = _mock_response(401, {"detail": "Invalid or revoked API key"})
+
+        with patch("zizkadb_mcp.server.httpx.AsyncClient", return_value=_client(return_value=resp)):
+            from zizkadb_mcp.server import _api
+            result = await _api("GET", "/events")
+
+        assert result["status"] == 401
+        assert "localhost:3001" in result["error"]  # local dashboard
+        assert "ENV=development" in result["error"]  # dev-key escape hatch
+        assert "Sign up at https://db.zizka.ai" not in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_403_explains_agent_scope(self, monkeypatch):
+        """Scoped-key mismatch: surface the server's detail and say 'scoped'."""
+        monkeypatch.setattr("zizkadb_mcp.server._KEY", "scoped_key")
+        detail = "This API key is scoped to agent 'bot-a' only"
+        resp = _mock_response(403, {"detail": detail})
+
+        with patch("zizkadb_mcp.server.httpx.AsyncClient", return_value=_client(return_value=resp)):
+            from zizkadb_mcp.server import _api
+            result = await _api("GET", "/events")
+
+        assert result["status"] == 403
+        assert "bot-a" in result["error"]
+        assert "scoped" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_unreachable_host_returns_error_not_exception(self, monkeypatch):
+        """Server down / wrong ZIZKADB_HOST: previously an uncaught
+        httpx.ConnectError traceback — now a clear error naming the host."""
+        monkeypatch.setattr("zizkadb_mcp.server._KEY", "any_key")
+        monkeypatch.setattr("zizkadb_mcp.server._HOST", "http://localhost:8000")
+
+        with patch(
+            "zizkadb_mcp.server.httpx.AsyncClient",
+            return_value=_client(side_effect=httpx.ConnectError("Connection refused")),
+        ):
+            from zizkadb_mcp.server import _api
+            result = await _api("GET", "/events")  # must NOT raise
+
+        assert result["status"] == 0
+        assert "Cannot reach" in result["error"]
+        assert "localhost:8000" in result["error"]  # names the host it tried
+        assert "ZIZKADB_HOST" in result["error"]  # points at the config knob
+
+    @pytest.mark.asyncio
+    async def test_non_json_error_body_falls_back_to_text(self, monkeypatch):
+        """e.g. an nginx 502 HTML page has no {"detail": ...} — show the body."""
+        monkeypatch.setattr("zizkadb_mcp.server._KEY", "any_key")
+        resp = MagicMock()
+        resp.status_code = 502
+        resp.is_success = False
+        resp.text = "<html>Bad Gateway</html>"
+        resp.json = MagicMock(side_effect=ValueError("not json"))
+
+        with patch("zizkadb_mcp.server.httpx.AsyncClient", return_value=_client(return_value=resp)):
+            from zizkadb_mcp.server import _api
+            result = await _api("GET", "/events")
+
+        assert result["status"] == 502
+        assert "Bad Gateway" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_missing_key_self_host_hint(self, monkeypatch):
+        """No key configured against localhost: point at the local dashboard
+        and the dev-key escape hatch, not the cloud signup."""
+        monkeypatch.setattr("zizkadb_mcp.server._KEY", "")
+        monkeypatch.setattr("zizkadb_mcp.server._HOST", "http://localhost:8000")
+
+        from zizkadb_mcp.server import _api
+        result = await _api("GET", "/events")
+
+        assert result["status"] == 401
+        assert "ZIZKADB_API_KEY is not set" in result["error"]
+        assert "localhost:3001" in result["error"]
+        assert "ENV=development" in result["error"]
+        assert "Sign up at https://db.zizka.ai" not in result["error"]
+
+
+class TestGetContextAuthFailure:
+    @pytest.mark.asyncio
+    async def test_auth_error_is_visible_not_silent(self):
+        """Regression: get_context used to return "" on any API error,
+        making an auth failure indistinguishable from 'agent has no memory'."""
+        error_dict = {
+            "error": "Authentication failed (401 Unauthorized): Invalid or revoked API key. Hint: ...",
+            "status": 401,
+        }
+        with patch("zizkadb_mcp.server._api", new=AsyncMock(return_value=error_dict)):
+            from zizkadb_mcp.server import get_context
+            result = await get_context(agent="bot", task="help user")
+
+        assert result != ""
+        assert "Authentication failed" in result
+
+    @pytest.mark.asyncio
+    async def test_legitimate_empty_context_stays_empty(self):
+        """A real 'no memory' response must still return "" — only errors change."""
+        with patch(
+            "zizkadb_mcp.server._api",
+            new=AsyncMock(return_value={"context": "", "event_count": 0}),
+        ):
+            from zizkadb_mcp.server import get_context
+            result = await get_context(agent="bot", task="something")
+
+        assert result == ""
+
+
+class TestStartupKeyWarning:
+    """The server prints a stderr warning at startup when no key is configured
+    (stdout stays clean because it carries the MCP protocol)."""
+
+    def test_warns_on_stderr_when_key_missing(self, monkeypatch, capsys):
+        import zizkadb_mcp.server as srv
+
+        for var in ("ZIZKADB_API_KEY", "AGENTDB_API_KEY", "DEV_API_KEY"):
+            monkeypatch.delenv(var, raising=False)
+        monkeypatch.setenv("ZIZKADB_HOST", "https://db.zizka.ai")
+
+        importlib.reload(srv)
+        try:
+            assert "ZIZKADB_API_KEY is not set" in capsys.readouterr().err
+        finally:
+            importlib.reload(srv)  # restore module state for other tests
+
+    def test_no_warning_when_key_present(self, monkeypatch, capsys):
+        import zizkadb_mcp.server as srv
+
+        monkeypatch.setenv("ZIZKADB_API_KEY", "zizkadb_live_test")
+        importlib.reload(srv)
+        try:
+            assert "ZIZKADB_API_KEY is not set" not in capsys.readouterr().err
+        finally:
+            monkeypatch.delenv("ZIZKADB_API_KEY", raising=False)
+            importlib.reload(srv)

@@ -55,6 +55,15 @@ def _is_local_host(host: str) -> bool:
 if not _KEY and _HOST and _is_local_host(_HOST):
     _KEY = os.getenv("DEV_API_KEY", DEFAULT_DEV_API_KEY)
 
+# MCP runs over stdio — stdout is protocol, so diagnostics go to stderr only.
+if not _KEY:
+    print(
+        f"zizkadb-mcp: ZIZKADB_API_KEY is not set — every tool call against {_HOST} "
+        "will fail with 401. Add it to the env block of your MCP config "
+        "(~/.cursor/mcp.json, claude_desktop_config.json, ...).",
+        file=sys.stderr,
+    )
+
 # ── Anonymous telemetry (opt-out: ZIZKADB_TELEMETRY=false) ────────────────────
 
 def _get_install_id() -> str:
@@ -100,32 +109,93 @@ def _telemetry_ping() -> None:
 threading.Thread(target=_telemetry_ping, daemon=True).start()
 
 
+def _error_detail(resp: httpx.Response) -> str:
+    """Best-effort extraction of the server's {"detail": ...} message."""
+    try:
+        detail = resp.json().get("detail")
+        if detail:
+            return str(detail)
+    except Exception:
+        pass
+    return resp.text
+
+
+def _missing_key_error() -> dict:
+    if _is_local_host(_HOST):
+        hint = (
+            f"Self-hosted at {_HOST}: create a key in your dashboard "
+            "(http://localhost:3001 → Settings → API keys) or run the server "
+            "with ENV=development to use the built-in dev key."
+        )
+    else:
+        hint = (
+            "Sign up at https://db.zizka.ai → Settings → Create API key, "
+            "then add it to your MCP config env."
+        )
+    return {"error": f"ZIZKADB_API_KEY is not set. {hint}", "status": 401}
+
+
+def _auth_hint() -> str:
+    """Host-aware remediation hint attached to 401 responses."""
+    if _is_local_host(_HOST):
+        return (
+            f"Hint for self-hosted {_HOST}: check that ZIZKADB_API_KEY matches a key "
+            "from your own dashboard (http://localhost:3001 → Settings → API keys), "
+            "or that the server runs with ENV=development if you rely on the built-in "
+            "dev key. A key created on db.zizka.ai will NOT work on a self-hosted "
+            "instance (and vice versa)."
+        )
+    return (
+        f"Hint: check that ZIZKADB_API_KEY in your MCP config is a valid, non-revoked "
+        f"key for {_HOST} (manage keys at https://db.zizka.ai → Settings → API keys). "
+        "A key from a self-hosted instance will NOT work on db.zizka.ai (and vice versa)."
+    )
+
+
 async def _api(method: str, path: str, body: dict | None = None) -> dict:
     if not _KEY:
-        return {
-            "error": (
-                "ZIZKADB_API_KEY is not set. "
-                "Sign up at https://db.zizka.ai → Settings → Create API key, "
-                "then add it to your MCP config env."
-            ),
-            "status": 401,
-        }
+        return _missing_key_error()
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {_KEY}"}
 
-    async with httpx.AsyncClient(timeout=15) as client:
-        url = f"{_HOST}/v1{path}"
-        if method == "GET":
-            r = await client.get(url, headers=headers)
-        elif method == "POST":
-            r = await client.post(url, headers=headers, json=body or {})
-        elif method == "DELETE":
-            r = await client.request("DELETE", url, headers=headers, json=body or {})
-        else:
-            raise ValueError(f"Unsupported method: {method}")
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            url = f"{_HOST}/v1{path}"
+            if method == "GET":
+                r = await client.get(url, headers=headers)
+            elif method == "POST":
+                r = await client.post(url, headers=headers, json=body or {})
+            elif method == "DELETE":
+                r = await client.request("DELETE", url, headers=headers, json=body or {})
+            else:
+                raise ValueError(f"Unsupported method: {method}")
+    except httpx.RequestError as e:
+        return {
+            "error": (
+                f"Cannot reach ZizkaDB at {_HOST} ({type(e).__name__}). "
+                "Check that the server is running and that ZIZKADB_HOST in your "
+                "MCP config points at it (default: https://db.zizka.ai)."
+            ),
+            "status": 0,
+        }
 
-    if not r.is_success:
-        return {"error": r.text, "status": r.status_code}
-    return r.json()
+    if r.is_success:
+        return r.json()
+
+    detail = _error_detail(r)
+    if r.status_code == 401:
+        return {
+            "error": f"Authentication failed (401 Unauthorized): {detail}. {_auth_hint()}",
+            "status": 401,
+        }
+    if r.status_code == 403:
+        return {
+            "error": (
+                f"Forbidden (403): {detail}. This usually means the API key is scoped "
+                "to a different agent than the one in your request."
+            ),
+            "status": 403,
+        }
+    return {"error": detail, "status": r.status_code}
 
 
 # ── Tools ──────────────────────────────────────────────────────────────────
@@ -223,6 +293,10 @@ async def get_context(
         body["session_id"] = session_id
     result = await _api("POST", "/memory/context", body)
     if isinstance(result, dict):
+        if "error" in result:
+            # Never fail silently: an empty string would look like "no memory"
+            # and hide auth/connectivity problems from the user entirely.
+            return f"ZizkaDB error: {result['error']}"
         return result.get("context", "")
     return str(result)
 
