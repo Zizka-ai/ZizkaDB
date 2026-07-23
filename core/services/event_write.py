@@ -9,6 +9,7 @@ import logging
 from db.connection import get_pool, get_qdrant
 from qdrant_client.models import PointStruct
 from services.embeddings import generate_embedding, event_to_text
+from services.exceptions import bad_request
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,16 @@ async def write_event(
     metadata: dict | None = None,
 ) -> dict:
     pool = get_pool()
+
+    if parent_id:
+        parent_tenant_id = await pool.fetchval(
+            "SELECT tenant_id FROM events WHERE event_id = $1",
+            parent_id,
+        )
+        if parent_tenant_id is None or str(parent_tenant_id) != str(tenant_id):
+            raise bad_request(
+                f"parent_id '{parent_id}' does not exist or belongs to a different tenant"
+            )
 
     await pool.execute(
         """
