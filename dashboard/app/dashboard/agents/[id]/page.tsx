@@ -989,36 +989,71 @@ export default function AgentPage() {
               </div>
 
               {/* State */}
-              <div
-                className="rounded-xl"
-                style={{ background: "#111", border: "1px solid #1f1f1f" }}
-              >
-                <div
-                  className="px-4 py-3 border-b flex items-center gap-2"
-                  style={{ borderColor: "#1f1f1f" }}
-                >
-                  <Zap size={13} style={{ color: "#22c55e" }} />
-                  <span className="text-sm font-medium text-white">
-                    Reconstructed state
-                  </span>
-                  <span
-                    className="text-xs ml-auto"
-                    style={{ color: "#e5e5e5" }}
+              {(() => {
+                const state =
+                  ((ttResult as { state?: Record<string, unknown> }).state) ?? {};
+                const keys = Object.keys(state);
+                const onlyLastEvent =
+                  keys.length === 1 && keys[0] === "_last_event";
+                const isEmpty = keys.length === 0;
+                return (
+                  <div
+                    className="rounded-xl"
+                    style={{ background: "#111", border: "1px solid #1f1f1f" }}
                   >
-                    Based on all STATE_SET events up to this point
-                  </span>
-                </div>
-                <pre
-                  className="p-4 text-xs overflow-x-auto"
-                  style={{ color: "#86efac", maxHeight: 300 }}
-                >
-                  {JSON.stringify(
-                    (ttResult as { state: unknown }).state,
-                    null,
-                    2,
-                  )}
-                </pre>
-              </div>
+                    <div
+                      className="px-4 py-3 border-b flex items-center gap-2"
+                      style={{ borderColor: "#1f1f1f" }}
+                    >
+                      <Zap size={13} style={{ color: "#22c55e" }} />
+                      <span className="text-sm font-medium text-white">
+                        {onlyLastEvent
+                          ? "Most recent event at this time"
+                          : "Reconstructed state"}
+                      </span>
+                      {!onlyLastEvent && !isEmpty && (
+                        <span
+                          className="text-xs ml-auto"
+                          style={{ color: "#e5e5e5" }}
+                        >
+                          Built from STATE_SET events up to this point
+                        </span>
+                      )}
+                    </div>
+                    {onlyLastEvent && (
+                      <div
+                        className="px-4 py-3 text-xs border-b"
+                        style={{ color: "#a3a3a3", borderColor: "#1f1f1f" }}
+                      >
+                        This agent doesn&apos;t log{" "}
+                        <span className="font-mono" style={{ color: "#d4d4d4" }}>
+                          STATE_SET
+                        </span>
+                        /
+                        <span className="font-mono" style={{ color: "#d4d4d4" }}>
+                          STATE_DELETE
+                        </span>{" "}
+                        events, so there&apos;s no key/value state to rebuild.
+                        Showing the most recent event before this time instead —
+                        log those event types to reconstruct real state.
+                      </div>
+                    )}
+                    {isEmpty ? (
+                      <div className="p-4 text-xs" style={{ color: "#a3a3a3" }}>
+                        No events had been logged for this agent yet at this
+                        time.
+                      </div>
+                    ) : (
+                      <pre
+                        className="p-4 text-xs overflow-x-auto"
+                        style={{ color: "#86efac", maxHeight: 300 }}
+                      >
+                        {JSON.stringify(state, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1509,6 +1544,14 @@ function BehaviorTabContent({
         <p className="text-sm" style={{ color: "#e5e5e5" }}>
           {baseline.message}
         </p>
+        <p
+          className="text-xs mt-3 max-w-md mx-auto leading-relaxed"
+          style={{ color: "#a3a3a3" }}
+        >
+          Once this agent has enough sessions, this tab compares its recent
+          behavior against its baseline to catch drift and rising error rates
+          automatically.
+        </p>
       </div>
     );
   }
@@ -1531,9 +1574,13 @@ function BehaviorTabContent({
             </h3>
           </div>
           <p className="text-sm" style={{ color: "#fdba74" }}>
-            {baseline.message} Drift detection kicks in once{" "}
-            <span className="font-mono">{agentId}</span> has more than{" "}
-            {recent_window} sessions.
+            {baseline.message}
+          </p>
+          <p className="text-xs mt-2 leading-relaxed" style={{ color: "#fdba74cc" }}>
+            Behavior tracking compares this agent&apos;s recent sessions against
+            its earlier ones to catch drift — silent changes in what it does or
+            how often it errors. It turns on automatically once there&apos;s
+            enough history.
           </p>
         </div>
         {recent && (

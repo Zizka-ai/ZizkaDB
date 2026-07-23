@@ -518,7 +518,7 @@ Router prefixes are mounted in `core/main.py:66-79`.
 | Dashboard fn | Method · Path | Backend |
 |---|---|---|
 | `getEvents` | GET `/v1/events` | `events.py:64` |
-| `getWhyChain` | GET `/v1/events/{id}/why` | `events.py:123` |
+| `getWhyChain` | GET `/v1/events/{id}/why?depth=&parent_id=` | `events.py:123` — used by `agents/[id]/page.tsx`'s Why tab and the standalone `dashboard/debugging/why/page.tsx` screen (§19.3a). `parent_id` is an optional, server-enforced integrity guard (400 on mismatch); tenant isolation is the real boundary |
 | `timeTravel` | GET `/v1/events/at` | `events.py:173` |
 | `searchEvents` | POST `/v1/search` | `search.py:18` |
 | `getMemoryDiff` | GET `/v1/memory/diff/{sessionId}` | `memory.py:190` |
@@ -667,6 +667,59 @@ Exhaustive behavior per file (state, effects, API order, branches, edge cases, n
 - **API:** submit → `requireAuth()` (`:30`) → `searchEvents(token, query)` **tenant-wide, no agentId** (`:31`); catch → `results=[]` (`:33-34`); assumes `res.results` (`:32`).
 - **Branches:** submit disabled if `loading || !query.trim()` (`:65`); empty-after-search state (`:74-78`); score badge if `event.score !== undefined` (`:103-107`); example queries when `!searched` (`:115-138`, buttons only set `query`).
 - **Rules:** empty query no-ops (`:26`); no page-load auth redirect (relies on layout gate + `requireAuth` on submit).
+
+### 19.3a Causal Trace — `app/dashboard/debugging/why/page.tsx`
+
+> Display name is **"Causal Trace"** (sidebar label + page `<h1>`). The route stays
+> `/dashboard/debugging/why` for deep-link stability; the SDK method (`db.why()`), API path
+> (`/v1/events/{id}/why`), and client fn (`getWhyChain`) keep the "why" identifier.
+
+
+- **Purpose:** standalone, error-focused root-cause tool. Paste an error's `event_id`; the
+  page walks its `parent_id` chain via `getWhyChain` and presents the lineage as a
+  **sequential, CloudWatch-style story timeline** from origin → failure, with the root cause
+  called out. Distinct from the same `getWhyChain` call used as a tab in `agents/[id]/page.tsx`.
+- **Inputs, no depth knob:** the required field is the error `event_id`; a second **Parent
+  ID** field is an optional, server-enforced integrity guard. The client always requests
+  `getWhyChain(token, eventId, MAX_DEPTH=50, parentId?)` — full lineage always captured, no
+  user-facing "depth" control. When Parent ID is set, the backend (`events.py::why`,
+  `?parent_id=`) returns **400** unless it matches the event's real `parent_event_id`; blank =
+  normal trace (required for root/origin events, which have no parent). Tenant isolation is the
+  actual access boundary — the guard is an explicit caller assertion, not the security control.
+- **State:** `eventIdInput` (form), `chain: WhyChain | null`, `loading`, `error`,
+  `expanded: Set<eventId>`, `copiedKey`, `highlighted`. Derived via `useMemo`: `loadedIds`,
+  and `rootCauseIndex` = index of the **first** (earliest) event whose type matches the error
+  heuristic, or `-1` if none.
+- **URL is the source of truth:** the fetch effect keys off `?event_id=` from
+  `useSearchParams()` — every trace action (manual submit, a node's "Trace this instead", a
+  deep link) does `router.push` to a new URL and the effect reacts (single fetch path,
+  `[urlEventId]` dep, `cancelled` guard). Fully deep-linkable/shareable.
+- **Root-cause / story summary banner** (`StorySummary`): computed client-side from `chain`.
+  Root cause = the earliest error/fail event (`rootCauseIndex`); if none, a neutral "no error
+  detected" state is shown (no forced badge). Renders a narrated line ("This flow began with
+  X, ran N steps, failing at step K — `event`: message" — message from `data.error` /
+  `data.message` when present), at-a-glance stats (steps, time span, agent, session), and a
+  "Traced N parent links" caption that explains the lineage walk.
+- **Story timeline** (`StoryStep` per node, root-first): numbered step dots (1·2·3…) joined by
+  a connector rail, a `+Δ` time delta from the previous step plus the absolute timestamp, and
+  markers — **Origin** (step 1), **Root cause** (first failure), **Error** (other error steps),
+  **You searched this** (last step). Every `AgentEvent` field is shown (`event_id`, `parent_id`,
+  `agent`, `event`, `timestamp`, `session_id`, `sequence_no`); the `data` JSON expands per
+  step (error/searched steps open by default, clean steps collapsed).
+- **Error heuristic:** `event` type contains `"error"`/`"fail"` (case-insensitive) — same rule
+  as `memory.py`'s `has_errors`.
+- **Client-side validation:** `event_id` checked against a UUID regex before any API call.
+- **Copy/share:** per-field copy (`event_id`/`parent_id`/`session_id`), per-step "Copy event
+  JSON", banner-level "Copy link" + "Copy chain JSON" — all wrapped in try/catch since
+  `navigator.clipboard` isn't guaranteed (non-secure context).
+- **`parent_id` linking:** when a step's `parent_id` is in the loaded chain it renders as a
+  click-to-scroll jump; otherwise plain text (not a broken link).
+- **Nav:** `DashboardShell.tsx` renders a grouped nav — a **Debugging** section (`Bug` icon,
+  non-clickable label) containing the **Why** link (`GitBranch`) → `/dashboard/debugging/why`.
+  The `nav` array holds flat `NavLink`s and `NavGroup`s (`{ label, icon, children }`); the
+  desktop sidebar renders groups as an indented section, and the mobile bottom bar flattens
+  every group to its leaf links (`mobileLinks`). Future debugging tools (at/search/memory-diff)
+  slot into the same Debugging group.
 
 ### 19.4 Settings — `app/dashboard/settings/page.tsx`
 
