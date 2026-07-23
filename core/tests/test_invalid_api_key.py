@@ -40,11 +40,10 @@ async def test_bad_api_key_returns_actionable_401(mock_resolve, _mock_dev):
 
 
 def test_message_is_actionable_for_new_integrator():
-    """The message must name the header format, how to get a key, and the
-    self-host ENV=production dev-key gotcha — the three things that trip up a
-    new integrator on a write with a bad key."""
+    """The message must tell the integrator to use a key for THIS deployment and
+    distinguish cloud (dashboard) from self-hosted (instance-generated) keys —
+    the thing that trips up a new integrator on a write with a bad key."""
     msg = _INVALID_API_KEY_MESSAGE.lower()
-    assert "bearer" in msg
-    assert "/v1/auth" in _INVALID_API_KEY_MESSAGE
-    assert "env=production" in msg
-    assert "zizkadb_dev_local" in _INVALID_API_KEY_MESSAGE
+    assert "deployment" in msg
+    assert "dashboard" in msg
+    assert "self-hosted" in msg

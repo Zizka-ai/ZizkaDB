@@ -8,7 +8,7 @@ tests pin the host-aware behaviour and that the server's guidance is surfaced.
 import httpx
 import pytest
 
-from zizkadb.client import ZizkaDB, CLOUD_HOST, DEFAULT_DEV_API_KEY
+from zizkadb.client import ZizkaDB, CLOUD_HOST
 from zizkadb.exceptions import AuthError
 
 
@@ -36,11 +36,10 @@ def test_selfhost_401_points_to_own_instance_not_cloud():
         db._handle(_resp(401))
 
     msg = str(exc_info.value)
+    # Names the instance the caller actually hit...
     assert "http://localhost:8000" in msg
-    # Must NOT send a self-hoster to the cloud dashboard.
+    # ...and must NOT send a self-hoster to the cloud dashboard.
     assert "db.zizka.ai/dashboard" not in msg
-    # Should mention the local-dev escape hatch.
-    assert DEFAULT_DEV_API_KEY in msg
 
 
 def test_401_ignores_non_string_server_detail():
