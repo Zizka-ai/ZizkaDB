@@ -24,14 +24,14 @@ export function ApiKeyUsage({
   return (
     <div className={className} aria-live="polite">
       <div className="flex items-center justify-between text-xs mb-1">
-        <span style={{ color: '#e5e5e5' }}>Account API keys</span>
-        <span style={{ color: at_limit ? '#f87171' : '#e5e5e5' }}>
+        <span style={{ color: '#e8edf5' }}>Account API keys</span>
+        <span style={{ color: at_limit ? '#f87171' : '#e8edf5' }}>
           {used} / {limit} used
         </span>
       </div>
       <div
         className="h-1.5 rounded-full overflow-hidden"
-        style={{ background: '#1a1a1a' }}
+        style={{ background: '#1f2733' }}
         role="progressbar"
         aria-valuenow={used}
         aria-valuemin={0}

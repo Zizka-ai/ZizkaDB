@@ -14,28 +14,32 @@
  */
 
 export const colors = {
-  bg: '#0a0a0a', // app background
-  surface: '#111111', // cards, panels
-  surfaceAlt: '#0d0d0d', // inputs, insets
-  surfaceHover: '#1a1a1a',
-  border: '#1f1f1f',
-  borderStrong: '#262626',
+  // Refined dark: a deep-slate base with real elevation between layers, so
+  // cards separate from the background and borders are actually visible
+  // (the old near-black palette read as "dim" and options were hard to find).
+  bg: '#0b0f16', // deep slate app background
+  surface: '#161c26', // cards, panels — visibly raised above bg
+  surfaceAlt: '#10151d', // inputs, insets
+  surfaceHover: '#1f2733',
+  border: '#2a3340', // visible dividers/outlines
+  borderStrong: '#3a4453',
 
-  text: '#e5e5e5', // primary (off-white, not pure white)
+  text: '#e8edf5', // primary (~13:1 on bg)
   textStrong: '#ffffff',
-  textMuted: '#a3a3a3', // secondary — ~7.4:1 on bg
-  // tertiary (labels, timestamps, metadata). #808080 clears WCAG AA (~4.6:1
-  // on the near-black bg); the previous #666 was ~3.4:1 and hard to read.
-  textFaint: '#808080',
+  textMuted: '#9aa7b8', // secondary (~9:1 on bg)
+  textFaint: '#7c8798', // tertiary — labels/timestamps (AA ~5:1 on bg)
 
-  success: '#22c55e',
-  successBg: '#14241a',
-  info: '#3b82f6',
-  infoBg: '#111c2e',
+  success: '#22c55e', // emerald — positive / healthy / create actions
+  successBg: '#10251a',
+  // Indigo is the interactive accent: active tab, focus ring, links, chart
+  // events series. `info` keeps its name so the 28 files referencing
+  // colors.info pick it up without edits.
+  info: '#6366f1',
+  infoBg: '#1a1e3a',
   warning: '#f59e0b',
-  warningBg: '#251c0e',
+  warningBg: '#2a1f0a',
   danger: '#f87171',
-  dangerBg: '#2a1414',
+  dangerBg: '#2a1416',
 } as const
 
 export const radii = {
