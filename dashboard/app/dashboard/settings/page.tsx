@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiKeyUsage } from "@/components/ApiKeyUsage";
+import { AgentKeysSection } from "@/components/dashboard/AgentKeysSection";
 import { useApiKeyQuota } from "@/hooks/useApiKeyQuota";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import {
@@ -108,22 +109,24 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-white font-semibold text-xl mb-1">Settings</h1>
-      <p className="text-sm mb-4" style={{ color: "#e5e5e5" }}>
-        Embeddings and account-wide overview.
+    <div className="max-w-2xl">
+      <h1 className="font-semibold text-lg mb-1" style={{ color: "#ffffff" }}>
+        Settings
+      </h1>
+      <p className="text-sm mb-5" style={{ color: "#a3a3a3" }}>
+        Embeddings, API keys, and account.
       </p>
       <p
-        className="text-xs mb-8 rounded-lg px-3 py-2"
+        className="text-xs mb-8 rounded-lg px-3 py-2.5"
         style={{
-          color: "#e5e5e5",
-          background: "#1a1a1a",
-          border: "1px solid #2a2a2a",
+          color: "#a3a3a3",
+          background: "#111111",
+          border: "1px solid #1f1f1f",
         }}
       >
         API keys belong to an agent.{" "}
         <Link
-          href="/dashboard"
+          href="/dashboard/fleet"
           className="underline"
           style={{ color: "#22c55e" }}
         >
@@ -139,7 +142,7 @@ export default function SettingsPage() {
         style={{ background: "#111", border: "1px solid #1f1f1f" }}
       >
         <h2 className="text-sm font-medium text-white mb-1">Embeddings</h2>
-        <p className="text-xs mb-4" style={{ color: "#e5e5e5" }}>
+        <p className="text-xs mb-4" style={{ color: "#a3a3a3" }}>
           Choose the model used for semantic search and context injection (like
           Pinecone&apos;s embedding choice). All models use 1536 dimensions. New
           events use this model; existing vectors are not re-indexed
@@ -259,7 +262,7 @@ export default function SettingsPage() {
         <h2 className="text-sm font-medium text-white mb-1">
           Test event logging
         </h2>
-        <p className="text-xs mb-4" style={{ color: "#e5e5e5" }}>
+        <p className="text-xs mb-4" style={{ color: "#a3a3a3" }}>
           Logs to agent{" "}
           <span className="font-mono">dashboard-connection-test</span> (not your
           app agent). To test a specific agent, open that agent and click{" "}
@@ -299,6 +302,9 @@ export default function SettingsPage() {
         )}
       </div>
 
+      {/* Per-agent keys (relocated from the old agent-detail page) */}
+      <AgentKeysSection />
+
       {/* Tenant-wide key (multi-agent apps) */}
       <div
         className="rounded-xl p-5 mb-6"
@@ -307,19 +313,11 @@ export default function SettingsPage() {
         <h2 className="text-sm font-medium text-white mb-1">
           Tenant-wide API key
         </h2>
-        <p className="text-xs mb-3" style={{ color: "#e5e5e5" }}>
+        <p className="text-xs mb-3" style={{ color: "#a3a3a3" }}>
           For apps that log to <strong>many agent names</strong> with one key
           (e.g. one key → <span className="font-mono">conv-user1</span>,{" "}
           <span className="font-mono">conv-user2</span>). Most users should
-          create per-agent keys on the{" "}
-          <Link
-            href="/dashboard"
-            className="underline"
-            style={{ color: "#22c55e" }}
-          >
-            Agents
-          </Link>{" "}
-          page instead.
+          create per-agent keys in the section above instead.
         </p>
         {!quota.unlimited && <ApiKeyUsage quota={quota} className="mb-3" />}
         {tenantNewKey && (

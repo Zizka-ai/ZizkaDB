@@ -1,67 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { API } from "@/lib/api";
 import { IS_DEV_MODE as IS_DEV } from "@/lib/constants";
 
-type HealthState = "checking" | "ok" | "error";
-
-export function ConnectionStatus() {
-  const [health, setHealth] = useState<HealthState>("checking");
-  const apiLabel = API || "same-origin (nginx)";
-
-  useEffect(() => {
-    let cancelled = false;
-    async function check() {
-      try {
-        const res = await fetch(`${API}/health`, { cache: "no-store" });
-        if (!cancelled) setHealth(res.ok ? "ok" : "error");
-      } catch {
-        if (!cancelled) setHealth("error");
-      }
-    }
-    check();
-    const id = setInterval(check, 30_000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, []);
-
-  const dot =
-    health === "ok" ? "#22c55e" : health === "error" ? "#ef4444" : "#e5e5e5";
-
-  return (
-    <div
-      className="mx-8 mt-6 mb-0 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs"
-      style={{ background: "#111", border: "1px solid #1f1f1f" }}
-    >
-      <span className="flex items-center gap-2" style={{ color: "#e5e5e5" }}>
-        <span
-          className="inline-block w-2 h-2 rounded-full shrink-0"
-          style={{ background: dot }}
-        />
-        API{" "}
-        {health === "ok"
-          ? "connected"
-          : health === "error"
-            ? "unreachable"
-            : "checking…"}
-        <code style={{ fontFamily: "monospace", color: "#e5e5e5" }}>
-          {apiLabel}
-        </code>
-      </span>
-      {IS_DEV && (
-        <span style={{ color: "#22c55e" }}>Self-hosted · local dev tenant</span>
-      )}
-      {health === 'error' && (
-        <span style={{ color: '#f87171' }}>
-          Start stack: <code style={{ fontFamily: 'monospace' }}>bash scripts/quickstart.sh</code>
-        </span>
-      )}
-    </div>
-  );
-}
+// Note: the old full-width ConnectionStatus banner has been folded into the
+// header AccountMenu (see components/dashboard/AccountMenu.tsx) so the content
+// area is dedicated to events/debugging. Live health now lives in
+// hooks/useConnectionHealth.ts. This module keeps only the onboarding
+// checklist shown in the Activity zero-agent state.
 
 export function GettingStartedChecklist() {
   const snippet = IS_DEV
