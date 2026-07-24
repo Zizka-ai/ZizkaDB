@@ -142,7 +142,7 @@ cd dashboard && npm run lint && npm run build
 
 1. **Auth deps**: never put `require_dashboard_session` routes on `get_tenant` — API-key holders must not be able to manage keys or access user data.
 2. **Route paths**: never rename `/v1/...` paths without updating `dashboard/lib/api.ts` — there is no runtime contract enforcement between backend and dashboard.
-3. **`assert_agent_allowed()`**: every per-agent analytics route (`agent_stats`, `list_sessions`, `agent_baseline`, `agent_behavior_change`, `time_travel`) must call this.
+3. **`assert_agent_allowed()`**: every per-agent route (`agent_stats`, `list_sessions`, `agent_baseline`, `agent_behavior_change`, `time_travel`, `why`, `memory/context`, `memory/diff`) must call this before touching event/session data. `memory/forget` is the one exception: instead of blocking, it scopes its `WHERE` clause to the caller's bound agent when the key is agent-scoped, since a tenant-wide key must still be able to erase a user's data across all of that tenant's agents for GDPR requests.
 4. **Entitlements single source**: plan caps live only in `core/services/entitlements.py::PLAN_ENTITLEMENTS`.
 5. **Idempotent DDL**: all schema changes must use `IF NOT EXISTS` / `IF EXISTS` — the same migration runs on fresh installs and live databases.
 6. **`docker-compose.yml` is production**: never add `--reload` or `../core:/app` volume mounts to the base compose file. Those belong in `docker-compose.dev.yml`.

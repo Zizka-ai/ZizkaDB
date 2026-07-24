@@ -47,7 +47,9 @@ def assert_agent_allowed(tenant: dict, agent_id: str) -> None:
         raise HTTPException(403, ...)
 ```
 
-Call at the top of any per-agent analytics route (stats, sessions, baseline, behavior-change, time-travel). Agent-scoped API keys can only access data for their bound agent.
+Call at the top of any per-agent route (stats, sessions, baseline, behavior-change, time-travel, why, memory/context, memory/diff). Agent-scoped API keys can only access data for their bound agent.
+
+`memory/forget` doesn't call this directly — it's a filter-match bulk delete, not a single-agent lookup, so instead it adds `agent_id = <scoped agent>` to its own `WHERE` clause when the calling key is agent-scoped. A tenant-wide key keeps the original cross-agent behavior, since GDPR erasure needs to reach a user's data across every agent in the tenant.
 
 ---
 

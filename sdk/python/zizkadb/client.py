@@ -503,17 +503,29 @@ class ZizkaDB:
             if not self._client:
                 await client.aclose()
 
+    @staticmethod
+    def _error_detail(resp: httpx.Response) -> str:
+        """Best-effort extraction of the server's {"detail": ...} message."""
+        try:
+            return resp.json().get("detail", resp.text)
+        except Exception:
+            return resp.text
+
     def _handle(self, resp: httpx.Response) -> Any:
         if resp.status_code == 401:
-            raise AuthError(
-                "Invalid API key. Create an agent at db.zizka.ai/dashboard and copy its key.",
-                status_code=401,
-            )
+            detail = self._error_detail(resp)
+            if _is_local_host(self._base_url):
+                hint = (
+                    f"Self-hosted at {self._base_url}: check that ZIZKADB_API_KEY matches "
+                    "a key from your dashboard, or that DEV_API_KEY / ENV=development is set "
+                    "on the server if you're using the local dev key "
+                    "(see wiki/Self-Hosting.md#troubleshooting)."
+                )
+            else:
+                hint = "Create an agent at db.zizka.ai/dashboard and copy its key."
+            raise AuthError(f"{detail}. {hint}", status_code=401)
         if resp.status_code == 403:
-            try:
-                detail = resp.json().get("detail", resp.text)
-            except Exception:
-                detail = resp.text
+            detail = self._error_detail(resp)
             raise AgentScopeError(
                 f"Agent mismatch (403): {detail}",
                 status_code=403,
@@ -523,10 +535,7 @@ class ZizkaDB:
         if resp.status_code == 429:
             raise RateLimitError("Rate limit exceeded", status_code=429)
         if resp.status_code >= 400:
-            try:
-                detail = resp.json().get("detail", resp.text)
-            except Exception:
-                detail = resp.text
+            detail = self._error_detail(resp)
             raise ZizkaDBError(
                 f"ZizkaDB error ({resp.status_code}): {detail}",
                 status_code=resp.status_code,
