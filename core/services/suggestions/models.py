@@ -72,7 +72,18 @@ class EvidenceBundle:
         }
 
     def fingerprint(self, model: str) -> str:
-        raw = json.dumps({"model": model, **self.to_payload()}, sort_keys=True)
+        """Cache key over what actually determines the suggestions.
+
+        Deliberately excludes ``period``: a rolling window ("last 30 days")
+        recomputes ``now`` on every request, so its exact from/to timestamps
+        differ by microseconds each call. Including them made the fingerprint
+        unique per request and the cache never hit. The evidence metrics already
+        encode the window's real effect (counts, rates), so identical evidence →
+        identical suggestions → one shared cache entry.
+        """
+        payload = self.to_payload()
+        payload.pop("period", None)
+        raw = json.dumps({"model": model, **payload}, sort_keys=True)
         return hashlib.sha256(raw.encode()).hexdigest()
 
 
