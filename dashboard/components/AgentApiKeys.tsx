@@ -17,9 +17,12 @@ import { useCallback, useEffect, useState } from "react";
 export function AgentApiKeys({
   agentId,
   onTestSuccess,
+  oneKeyMax = false,
 }: {
   agentId: string;
   onTestSuccess?: () => void;
+  /** OSS: allow only one key — hide "New key" while a key already exists. */
+  oneKeyMax?: boolean;
 }) {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,21 +134,25 @@ export function AgentApiKeys({
             <Zap size={13} style={{ color: "#22c55e" }} />
             {testBusy ? "Sending…" : "Test agent"}
           </button>
-          <button
-            type="button"
-            disabled={creating || quota.at_limit}
-            onClick={handleCreate}
-            title={
-              quota.at_limit
-                ? "API key limit reached — upgrade your plan to create more"
-                : undefined
-            }
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: "#22c55e" }}
-          >
-            <Plus size={13} />
-            {creating ? "Creating…" : "New key"}
-          </button>
+          {/* OSS allows a single key: only offer "New key" when none exists
+              (delete the running key to reveal the button again). */}
+          {(!oneKeyMax || (!loading && keys.length === 0)) && (
+            <button
+              type="button"
+              disabled={creating || quota.at_limit}
+              onClick={handleCreate}
+              title={
+                quota.at_limit
+                  ? "API key limit reached — upgrade your plan to create more"
+                  : undefined
+              }
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "#22c55e" }}
+            >
+              <Plus size={13} />
+              {creating ? "Creating…" : "New key"}
+            </button>
+          )}
         </div>
       </div>
       {!quota.unlimited && (

@@ -5,11 +5,13 @@ import { AgentApiKeys } from '@/components/AgentApiKeys'
 import { LoadingLine } from '@/components/ui'
 import { useAgents } from '@/hooks/useAgents'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
+import { useEdition } from '@/hooks/useEdition'
 import { colors, radii } from '@/lib/design-tokens'
 
 function Inner() {
   const { agents, loading } = useAgents()
   const { agentId } = useSelectedAgent(agents)
+  const isOss = useEdition().edition === 'oss'
 
   if (loading) return <LoadingLine label="Loading agents…" />
 
@@ -19,18 +21,21 @@ function Inner() {
       style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: radii.lg }}
     >
       <h2 className="text-sm font-medium mb-1" style={{ color: colors.textStrong }}>
-        Per-agent API keys
+        {isOss ? 'API key' : 'Per-agent API keys'}
       </h2>
       <p className="text-xs mb-3" style={{ color: colors.textMuted }}>
-        Keys scoped to a single agent — the recommended default. Use the agent selector in the
-        header to manage a different agent&apos;s keys.
+        {isOss
+          ? 'The key your app uses to connect to this agent.'
+          : 'Keys scoped to a single agent — the recommended default. Use the agent selector in the header to manage a different agent’s keys.'}
       </p>
 
       {agentId ? (
-        <AgentApiKeys agentId={agentId} />
+        <AgentApiKeys agentId={agentId} oneKeyMax={isOss} />
       ) : (
         <p className="text-xs" style={{ color: colors.textFaint }}>
-          No agents yet. Create one on Agent Fleets, or start logging events with the SDK.
+          {isOss
+            ? 'No agent yet. Start logging events with the SDK to create one.'
+            : 'No agents yet. Create one on Agent Fleets, or start logging events with the SDK.'}
         </p>
       )}
     </div>

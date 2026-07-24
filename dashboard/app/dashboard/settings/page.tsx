@@ -155,7 +155,7 @@ export default function SettingsPage() {
         <h2 className="text-sm font-medium text-white mb-1">Embeddings</h2>
         <p className="text-xs mb-4" style={{ color: "#a3a3a3" }}>
           {isOss
-            ? "Semantic search and context injection use OpenAI embeddings. Add your own OpenAI API key below to enable them. All models use 1536 dimensions; new events use this model (existing vectors are not re-indexed automatically)."
+            ? "Add your OpenAI API key to enable semantic search and context injection (OpenAI text-embedding-3-small)."
             : "Choose the model used for semantic search and context injection (like Pinecone's embedding choice). All models use 1536 dimensions. New events use this model; existing vectors are not re-indexed automatically."}
         </p>
         {embLoading ? (
@@ -190,23 +190,27 @@ export default function SettingsPage() {
               }
             }}
           >
-            <label className="block text-xs mb-1" style={{ color: "#e5e5e5" }}>
-              Model
-            </label>
-            <select
-              value={embModel}
-              onChange={(e) => setEmbModel(e.target.value)}
-              className="w-full rounded-lg px-3 py-2 text-sm text-white mb-4 outline-none"
-              style={{ background: "#1a1a1a", border: "1px solid #2a2a2a" }}
-            >
-              {(catalog.find((p) => p.id === embProvider)?.models ?? []).map(
-                (m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.label}
-                  </option>
-                ),
-              )}
-            </select>
+            {/* Model picker is managed-cloud only; OSS uses OpenAI
+                text-embedding-3-small (1536-dim) with the user's own key. */}
+            {!isOss && (
+              <>
+                <label className="block text-xs mb-1" style={{ color: "#e5e5e5" }}>
+                  Model
+                </label>
+                <select
+                  value={embModel}
+                  onChange={(e) => setEmbModel(e.target.value)}
+                  className="w-full rounded-lg px-3 py-2 text-sm text-white mb-4 outline-none"
+                  style={{ background: "#1a1a1a", border: "1px solid #2a2a2a" }}
+                >
+                  {(catalog.find((p) => p.id === embProvider)?.models ?? []).map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
 
             {/* Platform-key option is managed-cloud only; OSS always brings its own key. */}
             {!isOss && (
@@ -269,7 +273,9 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Connection test */}
+      {/* Connection test — managed only; OSS keeps Settings minimal and can use
+          the per-agent "Test agent" button below. */}
+      {!isOss && (
       <div
         className="rounded-xl p-5 mb-6"
         style={{ background: "#111", border: "1px solid #1f1f1f" }}
@@ -316,6 +322,7 @@ export default function SettingsPage() {
           </p>
         )}
       </div>
+      )}
 
       {/* Per-agent keys (relocated from the old agent-detail page) */}
       <AgentKeysSection />
@@ -426,7 +433,9 @@ export default function SettingsPage() {
       </div>
       )}
 
-      {/* Key list (overview) */}
+      {/* All-keys overview — managed only. OSS has a single per-agent key,
+          already shown above, so the overview is redundant. */}
+      {!isOss && (
       <div
         className="rounded-xl overflow-hidden"
         style={{ border: "1px solid #1f1f1f" }}
@@ -509,6 +518,7 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      )}
 
       {accountOpts?.managed_cloud && (
         <div
