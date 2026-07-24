@@ -65,6 +65,48 @@ export function Card({
   )
 }
 
+/* ── Controls ───────────────────────────────────────────────────────────── */
+
+const BUTTON_TONES = {
+  default: { bg: colors.surface, fg: colors.text, border: colors.border },
+  primary: { bg: colors.successBg, fg: colors.success, border: `${colors.success}40` },
+  danger: { bg: colors.dangerBg, fg: colors.danger, border: `${colors.danger}40` },
+} as const
+
+export function Button({
+  children,
+  onClick,
+  type = 'button',
+  tone = 'default',
+  size = 'md',
+  disabled = false,
+  title,
+}: {
+  children: ReactNode
+  onClick?: () => void
+  type?: 'button' | 'submit'
+  tone?: keyof typeof BUTTON_TONES
+  size?: 'sm' | 'md'
+  disabled?: boolean
+  title?: string
+}) {
+  const { bg, fg, border } = BUTTON_TONES[tone]
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`inline-flex items-center gap-1.5 font-medium transition disabled:opacity-40 ${
+        size === 'sm' ? 'text-xs px-2.5 py-1.5' : 'text-sm px-4 py-2'
+      }`}
+      style={{ background: bg, color: fg, border: `1px solid ${border}`, borderRadius: radii.md }}
+    >
+      {children}
+    </button>
+  )
+}
+
 /* ── States (loading / empty / error) ───────────────────────────────────── */
 
 export function Skeleton({ rows = 3 }: { rows?: number }) {

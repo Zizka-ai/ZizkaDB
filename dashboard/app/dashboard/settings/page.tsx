@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiKeyUsage } from "@/components/ApiKeyUsage";
+import { AgentKeysSection } from "@/components/dashboard/AgentKeysSection";
 import { useApiKeyQuota } from "@/hooks/useApiKeyQuota";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import {
@@ -299,6 +300,9 @@ export default function SettingsPage() {
         )}
       </div>
 
+      {/* Per-agent keys (relocated from the old agent-detail page) */}
+      <AgentKeysSection />
+
       {/* Tenant-wide key (multi-agent apps) */}
       <div
         className="rounded-xl p-5 mb-6"
@@ -311,15 +315,7 @@ export default function SettingsPage() {
           For apps that log to <strong>many agent names</strong> with one key
           (e.g. one key → <span className="font-mono">conv-user1</span>,{" "}
           <span className="font-mono">conv-user2</span>). Most users should
-          create per-agent keys on the{" "}
-          <Link
-            href="/dashboard"
-            className="underline"
-            style={{ color: "#22c55e" }}
-          >
-            Agents
-          </Link>{" "}
-          page instead.
+          create per-agent keys in the section above instead.
         </p>
         {!quota.unlimited && <ApiKeyUsage quota={quota} className="mb-3" />}
         {tenantNewKey && (
