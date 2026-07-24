@@ -49,15 +49,6 @@ export const radii = {
   full: 9999,
 } as const
 
-export const space = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
-  xxl: 32,
-} as const
-
 /** Agent/health status vocabulary (from the product spec). */
 export type StatusTone = 'healthy' | 'attention' | 'idle' | 'drift' | 'error'
 

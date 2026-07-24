@@ -1,11 +1,7 @@
 'use client'
 
 import { decodeJwt } from 'jose'
-import {
-  USER_TOKEN_COOKIE,
-  ADMIN_TOKEN_COOKIE,
-  TOKEN_MAX_AGE_SEC,
-} from './session-cookies'
+import { USER_TOKEN_COOKIE, TOKEN_MAX_AGE_SEC } from './session-cookies'
 
 function cookieSuffix(): string {
   const secure =
@@ -36,21 +32,6 @@ export function setToken(token: string) {
 export function clearToken() {
   localStorage.removeItem(USER_TOKEN_COOKIE)
   eraseCookie(USER_TOKEN_COOKIE)
-}
-
-export function getAdminToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem(ADMIN_TOKEN_COOKIE)
-}
-
-export function setAdminToken(token: string) {
-  localStorage.setItem(ADMIN_TOKEN_COOKIE, token)
-  writeCookie(ADMIN_TOKEN_COOKIE, token)
-}
-
-export function clearAdminToken() {
-  localStorage.removeItem(ADMIN_TOKEN_COOKIE)
-  eraseCookie(ADMIN_TOKEN_COOKIE)
 }
 
 export function getSessionEmail(): string | null {

@@ -504,14 +504,6 @@ export async function getBillingStatus(token: string): Promise<BillingStatus> {
   return apiFetch('/v1/billing/status', token)
 }
 
-export async function selectBillingPlan(token: string, plan: 'pro' | 'team'): Promise<BillingStatus> {
-  return apiFetch('/v1/billing/select-plan', token, {
-    method: 'POST',
-    body: JSON.stringify({ plan }),
-  })
-}
-
-
 export interface AccountOptions {
   managed_cloud: boolean
   retention_trial_available?: boolean
