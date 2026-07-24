@@ -1,18 +1,14 @@
 'use client'
 
 import { Suspense, type ReactNode } from 'react'
-import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { Settings, LogOut } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { BrandLogo } from '@/components/BrandLogo'
-import { ConnectionStatus } from '@/components/ConnectionStatus'
-import { TenantPlanBanner } from '@/components/TenantPlanBanner'
 import { Tabs, type TabItem } from '@/components/ui/Tabs'
 import { AgentSelector } from '@/components/dashboard/AgentSelector'
+import { AccountMenu } from '@/components/dashboard/AccountMenu'
 import { useEdition } from '@/hooks/useEdition'
 import { useAgents } from '@/hooks/useAgents'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
-import { clearToken } from '@/lib/auth'
 import { colors } from '@/lib/design-tokens'
 
 /** Tabs available in every edition, in display order. */
@@ -39,14 +35,13 @@ export function DashboardTabsShell({ children }: { children: ReactNode }) {
 function ShellFallback({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen" style={{ background: colors.bg }}>
-      <main className="max-w-6xl mx-auto">{children}</main>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">{children}</main>
     </div>
   )
 }
 
 function ShellInner({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const router = useRouter()
 
   const { edition } = useEdition()
   const { agents } = useAgents()
@@ -63,46 +58,25 @@ function ShellInner({ children }: { children: ReactNode }) {
     active: pathname === t.href || pathname.startsWith(`${t.href}/`),
   }))
 
-  function signOut() {
-    clearToken()
-    router.push('/login')
-  }
-
-  const settingsActive = pathname.startsWith('/dashboard/settings')
-
   return (
     <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-      <header style={{ background: colors.surfaceAlt, borderBottom: `1px solid ${colors.border}` }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          {/* Brand + global actions */}
-          <div className="flex items-center justify-between gap-3 py-3">
+      <header
+        className="sticky top-0 z-40"
+        style={{ background: colors.surfaceAlt, borderBottom: `1px solid ${colors.border}` }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Brand + agent context + account */}
+          <div className="flex items-center justify-between gap-3 h-14">
             <div className="flex items-center gap-2 min-w-0">
               <BrandLogo variant="mark" showWordmark={false} href="/dashboard" />
-              <span className="font-semibold" style={{ color: colors.textStrong }}>
+              <span className="font-semibold text-sm" style={{ color: colors.textStrong }}>
                 ZizkaDB
               </span>
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
               <AgentSelector agents={agents} selected={agentId} onSelect={selectAgent} />
-              <Link
-                href="/dashboard/settings"
-                aria-label="Settings"
-                title="Settings"
-                className="p-2 rounded-lg transition"
-                style={{ color: settingsActive ? colors.textStrong : colors.textMuted }}
-              >
-                <Settings size={16} />
-              </Link>
-              <button
-                onClick={signOut}
-                aria-label="Sign out"
-                title="Sign out"
-                className="p-2 rounded-lg transition"
-                style={{ color: colors.textMuted }}
-              >
-                <LogOut size={16} />
-              </button>
+              <AccountMenu />
             </div>
           </div>
 
@@ -110,11 +84,7 @@ function ShellInner({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6">
-        <TenantPlanBanner />
-        <ConnectionStatus />
-        {children}
-      </main>
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">{children}</main>
     </div>
   )
 }

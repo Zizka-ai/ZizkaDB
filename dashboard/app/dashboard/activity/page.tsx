@@ -32,7 +32,7 @@ function SegmentedControl({
     <div
       role="tablist"
       aria-label="Activity view"
-      className="inline-flex p-0.5 mb-5 overflow-x-auto max-w-full"
+      className="inline-flex p-0.5 overflow-x-auto max-w-full shrink-0"
       style={{
         background: colors.surface,
         border: `1px solid ${colors.border}`,
@@ -58,19 +58,6 @@ function SegmentedControl({
           </button>
         )
       })}
-    </div>
-  )
-}
-
-function StatTile({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div>
-      <div className="text-xs" style={{ color: colors.textFaint }}>
-        {label}
-      </div>
-      <div className="text-sm font-mono mt-0.5" style={{ color: colors.text }}>
-        {value}
-      </div>
     </div>
   )
 }
@@ -111,14 +98,30 @@ function ActivityContent() {
 
   return (
     <>
-      <PageHeader
-        title="Activity"
-        description={
-          stats?.last_event
-            ? `Last event ${formatDistanceToNow(new Date(stats.last_event), { addSuffix: true })}`
-            : 'Everything this agent records, as it happens.'
-        }
-      />
+      {/* Title + segment switcher share one row so the workspace starts higher. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold leading-tight" style={{ color: colors.textStrong }}>
+            Activity
+          </h1>
+          {stats && (
+            <p className="text-xs mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5" style={{ color: colors.textMuted }}>
+              <span><span style={{ color: colors.text }}>{stats.total_events.toLocaleString()}</span> events</span>
+              <span aria-hidden style={{ color: colors.border }}>·</span>
+              <span><span style={{ color: colors.text }}>{stats.unique_event_types}</span> types</span>
+              <span aria-hidden style={{ color: colors.border }}>·</span>
+              <span><span style={{ color: colors.text }}>{stats.sessions}</span> sessions</span>
+              {stats.last_event && (
+                <>
+                  <span aria-hidden style={{ color: colors.border }}>·</span>
+                  <span>last event {formatDistanceToNow(new Date(stats.last_event), { addSuffix: true })}</span>
+                </>
+              )}
+            </p>
+          )}
+        </div>
+        <SegmentedControl value={segment} onChange={setSegment} />
+      </div>
 
       {invalidAgent && (
         <div
@@ -134,31 +137,6 @@ function ActivityContent() {
           That agent no longer exists. Showing <span className="font-mono">{agentId}</span> instead.
         </div>
       )}
-
-      {stats && (
-        <div
-          className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5 px-4 py-3"
-          style={{
-            background: colors.surface,
-            border: `1px solid ${colors.border}`,
-            borderRadius: radii.lg,
-          }}
-        >
-          <StatTile label="Total events" value={stats.total_events.toLocaleString()} />
-          <StatTile label="Event types" value={stats.unique_event_types} />
-          <StatTile label="Sessions" value={stats.sessions} />
-          <StatTile
-            label="First event"
-            value={
-              stats.first_event
-                ? formatDistanceToNow(new Date(stats.first_event), { addSuffix: true })
-                : '—'
-            }
-          />
-        </div>
-      )}
-
-      <SegmentedControl value={segment} onChange={setSegment} />
 
       {segment === 'events' && <EventsSegment events={events} stats={stats} />}
       {segment === 'sessions' && <SessionsSegment agentId={agentId} />}

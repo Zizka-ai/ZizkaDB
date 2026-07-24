@@ -23,7 +23,7 @@ function WindowSelector({
   onChange: (w: BehaviorWindow) => void
 }) {
   return (
-    <div className="flex items-center gap-2 mb-5">
+    <div className="flex items-center gap-2 shrink-0">
       <span className="text-xs" style={{ color: colors.textFaint }}>
         Window
       </span>
@@ -74,11 +74,17 @@ function BehaviorContent() {
 
   return (
     <>
-      <PageHeader
-        title="Agent Behavior"
-        description="How this agent's recent behavior compares with its established baseline."
-      />
-      <WindowSelector value={window} onChange={setWindow} />
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold leading-tight" style={{ color: colors.textStrong }}>
+            Agent Behavior
+          </h1>
+          <p className="text-xs mt-1" style={{ color: colors.textMuted }}>
+            How this agent&apos;s recent behavior compares with its established baseline.
+          </p>
+        </div>
+        <WindowSelector value={window} onChange={setWindow} />
+      </div>
 
       {loading ? (
         <Skeleton rows={6} />
