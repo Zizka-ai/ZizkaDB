@@ -362,6 +362,8 @@ async def agent_suggestions(
             "agent": agent_id,
             "status": "ai_not_configured",
             "period": {"from": from_dt.replace(microsecond=0).isoformat(), "to": to_dt.replace(microsecond=0).isoformat(), "days": (to_dt - from_dt).days},
+            "model": None,
+            "generated_at": now.replace(microsecond=0).isoformat() + "Z",
             "suggestions": [],
             "evidence": [],
             "meta": {},

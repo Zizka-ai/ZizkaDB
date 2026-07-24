@@ -1,6 +1,6 @@
 'use client'
 
-import { colors, radii } from '@/lib/design-tokens'
+import { colors } from '@/lib/design-tokens'
 import { confidenceColor, confidenceLabel } from '@/lib/suggestions'
 
 /** Compact confidence indicator: a bar + "N% confidence". */
