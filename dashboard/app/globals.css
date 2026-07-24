@@ -69,3 +69,50 @@ pre:not(.pre-plain) {
   font-size: 13px;
   line-height: 1.6;
 }
+
+/* ── Reports: print-to-PDF ────────────────────────────────────────────────
+   The report cover is print-only; on screen it's hidden. When printing we
+   isolate `.report-print-area`, flip to an ink-friendly white/dark theme, hide
+   the app chrome, and avoid splitting cards/charts across pages. Trend-chart
+   colors survive because SVG uses fill/stroke (not CSS background). */
+.report-cover { display: none; }
+
+@media print {
+  @page { margin: 14mm; }
+
+  /* Isolate the report. */
+  body * { visibility: hidden !important; }
+  .report-print-area,
+  .report-print-area * { visibility: visible !important; }
+  .report-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+
+  /* Ink-friendly theme; keep chart/label colors exact. */
+  html, body { background: #ffffff !important; }
+  .report-print-area,
+  .report-print-area * {
+    background: #ffffff !important;
+    color: #111111 !important;
+    border-color: #d4d4d4 !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* SVG shapes keep their fill/stroke (they don't use CSS background). */
+  .report-print-area svg,
+  .report-print-area svg * { background: transparent !important; }
+
+  /* Hide app chrome and on-screen-only bits. */
+  header, .report-toolbar, .report-screen-heading { display: none !important; }
+
+  /* Cover page. */
+  .report-cover { display: block !important; break-after: page; text-align: center; padding-top: 26mm; }
+  .report-cover__brand { font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #666 !important; }
+  .report-cover__title { font-size: 34px; font-weight: 700; margin-top: 12mm; }
+  .report-cover__agent { font-family: 'JetBrains Mono', monospace; font-size: 18px; margin-top: 4mm; color: #333 !important; }
+  .report-cover__meta { margin-top: 24mm; display: inline-block; text-align: left; font-size: 13px; }
+  .report-cover__meta > div { display: flex; gap: 12px; margin-bottom: 6px; }
+  .report-cover__meta dt { width: 120px; color: #666 !important; }
+
+  /* Don't split blocks across pages. */
+  .report-avoid-break, svg, table, .report-print-area > * { break-inside: avoid; }
+}
