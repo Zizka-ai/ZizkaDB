@@ -43,11 +43,15 @@ export function AccountMenu() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [billing, setBilling] = useState<BillingStatus | null>(null)
-  const email = getSessionEmail()
+  // The email lives in the JWT in localStorage, which doesn't exist during SSR.
+  // Reading it at render time makes the server ('U') and client (real initial)
+  // disagree and React throws a hydration mismatch, so resolve it after mount.
+  const [email, setEmail] = useState<string | null>(null)
   const health = useConnectionHealth()
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    setEmail(getSessionEmail())
     const token = getToken()
     if (!token) return
     let cancelled = false
