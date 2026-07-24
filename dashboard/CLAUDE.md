@@ -26,7 +26,7 @@ so back/forward, refresh, bookmarking and sharing all work.
 |---|---|---|
 | Activity (Events · Sessions · Time Travel) | `/dashboard/activity` | all |
 | Agent Behavior | `/dashboard/behavior` | all |
-| Reports | `/dashboard/reports` | all (empty state — no backend) |
+| Reports | `/dashboard/reports` | all — per-agent, date-ranged report (see below) |
 | Suggestions | `/dashboard/suggestions` | all (empty state — no backend) |
 | Agent Fleets | `/dashboard/fleet` | managed only; OSS redirects to Activity |
 | Settings | `/dashboard/settings` | all — header icon, not a tab |
@@ -44,6 +44,16 @@ Data fetching lives in `hooks/`; `components/ui/` is presentational primitives a
 `useAgents()` is backed by a small module-level pub/sub so the header selector and
 the active tab share one poll and one list — not a state library, and not a licence
 to add one.
+
+**Reports** (`/dashboard/reports`) is agent-scoped like the other tabs. It fetches
+one consolidated payload from `GET /v1/agents/{id}/report?from=&to=&granularity=`
+(backend: `core/services/reports.py`) via `getAgentReport` + `useAgentReport`, and
+renders it from `components/dashboard/report/*` (ExecutiveSummary/KPIs, TrendChart —
+hand-rolled inline SVG, no chart lib — DistributionBars, SessionsTable,
+ReliabilitySection, Recommendations). Period presets + range math live in
+`lib/report.ts`. Every number is real (no fabricated cost/token/SLA metrics).
+PDF export is `window.print()` + the `@media print` block in `globals.css`
+(isolates `.report-print-area`, reveals the print-only `.report-cover`).
 
 ## Conventions
 
