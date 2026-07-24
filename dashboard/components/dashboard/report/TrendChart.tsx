@@ -64,16 +64,23 @@ export function TrendChart({
         </div>
       </div>
 
-      {!hasData ? (
+      {buckets.length === 0 ? (
         <p className="text-sm py-8 text-center" style={{ color: colors.textMuted }}>
-          No activity in this period.
+          No data for this period.
         </p>
       ) : (
+        // Always render the chart frame — with no activity the series flatlines
+        // along the baseline, which keeps the layout stable and reads as a
+        // genuine flat trend at a glance (rather than an empty text block).
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="w-full h-auto"
           role="img"
-          aria-label={`Activity trend: ${buckets.length} ${granularity} buckets, peak ${geom.maxY} events`}
+          aria-label={
+            hasData
+              ? `Activity trend: ${buckets.length} ${granularity} buckets, peak ${geom.maxY} events`
+              : `Activity trend: no activity across ${buckets.length} ${granularity} buckets`
+          }
           preserveAspectRatio="none"
         >
           {/* Y gridline (max) */}
@@ -95,6 +102,19 @@ export function TrendChart({
               <circle cx={geom.pts[0].x} cy={geom.pts[0].ye} r={3} fill={colors.info} />
               <circle cx={geom.pts[0].x} cy={geom.pts[0].yr} r={3} fill={colors.danger} />
             </>
+          )}
+
+          {/* Flatline label so zero activity is unmistakable. */}
+          {!hasData && (
+            <text
+              x={W / 2}
+              y={geom.baseY - 12}
+              textAnchor="middle"
+              fontSize="12"
+              fill={colors.textMuted}
+            >
+              No activity in this period
+            </text>
           )}
 
           {/* X labels: first & last */}

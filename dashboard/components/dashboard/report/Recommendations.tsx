@@ -17,15 +17,26 @@ const SEVERITY: Record<
 /**
  * Rule-based recommendations, most severe first. Each is deterministic and
  * derived from the report's real metrics (see services/reports.py).
+ *
+ * `heading` defaults to "Recommendations"; pass `null` to omit it (e.g. when
+ * wrapped by InsightsSection, which supplies its own header).
  */
-export function Recommendations({ items }: { items: ReportRecommendation[] }) {
+export function Recommendations({
+  items,
+  heading = 'Recommendations',
+}: {
+  items: ReportRecommendation[]
+  heading?: string | null
+}) {
   const sorted = [...items].sort((a, b) => SEVERITY[a.severity].rank - SEVERITY[b.severity].rank)
 
   return (
     <div>
-      <h3 className="text-sm font-medium mb-3" style={{ color: colors.textStrong }}>
-        Recommendations
-      </h3>
+      {heading && (
+        <h3 className="text-sm font-medium mb-3" style={{ color: colors.textStrong }}>
+          {heading}
+        </h3>
+      )}
       <div className="space-y-2">
         {sorted.map((r, i) => {
           const s = SEVERITY[r.severity]

@@ -46,10 +46,14 @@ describe('TrendChart', () => {
     sessions: 0,
   })
 
-  it('renders the empty state when there is no activity', () => {
+  it('renders the chart frame with a flatline (not bare text) when there is no activity', () => {
     const buckets = [bucket('2026-07-01T00:00:00', 0), bucket('2026-07-02T00:00:00', 0)]
-    render(<TrendChart buckets={buckets} granularity="day" />)
-    expect(screen.getByText(/no activity/i)).toBeInTheDocument()
+    const { container } = render(<TrendChart buckets={buckets} granularity="day" />)
+    // SVG frame renders (layout continuity), with an in-chart flatline label.
+    expect(container.querySelector('svg')).toBeInTheDocument()
+    expect(screen.getByText(/no activity in this period/i)).toBeInTheDocument()
+    // and the accessible data table fallback is still present
+    expect(container.querySelector('table')).toBeInTheDocument()
   })
 
   it('renders an SVG and a data-table fallback for real data', () => {
