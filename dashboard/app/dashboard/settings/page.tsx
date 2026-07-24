@@ -3,6 +3,7 @@
 import { ApiKeyUsage } from "@/components/ApiKeyUsage";
 import { AgentKeysSection } from "@/components/dashboard/AgentKeysSection";
 import { useApiKeyQuota } from "@/hooks/useApiKeyQuota";
+import { useEdition } from "@/hooks/useEdition";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import {
   createApiKey,
@@ -55,6 +56,10 @@ export default function SettingsPage() {
   const [accountMsg, setAccountMsg] = useState("");
   const [accountErr, setAccountErr] = useState("");
   const quota = useApiKeyQuota();
+  // Self-hosted (OSS) has no Zizka platform, so it always brings its own
+  // embedding key and has no tenant-wide key. Pro/Team keep both.
+  const { edition } = useEdition();
+  const isOss = edition === "oss";
 
   useEffect(() => {
     let token: string;
@@ -124,16 +129,22 @@ export default function SettingsPage() {
           border: "1px solid #1f1f1f",
         }}
       >
-        API keys belong to an agent.{" "}
-        <Link
-          href="/dashboard/fleet"
-          className="underline"
-          style={{ color: "#22c55e" }}
-        >
-          Create an agent
-        </Link>{" "}
-        to get a key, or open an agent to add more keys. Legacy tenant-wide keys
-        (no agent) still work.
+        {isOss ? (
+          <>
+            API keys belong to an agent. Your agent is created automatically the
+            first time it logs an event with the SDK; create its key in the
+            section below.
+          </>
+        ) : (
+          <>
+            API keys belong to an agent.{" "}
+            <Link href="/dashboard/fleet" className="underline" style={{ color: "#22c55e" }}>
+              Create an agent
+            </Link>{" "}
+            to get a key, or open an agent to add more keys. Legacy tenant-wide
+            keys (no agent) still work.
+          </>
+        )}
       </p>
 
       {/* Embeddings */}
@@ -143,10 +154,9 @@ export default function SettingsPage() {
       >
         <h2 className="text-sm font-medium text-white mb-1">Embeddings</h2>
         <p className="text-xs mb-4" style={{ color: "#a3a3a3" }}>
-          Choose the model used for semantic search and context injection (like
-          Pinecone&apos;s embedding choice). All models use 1536 dimensions. New
-          events use this model; existing vectors are not re-indexed
-          automatically.
+          {isOss
+            ? "Semantic search and context injection use OpenAI embeddings. Add your own OpenAI API key below to enable them. All models use 1536 dimensions; new events use this model (existing vectors are not re-indexed automatically)."
+            : "Choose the model used for semantic search and context injection (like Pinecone's embedding choice). All models use 1536 dimensions. New events use this model; existing vectors are not re-indexed automatically."}
         </p>
         {embLoading ? (
           <div
@@ -162,11 +172,13 @@ export default function SettingsPage() {
               setEmbMsg("");
               try {
                 const token = requireAuth();
+                // OSS never uses the platform key — always send the user's own.
+                const platformKey = isOss ? false : usePlatformKey;
                 await updateEmbeddingSettings(token, {
                   provider: embProvider,
                   model: embModel,
-                  use_platform_key: usePlatformKey,
-                  api_key: usePlatformKey ? undefined : customApiKey,
+                  use_platform_key: platformKey,
+                  api_key: platformKey ? undefined : customApiKey,
                 });
                 setEmbMsg("Saved. New events will use this embedding model.");
                 setEmbReady(true);
@@ -196,16 +208,19 @@ export default function SettingsPage() {
               )}
             </select>
 
-            <label className="flex items-center gap-2 text-sm text-white mb-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={usePlatformKey}
-                onChange={(e) => setUsePlatformKey(e.target.checked)}
-              />
-              Use Zizka platform embeddings (included on managed cloud)
-            </label>
+            {/* Platform-key option is managed-cloud only; OSS always brings its own key. */}
+            {!isOss && (
+              <label className="flex items-center gap-2 text-sm text-white mb-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={usePlatformKey}
+                  onChange={(e) => setUsePlatformKey(e.target.checked)}
+                />
+                Use Zizka platform embeddings (included on managed cloud)
+              </label>
+            )}
 
-            {!usePlatformKey && (
+            {(isOss || !usePlatformKey) && (
               <>
                 <label
                   className="block text-xs mb-1"
@@ -305,7 +320,8 @@ export default function SettingsPage() {
       {/* Per-agent keys (relocated from the old agent-detail page) */}
       <AgentKeysSection />
 
-      {/* Tenant-wide key (multi-agent apps) */}
+      {/* Tenant-wide key — managed only. OSS uses a single per-agent key. */}
+      {!isOss && (
       <div
         className="rounded-xl p-5 mb-6"
         style={{ background: "#111", border: "1px solid #1f1f1f" }}
@@ -408,6 +424,7 @@ export default function SettingsPage() {
           </button>
         </form>
       </div>
+      )}
 
       {/* Key list (overview) */}
       <div
