@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from api.deps import assert_agent_allowed, get_tenant, require_dashboard_session
 from db.connection import get_pool
+from services import reports
 from services.api_keys import (
     assert_and_reserve_api_key_slot,
     create_api_key_record,
@@ -293,6 +294,37 @@ async def agent_stats(agent_id: str, tenant: dict = Depends(get_tenant)):
         "last_event": stats["last_event"].isoformat() if stats["last_event"] else None,
         "top_events": [{"event": r["event_type"], "count": r["count"]} for r in top_events],
     }
+
+
+@router.get("/{agent_id}/report")
+async def agent_report(
+    agent_id: str,
+    from_: str = Query(..., alias="from", description="ISO-8601 start of the report window"),
+    to: str = Query(..., description="ISO-8601 end of the report window (exclusive)"),
+    granularity: str | None = Query(default=None, pattern=r"^(day|week)$"),
+    tenant: dict = Depends(get_tenant),
+):
+    """Single consolidated, date-ranged report for one agent.
+
+    Composes summary KPIs (with previous-period deltas), a gap-filled events/
+    errors time series, event breakdown, sessions, behavior drift and rule-based
+    recommendations from real events. See services/reports.py.
+    """
+    agent_id = _validate_agent_id(agent_id)
+    assert_agent_allowed(tenant, agent_id)
+
+    try:
+        from_dt = reports.parse_utc_naive(from_, "from")
+        to_dt = reports.parse_utc_naive(to, "to")
+        reports.validate_range(from_dt, to_dt)
+    except ValueError as exc:
+        raise bad_request(detail=str(exc))
+
+    granularity = reports.resolve_granularity(from_dt, to_dt, granularity)
+    pool = get_pool()
+    return await reports.build_report(
+        pool, tenant["tenant_id"], agent_id, from_dt, to_dt, granularity
+    )
 
 
 @router.get("/{agent_id}/sessions")
