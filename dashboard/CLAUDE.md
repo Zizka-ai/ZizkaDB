@@ -27,7 +27,7 @@ so back/forward, refresh, bookmarking and sharing all work.
 | Activity (Events · Sessions · Time Travel) | `/dashboard/activity` | all |
 | Agent Behavior | `/dashboard/behavior` | all |
 | Reports | `/dashboard/reports` | all — per-agent, date-ranged report (see below) |
-| Suggestions | `/dashboard/suggestions` | all (empty state — no backend) |
+| Suggestions | `/dashboard/suggestions` | all — per-agent, AI evidence-backed recommendations (see below) |
 | Agent Fleets | `/dashboard/fleet` | managed only; OSS redirects to Activity |
 | Settings | `/dashboard/settings` | all — header icon, not a tab |
 
@@ -54,6 +54,19 @@ ReliabilitySection, Recommendations). Period presets + range math live in
 `lib/report.ts`. Every number is real (no fabricated cost/token/SLA metrics).
 PDF export is `window.print()` + the `@media print` block in `globals.css`
 (isolates `.report-print-area`, reveals the print-only `.report-cover`).
+
+**Suggestions** (`/dashboard/suggestions`) is agent-scoped like Reports. It fetches
+`GET /v1/agents/{id}/suggestions?from=&to=&refresh=` (backend:
+`core/services/suggestions/` + `core/services/ai/`) via `getAgentSuggestions` +
+`useAgentSuggestions`, and renders `components/dashboard/suggestions/*`
+(SuggestionsToolbar, SuggestionList → SuggestionCard → SeverityBadge/ConfidenceMeter).
+Period presets reuse `lib/report.ts`; severity/category presentation is in
+`lib/suggestions.ts`. **Every suggestion is grounded in real evidence** — a
+deterministic backend extractor computes facts from the events table, Claude only
+elaborates via forced tool use, and a validation layer drops any ungrounded output.
+Three non-error states: `ok` (cards), `no_evidence` (not enough signal), and
+`ai_not_configured` (OSS server without `ANTHROPIC_API_KEY` — HTTP 200, setup card).
+Regenerate bypasses the server cache (`?refresh=1`).
 
 ## Conventions
 
