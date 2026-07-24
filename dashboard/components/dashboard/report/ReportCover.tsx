@@ -1,6 +1,6 @@
 'use client'
 
-import { format } from 'date-fns'
+import { formatUtcDate, formatUtcDateTime } from '@/lib/report'
 import type { ReportPayload } from '@/lib/api'
 
 /**
@@ -22,12 +22,12 @@ export function ReportCover({ report, periodLabel }: { report: ReportPayload; pe
         <div>
           <dt>Range (UTC)</dt>
           <dd>
-            {format(new Date(p.from), 'MMM d, yyyy')} — {format(new Date(p.to), 'MMM d, yyyy')}
+            {formatUtcDate(p.from)} — {formatUtcDate(p.to)}
           </dd>
         </div>
         <div>
           <dt>Generated</dt>
-          <dd>{format(new Date(report.generated_at), 'MMM d, yyyy HH:mm')} UTC</dd>
+          <dd>{formatUtcDateTime(report.generated_at)} UTC</dd>
         </div>
         <div>
           <dt>Report version</dt>

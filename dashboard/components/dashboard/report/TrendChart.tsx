@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo } from 'react'
-import { format } from 'date-fns'
 import { colors, radii } from '@/lib/design-tokens'
+import { formatUtcMonthDay, utcDay } from '@/lib/report'
 import type { ReportBucket } from '@/lib/api'
 
 const W = 800
@@ -34,7 +34,6 @@ export function TrendChart({
     return { pts, maxY, baseY: PAD.top + innerH }
   }, [buckets])
 
-  const dateFmt = granularity === 'week' ? 'MMM d' : 'MMM d'
   const hasData = buckets.some((b) => b.events > 0)
 
   const eventsPath = geom.pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.ye}`).join(' ')
@@ -100,10 +99,10 @@ export function TrendChart({
 
           {/* X labels: first & last */}
           <text x={PAD.left} y={H - 8} fontSize="11" fill={colors.textFaint}>
-            {format(new Date(buckets[0].bucket), dateFmt)}
+            {formatUtcMonthDay(buckets[0].bucket)}
           </text>
           <text x={W - PAD.right} y={H - 8} textAnchor="end" fontSize="11" fill={colors.textFaint}>
-            {format(new Date(buckets[buckets.length - 1].bucket), dateFmt)}
+            {formatUtcMonthDay(buckets[buckets.length - 1].bucket)}
           </text>
         </svg>
       )}
@@ -122,7 +121,7 @@ export function TrendChart({
         <tbody>
           {buckets.map((b) => (
             <tr key={b.bucket}>
-              <td>{format(new Date(b.bucket), 'yyyy-MM-dd')}</td>
+              <td>{utcDay(b.bucket)}</td>
               <td>{b.events}</td>
               <td>{b.errors}</td>
               <td>{b.sessions}</td>

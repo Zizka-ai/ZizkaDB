@@ -19,9 +19,19 @@ codebase: an event counts as an error when its ``event_type`` matches
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+import asyncio
+from datetime import datetime, timezone
 
 REPORT_VERSION = "1.0"
+
+_VALID_GRANULARITY = {"day", "week"}
+
+
+def _iso_utc(dt: datetime) -> str:
+    """ISO-8601 with an explicit UTC offset, so clients never parse it as local."""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 # A behavior baseline needs at least this many events before the window to be
 # statistically meaningful (mirrors api/agents.py::MINIMUM_BASELINE_EVENTS).
@@ -220,6 +230,8 @@ async def _timeseries(pool, tenant_id, agent_id, from_dt, to_dt, granularity) ->
 
     ``granularity`` is a whitelisted literal ('day'/'week'), safe to interpolate.
     """
+    if granularity not in _VALID_GRANULARITY:  # defence-in-depth vs. SQL interpolation
+        raise ValueError(f"invalid granularity: {granularity!r}")
     step = f"1 {granularity}"
     rows = await pool.fetch(
         f"""
@@ -253,7 +265,7 @@ async def _timeseries(pool, tenant_id, agent_id, from_dt, to_dt, granularity) ->
     )
     return [
         {
-            "bucket": r["bucket"].isoformat(),
+            "bucket": _iso_utc(r["bucket"]),
             "events": r["events"],
             "errors": r["errors"],
             "sessions": r["sessions"],
@@ -262,7 +274,9 @@ async def _timeseries(pool, tenant_id, agent_id, from_dt, to_dt, granularity) ->
     ]
 
 
-async def _top_events(pool, tenant_id, agent_id, from_dt, to_dt, total: int) -> list[dict]:
+async def _top_events(pool, tenant_id, agent_id, from_dt, to_dt) -> list[dict]:
+    """Top-10 event types (raw counts). ``pct`` is filled in by the caller once
+    the window total is known, so this can run in parallel with the summary."""
     rows = await pool.fetch(
         """
         SELECT event_type, COUNT(*) AS count
@@ -275,14 +289,7 @@ async def _top_events(pool, tenant_id, agent_id, from_dt, to_dt, total: int) -> 
         """,
         tenant_id, agent_id, from_dt, to_dt,
     )
-    return [
-        {
-            "event_type": r["event_type"],
-            "count": r["count"],
-            "pct": round(100 * r["count"] / total, 2) if total else 0.0,
-        }
-        for r in rows
-    ]
+    return [{"event_type": r["event_type"], "count": r["count"]} for r in rows]
 
 
 async def _sessions(pool, tenant_id, agent_id, from_dt, to_dt) -> list[dict]:
@@ -486,15 +493,24 @@ async def build_report(
     span = to_dt - from_dt
     prev_from = from_dt - span
 
+    # `summary` is needed for the top-event percentages, health and
+    # recommendations, so resolve it first; the rest are independent and run
+    # concurrently (≈2 round-trips total rather than ~8 sequential ones).
     summary = await _summary(pool, tenant_id, agent_id, from_dt, to_dt)
-    prev_summary = await _summary(pool, tenant_id, agent_id, prev_from, from_dt)
-    timeseries = await _timeseries(pool, tenant_id, agent_id, from_dt, to_dt, granularity)
-    top_events = await _top_events(
-        pool, tenant_id, agent_id, from_dt, to_dt, summary["total_events"]
+
+    prev_summary, timeseries, top_raw, distribution, sessions, drift = await asyncio.gather(
+        _summary(pool, tenant_id, agent_id, prev_from, from_dt),
+        _timeseries(pool, tenant_id, agent_id, from_dt, to_dt, granularity),
+        _top_events(pool, tenant_id, agent_id, from_dt, to_dt),
+        window_metrics(pool, tenant_id, agent_id, from_dt, to_dt),
+        _sessions(pool, tenant_id, agent_id, from_dt, to_dt),
+        _drift(pool, tenant_id, agent_id, from_dt, to_dt),
     )
-    distribution = await window_metrics(pool, tenant_id, agent_id, from_dt, to_dt)
-    sessions = await _sessions(pool, tenant_id, agent_id, from_dt, to_dt)
-    drift = await _drift(pool, tenant_id, agent_id, from_dt, to_dt)
+
+    total = summary["total_events"]
+    top_events = [
+        {**r, "pct": round(100 * r["count"] / total, 2) if total else 0.0} for r in top_raw
+    ]
 
     summary["previous"] = {
         "total_events": prev_summary["total_events"],
@@ -508,8 +524,8 @@ async def build_report(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "report_version": REPORT_VERSION,
         "period": {
-            "from": from_dt.isoformat(),
-            "to": to_dt.isoformat(),
+            "from": _iso_utc(from_dt),
+            "to": _iso_utc(to_dt),
             "days": span.days,
             "granularity": granularity,
         },

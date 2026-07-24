@@ -94,6 +94,29 @@ export function formatNumber(n: number): string {
   return NUM.format(n)
 }
 
+// Report timestamps are UTC; format them in UTC so a shared report reads the
+// same everywhere (date-fns `format` would use the viewer's local timezone).
+const UTC_DATE = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric',
+})
+const UTC_DATETIME = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric',
+  hour: '2-digit', minute: '2-digit', hour12: false,
+})
+const UTC_MONTH_DAY = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC', month: 'short', day: 'numeric',
+})
+const UTC_MONTH_DAY_TIME = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+})
+
+export const formatUtcDate = (iso: string) => UTC_DATE.format(new Date(iso))
+export const formatUtcDateTime = (iso: string) => UTC_DATETIME.format(new Date(iso))
+export const formatUtcMonthDay = (iso: string) => UTC_MONTH_DAY.format(new Date(iso))
+export const formatUtcMonthDayTime = (iso: string) => UTC_MONTH_DAY_TIME.format(new Date(iso))
+/** Calendar day of a UTC ISO timestamp, e.g. "2026-07-01". */
+export const utcDay = (iso: string) => iso.slice(0, 10)
+
 /** Human duration from seconds: "45s", "3m 20s", "2h 5m". */
 export function formatDuration(totalSeconds: number): string {
   if (totalSeconds <= 0) return '0s'

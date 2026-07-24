@@ -1,8 +1,7 @@
 'use client'
 
-import { format } from 'date-fns'
 import { colors, radii } from '@/lib/design-tokens'
-import { formatDuration } from '@/lib/report'
+import { formatDuration, formatUtcMonthDayTime } from '@/lib/report'
 import type { ReportSession } from '@/lib/api'
 
 /** Sessions recorded in the window. Scrolls horizontally on small screens. */
@@ -54,7 +53,7 @@ export function SessionsTable({ sessions }: { sessions: ReportSession[] }) {
                   {formatDuration(s.duration_seconds)}
                 </td>
                 <td className="px-4 py-2 text-right" style={{ color: colors.textMuted }}>
-                  {format(new Date(s.started_at), 'MMM d, HH:mm')}
+                  {formatUtcMonthDayTime(s.started_at)}
                 </td>
               </tr>
             ))}
