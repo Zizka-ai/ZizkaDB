@@ -57,10 +57,10 @@ asyncio.run(main())"`
   return (
     <div
       className="rounded-xl p-8"
-      style={{ background: "#111", border: "1px solid #1f1f1f" }}
+      style={{ background: "#161c26", border: "1px solid #2a3340" }}
     >
       <h3 className="text-white font-medium mb-1">Getting started</h3>
-      <p className="text-sm mb-6" style={{ color: '#e5e5e5' }}>
+      <p className="text-sm mb-6" style={{ color: '#e8edf5' }}>
         {IS_DEV
           ? 'OSS quickstart — taste causal lineage, then connect your stack.'
           : 'Three steps to see your first agent in the dashboard.'}
@@ -76,7 +76,7 @@ asyncio.run(main())"`
             </span>
             <div>
               <div className="text-sm font-medium text-white">{step.title}</div>
-              <div className="text-xs mt-0.5" style={{ color: "#e5e5e5" }}>
+              <div className="text-xs mt-0.5" style={{ color: "#e8edf5" }}>
                 {step.desc}
               </div>
             </div>
@@ -85,11 +85,11 @@ asyncio.run(main())"`
       </ol>
       <pre
         className="text-left rounded-lg p-4 text-xs overflow-x-auto"
-        style={{ background: "#0d0d0d", color: "#22c55e" }}
+        style={{ background: "#10151d", color: "#22c55e" }}
       >
         {snippet}
       </pre>
-      <p className="text-xs mt-4" style={{ color: '#e5e5e5' }}>
+      <p className="text-xs mt-4" style={{ color: '#e8edf5' }}>
         {IS_DEV ? (
           <>
             Connect guide:{' '}
@@ -97,7 +97,7 @@ asyncio.run(main())"`
               href="https://github.com/Zizka-ai/ZizkaDB/blob/main/CONNECT.md"
               target="_blank"
               rel="noreferrer"
-              style={{ color: '#e5e5e5' }}
+              style={{ color: '#e8edf5' }}
             >
               CONNECT.md
             </a>
@@ -106,7 +106,7 @@ asyncio.run(main())"`
               href="https://github.com/Zizka-ai/ZizkaDB/tree/main/worked/01-support-order-delay"
               target="_blank"
               rel="noreferrer"
-              style={{ color: '#e5e5e5' }}
+              style={{ color: '#e8edf5' }}
             >
               01-support-order-delay
             </a>
@@ -114,7 +114,7 @@ asyncio.run(main())"`
         ) : (
           <>
             Dashboard empty but SDK works? Your SDK and login must share the same tenant — see{' '}
-            <a href="https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting" style={{ color: '#e5e5e5' }}>Self-host docs</a>.
+            <a href="https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting" style={{ color: '#e8edf5' }}>Self-host docs</a>.
           </>
         )}
       </p>

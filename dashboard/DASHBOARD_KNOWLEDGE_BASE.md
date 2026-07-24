@@ -556,6 +556,14 @@ Router prefixes are mounted in `core/main.py:66-79`.
 | `getAgentStats` | GET `/v1/agents/{id}/stats` | `agents.py:239` |
 | `getAgentSessions` | GET `/v1/agents/{id}/sessions` | `agents.py:280` |
 | `getAgentBaseline` | GET `/v1/agents/{id}/baseline` | `agents.py:453` |
+| `getAgentReport` | GET `/v1/agents/{id}/report?from=&to=&granularity=` | `agents.py` → `services/reports.py` |
+
+The **report** endpoint composes one date-ranged payload for an agent: summary KPIs
+(with previous-period figures for deltas), a gap-filled events/errors/sessions time
+series, event breakdown + transitions, sessions, behavior drift (null when <50 prior
+events), and deterministic rule-based recommendations. Auth: `get_tenant` +
+`assert_agent_allowed`. Range validated (`from<to`, ≤366 days); granularity auto
+(day ≤92d else week). All aggregation is real events — no fabricated cost/token/SLA.
 
 **Events / Search / Memory (dashboard read side):**
 | Dashboard fn | Method · Path | Backend |
