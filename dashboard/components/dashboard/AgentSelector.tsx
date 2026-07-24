@@ -64,7 +64,7 @@ export function AgentSelector({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Select agent"
-        className="flex items-center gap-2 px-3 py-1.5 text-sm transition"
+        className="btn-hover flex items-center gap-2 px-3 py-1.5 text-sm"
         style={{
           background: colors.surfaceAlt,
           border: `1px solid ${colors.borderStrong}`,
@@ -134,7 +134,7 @@ export function AgentSelector({
                       setOpen(false)
                       setFilter('')
                     }}
-                    className="w-full text-left px-3 py-2 text-sm flex items-center justify-between gap-2 transition"
+                    className="opt-hover w-full text-left px-3 py-2 text-sm flex items-center justify-between gap-2"
                     style={{
                       background: isSel ? colors.surfaceHover : 'transparent',
                       color: isSel ? colors.textStrong : colors.text,

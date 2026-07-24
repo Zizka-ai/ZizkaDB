@@ -44,7 +44,7 @@ const EventRow = memo(function EventRow({
       <button
         onClick={() => onSelect(event)}
         aria-expanded={selected}
-        className="w-full text-left px-4 py-3 transition"
+        className={`w-full text-left px-4 py-3 ${selected ? '' : 'row-hover'}`}
         style={{
           background: selected ? colors.successBg : colors.surface,
           border: `1px solid ${selected ? '#22c55e40' : colors.border}`,

@@ -97,7 +97,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`inline-flex items-center gap-1.5 font-medium transition disabled:opacity-40 ${
+      className={`btn-hover inline-flex items-center gap-1.5 font-medium disabled:opacity-40 ${
         size === 'sm' ? 'text-xs px-2.5 py-1.5' : 'text-sm px-4 py-2'
       }`}
       style={{ background: bg, color: fg, border: `1px solid ${border}`, borderRadius: radii.md }}
@@ -256,7 +256,7 @@ export function CopyButton({ value, label = 'Copy' }: { value: string; label?: s
     <button
       type="button"
       onClick={() => copy(value)}
-      className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 transition"
+      className="btn-hover inline-flex items-center gap-1.5 text-xs px-2.5 py-1"
       style={{
         background: colors.surfaceHover,
         border: `1px solid ${colors.borderStrong}`,

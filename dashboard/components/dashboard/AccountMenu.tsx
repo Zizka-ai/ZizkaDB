@@ -95,7 +95,7 @@ export function AccountMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account and connection"
-        className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 transition"
+        className="btn-hover flex items-center gap-2 pl-1.5 pr-2 py-1.5"
         style={{
           background: open ? colors.surfaceHover : 'transparent',
           border: `1px solid ${open ? colors.borderStrong : colors.border}`,
@@ -212,7 +212,7 @@ export function AccountMenu() {
               href="/dashboard/settings"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2.5 px-2.5 py-2 text-sm transition"
+              className="opt-hover flex items-center gap-2.5 px-2.5 py-2 text-sm"
               style={{ color: colors.text, borderRadius: radii.md }}
             >
               <Settings size={15} style={{ color: colors.textMuted }} />
@@ -221,7 +221,7 @@ export function AccountMenu() {
             <button
               onClick={signOut}
               role="menuitem"
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 text-sm transition"
+              className="opt-hover w-full flex items-center gap-2.5 px-2.5 py-2 text-sm"
               style={{ color: colors.text, borderRadius: radii.md }}
             >
               <LogOut size={15} style={{ color: colors.textMuted }} />

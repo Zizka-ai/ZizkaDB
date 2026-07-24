@@ -53,7 +53,11 @@ export function FleetTable({
             const tone = deriveStatus({ lastSeen: a.last_seen })
             const isDeleting = deletingAgent === a.agent
             return (
-              <tr key={a.agent} style={{ borderTop: `1px solid ${colors.border}` }}>
+              <tr
+                key={a.agent}
+                className="row-hover"
+                style={{ borderTop: `1px solid ${colors.border}` }}
+              >
                 <td className="px-4 py-3">
                   <Link
                     href={`/dashboard/activity?agent=${encodeURIComponent(a.agent)}`}
@@ -80,7 +84,7 @@ export function FleetTable({
                     disabled={isDeleting}
                     aria-label={`Delete agent ${a.agent}`}
                     title="Delete agent"
-                    className="p-1.5 transition disabled:opacity-40"
+                    className="icon-hover p-1.5 disabled:opacity-40"
                     style={{ color: colors.textFaint, borderRadius: radii.sm }}
                   >
                     <Trash2 size={14} />

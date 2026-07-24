@@ -250,7 +250,7 @@ export function EventsSegment({
             {!searchResults && events.hasMore && (
               <button
                 onClick={events.loadMore}
-                className="w-full mt-4 py-2.5 text-sm transition"
+                className="row-hover w-full mt-4 py-2.5 text-sm"
                 style={{
                   background: colors.surface,
                   color: colors.text,

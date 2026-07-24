@@ -55,7 +55,7 @@ export function SessionsSegment({ agentId }: { agentId: string | null }) {
                 key={s.session_id}
                 onClick={() => openSession(s)}
                 aria-pressed={isSelected}
-                className="w-full text-left p-3.5 transition"
+                className={`w-full text-left p-3.5 ${isSelected ? '' : 'row-hover'}`}
                 style={{
                   background: isSelected ? colors.successBg : colors.surface,
                   border: `1px solid ${isSelected ? '#22c55e40' : colors.border}`,

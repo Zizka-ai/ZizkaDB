@@ -23,8 +23,10 @@ export const colors = {
 
   text: '#e5e5e5', // primary (off-white, not pure white)
   textStrong: '#ffffff',
-  textMuted: '#a3a3a3', // secondary
-  textFaint: '#666666', // labels, metadata
+  textMuted: '#a3a3a3', // secondary — ~7.4:1 on bg
+  // tertiary (labels, timestamps, metadata). #808080 clears WCAG AA (~4.6:1
+  // on the near-black bg); the previous #666 was ~3.4:1 and hard to read.
+  textFaint: '#808080',
 
   success: '#22c55e',
   successBg: '#14241a',
