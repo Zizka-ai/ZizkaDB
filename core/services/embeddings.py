@@ -64,7 +64,7 @@ async def generate_embedding_with_config(
     except Exception:
         pass
 
-    provider = EMBEDDING_PROVIDERS.get(config.provider)
+    provider = _get_embedding_provider(config.provider)
     if provider is None:
         logger.warning("Unsupported embedding provider: %s", config.provider)
         return None
@@ -132,9 +132,19 @@ async def _openai_embedding(
         return response.json()["data"][0]["embedding"]
 
 
-EMBEDDING_PROVIDERS: dict[str, EmbeddingProvider] = {
-    "openai": _openai_embedding,
+# Map provider id → the module-level function that implements it. The function
+# is resolved from module globals at call time (see _get_embedding_provider)
+# rather than stored as a direct reference, so monkeypatching the provider —
+# e.g. `_openai_embedding` in tests — takes effect, and reassigning it never
+# leaves a stale binding here.
+_EMBEDDING_PROVIDER_NAMES: dict[str, str] = {
+    "openai": "_openai_embedding",
 }
+
+
+def _get_embedding_provider(provider: str) -> EmbeddingProvider | None:
+    fn_name = _EMBEDDING_PROVIDER_NAMES.get(provider)
+    return globals().get(fn_name) if fn_name else None
 
 
 def _flatten_data(value: Any, prefix: str = "") -> list[str]:
