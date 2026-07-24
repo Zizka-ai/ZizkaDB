@@ -386,6 +386,62 @@ export async function getAgentReport(
   return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/report?${qs.toString()}`, token)
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Suggestions — evidence-grounded AI recommendations (see core/services/suggestions)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type SuggestionSeverity = 'critical' | 'high' | 'medium' | 'low' | 'informational'
+export type SuggestionCategory =
+  | 'general'
+  | 'token_optimization'
+  | 'error_prevention'
+  | 'performance'
+  | 'reliability'
+  | 'code'
+export type SuggestionStatus = 'ok' | 'no_evidence' | 'ai_not_configured'
+
+export interface SuggestionEvidence {
+  id: string
+  category: SuggestionCategory
+  label: string
+  summary: string
+  metrics: Record<string, unknown>
+  samples: string[]
+  strength: number
+}
+
+export interface Suggestion {
+  title: string
+  category: SuggestionCategory
+  severity: SuggestionSeverity
+  confidence: number
+  evidence: string[]
+  recommendation: string
+  expected_impact: string
+  code_fix?: { language: string; code: string }
+}
+
+export interface SuggestionsResult {
+  agent: string
+  status: SuggestionStatus
+  period: { from: string; to: string; days: number }
+  model: string | null
+  generated_at: string
+  suggestions: Suggestion[]
+  evidence: SuggestionEvidence[]
+  meta: Record<string, unknown>
+}
+
+export async function getAgentSuggestions(
+  token: string,
+  agentId: string,
+  params: { from: string; to: string; refresh?: boolean },
+): Promise<SuggestionsResult> {
+  const qs = new URLSearchParams({ from: params.from, to: params.to })
+  if (params.refresh) qs.set('refresh', '1')
+  return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/suggestions?${qs.toString()}`, token)
+}
+
 export async function getApiKeys(token: string) {
   return apiFetch('/v1/auth/api-keys', token)
 }

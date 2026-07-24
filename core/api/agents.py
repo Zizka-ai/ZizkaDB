@@ -3,12 +3,15 @@ import re
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
-from services.exceptions import bad_request, conflict, not_found
+from services.exceptions import bad_request, conflict, not_found, service_unavailable
 from pydantic import BaseModel, Field
 
 from api.deps import assert_agent_allowed, get_tenant, require_dashboard_session
-from db.connection import get_pool
+from db.connection import get_pool, get_redis
 from services import reports
+from services.ai import config as ai_config
+from services.ai.provider import AIProviderError
+from services.suggestions import engine as suggestions_engine
 from services.api_keys import (
     assert_and_reserve_api_key_slot,
     create_api_key_record,
@@ -327,12 +330,61 @@ async def agent_report(
     )
 
 
+@router.get("/{agent_id}/suggestions")
+async def agent_suggestions(
+    agent_id: str,
+    from_: str | None = Query(default=None, alias="from", description="ISO-8601 window start"),
+    to: str | None = Query(default=None, description="ISO-8601 window end (exclusive)"),
+    refresh: bool = Query(default=False, description="Bypass the cache and regenerate"),
+    tenant: dict = Depends(get_tenant),
+):
+    """AI-generated, evidence-grounded improvement suggestions for one agent.
+
+    Deterministic signals are extracted from real events (see services/
+    suggestions/evidence.py); Claude only elaborates on those supplied facts and
+    a validation layer drops anything ungrounded. Returns status ``ok`` /
+    ``no_evidence`` / ``ai_not_configured``. Never invents recommendations.
+    """
+    agent_id = _validate_agent_id(agent_id)
+    assert_agent_allowed(tenant, agent_id)
+
+    # Default to the last 30 days when the caller omits an explicit window.
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    try:
+        to_dt = reports.parse_utc_naive(to, "to") if to else now
+        from_dt = reports.parse_utc_naive(from_, "from") if from_ else to_dt - timedelta(days=30)
+        reports.validate_range(from_dt, to_dt)
+    except ValueError as exc:
+        raise bad_request(detail=str(exc))
+
+    if not ai_config.ai_configured():
+        return {
+            "agent": agent_id,
+            "status": "ai_not_configured",
+            "period": {"from": from_dt.replace(microsecond=0).isoformat(), "to": to_dt.replace(microsecond=0).isoformat(), "days": (to_dt - from_dt).days},
+            "model": None,
+            "generated_at": now.replace(microsecond=0).isoformat() + "Z",
+            "suggestions": [],
+            "evidence": [],
+            "meta": {},
+        }
+
+    try:
+        result = await suggestions_engine.get_suggestions(
+            get_pool(), get_redis(), tenant["tenant_id"], agent_id, from_dt, to_dt, refresh=refresh
+        )
+    except AIProviderError as exc:
+        raise service_unavailable(detail=f"AI analysis is temporarily unavailable: {exc}")
+    return result.to_dict()
+
+
 @router.get("/{agent_id}/sessions")
 async def list_sessions(
     agent_id: str,
-    limit: int = Query(default=50, le=500),
+    limit: int = Query(default=20, ge=1, le=100),
     tenant: dict = Depends(get_tenant),
 ):
+    agent_id = _validate_agent_id(agent_id)
     assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
     rows = await pool.fetch(

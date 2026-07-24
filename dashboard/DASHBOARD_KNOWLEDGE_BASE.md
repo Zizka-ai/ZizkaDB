@@ -557,6 +557,7 @@ Router prefixes are mounted in `core/main.py:66-79`.
 | `getAgentSessions` | GET `/v1/agents/{id}/sessions` | `agents.py:280` |
 | `getAgentBaseline` | GET `/v1/agents/{id}/baseline` | `agents.py:453` |
 | `getAgentReport` | GET `/v1/agents/{id}/report?from=&to=&granularity=` | `agents.py` → `services/reports.py` |
+| `getAgentSuggestions` | GET `/v1/agents/{id}/suggestions?from=&to=&refresh=` | `agents.py` → `services/suggestions/` + `services/ai/` |
 
 The **report** endpoint composes one date-ranged payload for an agent: summary KPIs
 (with previous-period figures for deltas), a gap-filled events/errors/sessions time
@@ -564,6 +565,20 @@ series, event breakdown + transitions, sessions, behavior drift (null when <50 p
 events), and deterministic rule-based recommendations. Auth: `get_tenant` +
 `assert_agent_allowed`. Range validated (`from<to`, ≤366 days); granularity auto
 (day ≤92d else week). All aggregation is real events — no fabricated cost/token/SLA.
+
+The **suggestions** endpoint returns AI recommendations grounded in an agent's real
+recorded behavior. A deterministic extractor (`services/suggestions/evidence.py`,
+reusing `reports.py`) computes threshold-gated *signals* (recurring errors, low
+success rate, retry loops, long causal chains, missing sessions, slow sessions,
+drift, sparse activity, and coverage-gated token/latency signals) from the events
+table; Claude (`services/ai/claude_provider.py`, `ANTHROPIC_MODEL`, forced tool use,
+temperature 0) only elaborates on those supplied facts; a validation layer drops any
+suggestion referencing evidence not in the bundle and clamps confidence to the
+signal's strength ceiling. No signal above threshold → no Claude call. Response
+`status` is `ok`, `no_evidence`, or `ai_not_configured` (no `ANTHROPIC_API_KEY` set —
+HTTP 200, not an error). Results are Redis-cached by an evidence fingerprint;
+`?refresh=1` bypasses the read cache. Auth: `get_tenant` + `assert_agent_allowed`;
+range validated like `/report`. Provider failure → 503 (never 500). Never invented.
 
 **Events / Search / Memory (dashboard read side):**
 | Dashboard fn | Method · Path | Backend |
