@@ -334,7 +334,6 @@ async def agent_report(
 async def agent_suggestions(
     agent_id: str,
     from_: str | None = Query(default=None, alias="from", description="ISO-8601 window start"),
-    to: str | None = Query(default=None, description="ISO-8601 window end (exclusive)"),
     refresh: bool = Query(default=False, description="Bypass the cache and regenerate"),
     tenant: dict = Depends(get_tenant),
 ):
@@ -381,8 +380,6 @@ async def agent_suggestions(
 @router.get("/{agent_id}/sessions")
 async def list_sessions(
     agent_id: str,
-    limit: int = Query(default=50, le=500),
-    tenant: dict = Depends(get_tenant),
 ):
     assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
