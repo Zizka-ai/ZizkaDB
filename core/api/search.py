@@ -72,7 +72,7 @@ async def semantic_search(
         event_ids, tenant_id,
     )
 
-    score_map = {r.id: r.score for r in results}
+    score_map = {str(r.id): r.score for r in results}
     events = []
     for row in rows:
         data = row["data"]

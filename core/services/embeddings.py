@@ -1,3 +1,4 @@
+import hashlib
 import httpx
 import json
 import logging
@@ -25,6 +26,13 @@ EmbeddingProvider = Callable[
 ]
 
 
+def _cache_key_for(provider: str, model: str, text: str) -> str:
+    """Stable across processes (unlike builtin hash()), so the Redis
+    embedding cache actually gets hit when running with multiple workers."""
+    text_hash = hashlib.sha256(text.encode()).hexdigest()
+    return f"emb:{provider}:{model}:{text_hash}"
+
+
 async def generate_embedding(text: str, tenant_id: str) -> list[float] | None:
     """Generate embedding using the tenant's configured provider/model."""
     config = await get_tenant_embedding_config(tenant_id)
@@ -46,7 +54,7 @@ async def generate_embedding_with_config(
         )
         return None
 
-    cache_key = f"emb:{config.provider}:{config.model}:{hash(text)}"
+    cache_key = _cache_key_for(config.provider, config.model, text)
 
     try:
         redis = get_redis()
