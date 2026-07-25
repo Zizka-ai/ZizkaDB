@@ -40,6 +40,18 @@ if [ ! -f ecosystem.config.js ]; then
   exit 1
 fi
 
+# next.config.mjs sets output: 'standalone' — "next start" doesn't work with
+# it, so PM2 runs .next/standalone/server.js directly (see ecosystem.config.js).
+# The standalone build doesn't include static assets/public files, so copy
+# them in, mirroring what dashboard/Dockerfile does for the Docker build.
+if [ ! -f .next/standalone/server.js ]; then
+  echo "ERROR: .next/standalone/server.js missing — check next.config.mjs output mode" >&2
+  exit 1
+fi
+cp -r public .next/standalone/
+mkdir -p .next/standalone/.next
+cp -r .next/static .next/standalone/.next/
+
 if pm2 describe zizkadb-dashboard >/dev/null 2>&1; then
   pm2 delete zizkadb-dashboard 2>/dev/null || true
 fi
