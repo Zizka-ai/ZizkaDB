@@ -8,22 +8,24 @@ See root [`CLAUDE.md`](../CLAUDE.md) for full project context. This file covers 
 
 All routers are mounted in `main.py` at `/v1/<prefix>`:
 
+The nine routers mounted in `main.py` (`app.include_router`):
+
 | File | Prefix | Auth type |
 |---|---|---|
-| `api/events.py` | `/v1/events` | `get_tenant` |
+| `api/auth.py` | `/v1/auth` | mixed (public OTP + JWT-only key mgmt) |
+| `api/events.py` | `/v1/events` | `get_tenant` (+ `assert_agent_allowed` on `/why`, `/at`) |
 | `api/agents.py` | `/v1/agents` | mixed (see below) |
-| `api/auth.py` | `/v1/auth` | mixed |
-| `api/search.py` | `/v1/search` | `get_tenant` |
-| `api/memory.py` | `/v1/memory` | `get_tenant` |
+| `api/search.py` | `/v1/search` | `get_tenant` + `assert_agent_allowed` |
+| `api/memory.py` | `/v1/memory` | `get_tenant` + `assert_agent_allowed` (agent-scoped) |
 | `api/telemetry.py` | `/v1/telemetry` | `get_tenant` |
-| `api/stats.py` | `/v1/stats` | `get_tenant` |
 | `api/billing_checkout.py` | `/v1/billing` | `require_dashboard_session` |
-| `api/community.py` | `/v1/community` | public + rate-limited |
-| `api/demo_requests.py` | `/v1/demo-requests` | public + rate-limited |
-| `api/marketing_subscriptions.py` | `/v1/marketing-subscriptions` | public + rate-limited |
 | `api/settings.py` | `/v1/settings` | `require_dashboard_session` |
 | `api/account.py` | `/v1/account` | `require_dashboard_session` |
-| `api/admin.py` | `/v1/admin` | `require_admin` (hidden from schema) |
+
+Under `/v1/agents`: per-agent analytics (`/stats`, `/sessions`, `/baseline`, `/behavior-change`,
+`/report`, `/suggestions`, `/at`) use `get_tenant` + `assert_agent_allowed`; agent + API-key
+management (`create_agent`, `delete_agent`, and **all** `/api-keys` list/create/revoke) use
+`require_dashboard_session`.
 
 Swagger UI: `http://localhost:8000/swagger` · OpenAPI schema: `/openapi.json`
 
@@ -38,14 +40,16 @@ Is this route SDK-callable (agents logging events, querying data)?
 Is this route dashboard-only (manages keys, billing, user settings, destructive ops)?
   → Depends(require_dashboard_session)   JWT only, rejects API keys
 
-Is this route per-agent analytics (stats, sessions, baseline, behavior-change, time-travel)?
+Is this route per-agent analytics OR an SDK read scoped to one agent
+(stats, sessions, baseline, behavior-change, time-travel, report, suggestions,
+memory/context, memory/diff, events/why)?
   → Depends(get_tenant)  AND  assert_agent_allowed(tenant, agent_id)  at the top of the handler
-
-Is this the admin panel?
-  → require_admin  (checks FOUNDER_EMAIL env var)
+    (for memory/diff & events/why the agent is resolved from the row, then asserted;
+     memory/forget constrains its delete to the scoped agent when the key is scoped)
 ```
 
-All three dependency functions are in `api/deps.py`. `require_dashboard_session` is the pre-built instance of `dashboard_session_dependency()`.
+Both dependency functions are in `api/deps.py`. `require_dashboard_session` is the pre-built instance
+of `dashboard_session_dependency()`. There is no admin router in this codebase.
 
 ---
 

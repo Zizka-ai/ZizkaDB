@@ -7,6 +7,7 @@ from services.exceptions import bad_request, conflict, not_found, service_unavai
 from pydantic import BaseModel, Field
 
 from api.deps import assert_agent_allowed, get_tenant, require_dashboard_session
+from api.utils import check_rate
 from db.connection import get_pool, get_redis
 from services import reports
 from services.ai import config as ai_config
@@ -23,6 +24,13 @@ from services.event_write import write_event
 router = APIRouter()
 
 _AGENT_ID_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,254}$")
+
+# Per-tenant throttle for the AI suggestions endpoint. Cache + Redis lock already
+# coalesce repeat reads, but `refresh=true` bypasses both and triggers a live
+# (paid, ~20s) Claude call, so cap how often a tenant can force regeneration.
+# In-process dict — same per-worker semantics as the other limiters in this app.
+_SUGGESTIONS_REFRESH_RATE: dict[str, list[float]] = {}
+_SUGGESTIONS_RATE: dict[str, list[float]] = {}
 
 
 def _validate_agent_id(agent_id: str) -> str:
@@ -197,11 +205,13 @@ async def test_agent_event(
 @router.get("/{agent_id}/api-keys")
 async def list_agent_api_keys(
     agent_id: str,
-    tenant: dict = Depends(get_tenant),
+    session: dict = Depends(require_dashboard_session),
 ):
+    # Key management is dashboard-only (JWT); an API key — especially a scoped
+    # agent key — must never enumerate keys. Mirrors create/revoke.
     agent_id = _validate_agent_id(agent_id)
     pool = get_pool()
-    tenant_id = tenant["tenant_id"]
+    tenant_id = session["tenant_id"]
 
     exists = await pool.fetchrow(
         "SELECT 1 FROM agents WHERE tenant_id = $1 AND agent_id = $2",
@@ -246,11 +256,12 @@ async def create_agent_api_key(
 async def revoke_agent_api_key(
     agent_id: str,
     key_id: str,
-    tenant: dict = Depends(get_tenant),
+    session: dict = Depends(require_dashboard_session),
 ):
+    # Key management is dashboard-only (JWT); an API key must never revoke keys.
     agent_id = _validate_agent_id(agent_id)
     pool = get_pool()
-    tenant_id = tenant["tenant_id"]
+    tenant_id = session["tenant_id"]
 
     if not await revoke_api_key_record(pool, tenant_id, key_id, agent_id):
         raise not_found("API key not found")
@@ -259,6 +270,7 @@ async def revoke_agent_api_key(
 
 @router.get("/{agent_id}/stats")
 async def agent_stats(agent_id: str, tenant: dict = Depends(get_tenant)):
+    agent_id = _validate_agent_id(agent_id)
     assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
 
@@ -347,6 +359,19 @@ async def agent_suggestions(
     """
     agent_id = _validate_agent_id(agent_id)
     assert_agent_allowed(tenant, agent_id)
+
+    # Throttle per tenant to bound AI spend. `refresh` bypasses the cache/lock
+    # and forces a live Claude call, so it gets a much tighter cap.
+    tenant_key = tenant["tenant_id"]
+    if refresh:
+        check_rate(
+            _SUGGESTIONS_REFRESH_RATE, tenant_key, window_sec=3600, max_hits=20,
+            detail="Suggestion regeneration limit reached. Try again later.",
+        )
+    check_rate(
+        _SUGGESTIONS_RATE, tenant_key, window_sec=60, max_hits=30,
+        detail="Too many suggestion requests. Try again shortly.",
+    )
 
     # Default to the last 30 days when the caller omits an explicit window.
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -567,6 +592,7 @@ async def agent_baseline(
     `recent` = sessions ending inside that window, `baseline` = everything before.
     Otherwise falls back to the most recent N sessions vs everything prior.
     """
+    agent_id = _validate_agent_id(agent_id)
     assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
 

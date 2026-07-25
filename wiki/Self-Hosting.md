@@ -145,6 +145,22 @@ Set `OPENAI_API_KEY` in `infra/.env` for semantic search, memory context, and dr
 
 Dashboard → Settings → choose embedding model (OpenAI platform key or bring your own).
 
+## AI Suggestions
+
+The **Suggestions** tab generates evidence-grounded recommendations from an agent's recorded
+behavior using the Claude API. Set `ANTHROPIC_API_KEY` in `infra/.env` to enable it:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-sonnet-4-6   # optional; this is the default
+```
+
+Without a key the endpoint returns `status: "ai_not_configured"` (HTTP 200) and the dashboard shows a
+setup card — every other feature keeps working. Advanced overrides (rarely needed):
+`ANTHROPIC_BASE_URL` (default `https://api.anthropic.com`) and `ANTHROPIC_VERSION` (default
+`2023-06-01`). Suggestions are computed on demand, cached in Redis by an evidence fingerprint, and
+per-tenant rate-limited.
+
 ## Backups
 
 ```bash

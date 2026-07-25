@@ -118,6 +118,9 @@ async def why(
 ):
     pool = get_pool()
     tenant_id = tenant["tenant_id"]
+    # A scoped agent key may only walk the causal chain of its own agent's
+    # events; anchoring on a mismatched agent yields no rows → 404.
+    scoped_agent = tenant.get("agent_id")
 
     try:
         UUID(event_id)
@@ -133,6 +136,7 @@ async def why(
                 0 AS depth
             FROM events
             WHERE event_id = $1 AND tenant_id = $2
+              AND ($4::text IS NULL OR agent_id = $4)
 
             UNION ALL
 
@@ -147,7 +151,7 @@ async def why(
         SELECT * FROM causal_chain
         ORDER BY depth DESC, timestamp ASC
         """,
-        event_id, tenant_id, depth,
+        event_id, tenant_id, depth, scoped_agent,
     )
 
     if not rows:

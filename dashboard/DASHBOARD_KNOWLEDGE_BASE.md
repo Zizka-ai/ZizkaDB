@@ -99,8 +99,8 @@ dashboard/
 │   │   ├── page.tsx         # redirect → /dashboard/activity
 │   │   ├── activity/page.tsx     # Events | Sessions | Time Travel segments
 │   │   ├── behavior/page.tsx     # Baseline / drift analysis
-│   │   ├── reports/page.tsx      # Empty state (no backend yet)
-│   │   ├── suggestions/page.tsx  # Empty state (no backend yet)
+│   │   ├── reports/page.tsx      # Agent report — GET /v1/agents/{id}/report
+│   │   ├── suggestions/page.tsx  # AI suggestions — GET /v1/agents/{id}/suggestions
 │   │   ├── fleet/page.tsx        # Managed only; OSS redirects to activity
 │   │   ├── agents/[id]/page.tsx  # redirect → /dashboard/activity?agent={id}
 │   │   ├── search/page.tsx  # redirect → /dashboard/activity (search is inline now)
