@@ -14,7 +14,7 @@ from typing import Any
 import json
 import logging
 
-from api.deps import get_tenant
+from api.deps import get_tenant, assert_agent_allowed
 from db.connection import get_pool, get_qdrant
 from services.embeddings import generate_embedding
 
@@ -59,6 +59,8 @@ async def get_context(
             {"role": "user", "content": user_message}
         ]
     """
+    # A scoped agent key may only read its own agent's context.
+    assert_agent_allowed(tenant, body.agent)
     tenant_id = tenant["tenant_id"]
     pool = get_pool()
 
@@ -226,6 +228,8 @@ async def session_diff(
         raise not_found("Session not found")
 
     agent_id = rows[0]["agent_id"]
+    # A scoped agent key may only diff sessions belonging to its own agent.
+    assert_agent_allowed(tenant, agent_id)
     events = []
     event_types: dict[str, int] = {}
     has_error = False
@@ -321,6 +325,11 @@ async def forget(
     tenant_id = tenant["tenant_id"]
     pool = get_pool()
 
+    # A scoped agent key may only forget its own agent's events; a full key
+    # forgets tenant-wide. Deletion below works off these SELECTed ids, so
+    # constraining the SELECT is sufficient.
+    scoped_agent = tenant.get("agent_id")
+
     # Find matching event IDs
     rows = await pool.fetch(
         """
@@ -328,10 +337,12 @@ async def forget(
         FROM events
         WHERE tenant_id = $1
           AND data->$2 = to_jsonb($3::text)
+          AND ($4::text IS NULL OR agent_id = $4)
         """,
         tenant_id,
         body.filter_key,
         body.filter_value,
+        scoped_agent,
     )
 
     if not rows:

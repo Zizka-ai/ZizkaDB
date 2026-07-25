@@ -1,6 +1,8 @@
 # Environment
 .env
 *.env
+.env.staging
+infra/.env.staging
 
 # Python
 __pycache__/

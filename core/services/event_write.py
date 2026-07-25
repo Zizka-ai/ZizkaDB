@@ -9,8 +9,16 @@ import logging
 from db.connection import get_pool, get_qdrant
 from qdrant_client.models import PointStruct
 from services.embeddings import generate_embedding, event_to_text
+from services.exceptions import bad_request
 
 logger = logging.getLogger(__name__)
+
+
+def _pgvector_literal(embedding: list[float]) -> str:
+    """asyncpg has no built-in codec for pgvector's `vector` type, so a raw
+    list param fails with 'expected str, got list'. pgvector accepts its
+    text input format (e.g. "[0.1,0.2]") cast via `::vector` instead."""
+    return "[" + ",".join(repr(x) for x in embedding) + "]"
 
 
 async def write_event(
@@ -24,6 +32,16 @@ async def write_event(
     metadata: dict | None = None,
 ) -> dict:
     pool = get_pool()
+
+    if parent_id:
+        parent_tenant_id = await pool.fetchval(
+            "SELECT tenant_id FROM events WHERE event_id = $1",
+            parent_id,
+        )
+        if parent_tenant_id is None or str(parent_tenant_id) != str(tenant_id):
+            raise bad_request(
+                f"parent_id '{parent_id}' does not exist or belongs to a different tenant"
+            )
 
     await pool.execute(
         """
@@ -60,13 +78,14 @@ async def write_event(
 
     event_id = str(row["event_id"])
 
+    indexed = False
     try:
         text = event_to_text(event, data)
         embedding = await generate_embedding(text, tenant_id)
         if embedding:
             await pool.execute(
-                "UPDATE events SET embedding = $1 WHERE event_id = $2",
-                embedding,
+                "UPDATE events SET embedding = $1::vector WHERE event_id = $2",
+                _pgvector_literal(embedding),
                 row["event_id"],
             )
             qdrant = get_qdrant()
@@ -85,6 +104,7 @@ async def write_event(
                     )
                 ],
             )
+            indexed = True
     except Exception as e:
         logger.warning("Embedding/index skipped for event %s: %s", event_id, e)
 
@@ -106,4 +126,5 @@ async def write_event(
         "timestamp": row["timestamp"].isoformat(),
         "sequence_no": row["sequence_no"],
         "checksum": checksum,
+        "indexed": indexed,
     }

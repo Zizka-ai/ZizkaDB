@@ -35,7 +35,6 @@ services:
   qdrant:
     # Pin the version instead of using latest
     image: qdrant/qdrant:v1.15.4
-    image: qdrant/qdrant:v1.13.5
     container_name: zizkadb_qdrant
 
     ports:
@@ -86,6 +85,8 @@ services:
       QDRANT_URL: http://qdrant:6333
 
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-6}
 
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-in-production}
@@ -121,7 +122,6 @@ services:
       - ../core:/app
       - community_uploads:/data/community_uploads
 
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
 
     restart: unless-stopped

@@ -1,7 +1,8 @@
+import hashlib
 import httpx
 import json
 import logging
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from db.connection import get_redis
 from services.embedding_config import (
@@ -15,6 +16,22 @@ logger = logging.getLogger(__name__)
 
 CACHE_TTL = 86400  # 24 hours
 
+API_KEY_REQUIRED_PROVIDERS = {
+     "openai",
+}     
+
+EmbeddingProvider = Callable[
+    [str, TenantEmbeddingConfig],
+    Awaitable[list[float] | None],
+]
+
+
+def _cache_key_for(provider: str, model: str, text: str) -> str:
+    """Stable across processes (unlike builtin hash()), so the Redis
+    embedding cache actually gets hit when running with multiple workers."""
+    text_hash = hashlib.sha256(text.encode()).hexdigest()
+    return f"emb:{provider}:{model}:{text_hash}"
+
 
 async def generate_embedding(text: str, tenant_id: str) -> list[float] | None:
     """Generate embedding using the tenant's configured provider/model."""
@@ -26,7 +43,10 @@ async def generate_embedding_with_config(
     text: str,
     config: TenantEmbeddingConfig,
 ) -> list[float] | None:
-    if not config.api_key:
+    if (
+        config.provider in API_KEY_REQUIRED_PROVIDERS
+        and not config.api_key
+    ):
         logger.warning(
             "No embedding API key for tenant %s (platform=%s)",
             config.tenant_id,
@@ -34,7 +54,7 @@ async def generate_embedding_with_config(
         )
         return None
 
-    cache_key = f"emb:{config.provider}:{config.model}:{hash(text)}"
+    cache_key = _cache_key_for(config.provider, config.model, text)
 
     try:
         redis = get_redis()
@@ -44,12 +64,13 @@ async def generate_embedding_with_config(
     except Exception:
         pass
 
+    provider = _get_embedding_provider(config.provider)
+    if provider is None:
+        logger.warning("Unsupported embedding provider: %s", config.provider)
+        return None
+
     try:
-        if config.provider == "openai":
-            embedding = await _openai_embedding(text, config)
-        else:
-            logger.warning("Unsupported embedding provider: %s", config.provider)
-            return None
+        embedding = await provider(text, config)
 
         if not embedding:
             return None
@@ -90,7 +111,10 @@ async def _openai_embedding(
     }
 
     for model in EMBEDDING_MODELS.get("openai", []):
-        if model["id"] == config.model and model.get("dimensions_param"):
+        if (
+            model["id"] == config.model
+            and model.get("dimensions_param") is not None
+        ):
             payload["dimensions"] = model["dimensions_param"]
             break
 
@@ -106,6 +130,21 @@ async def _openai_embedding(
         response.raise_for_status()
 
         return response.json()["data"][0]["embedding"]
+
+
+# Map provider id → the module-level function that implements it. The function
+# is resolved from module globals at call time (see _get_embedding_provider)
+# rather than stored as a direct reference, so monkeypatching the provider —
+# e.g. `_openai_embedding` in tests — takes effect, and reassigning it never
+# leaves a stale binding here.
+_EMBEDDING_PROVIDER_NAMES: dict[str, str] = {
+    "openai": "_openai_embedding",
+}
+
+
+def _get_embedding_provider(provider: str) -> EmbeddingProvider | None:
+    fn_name = _EMBEDDING_PROVIDER_NAMES.get(provider)
+    return globals().get(fn_name) if fn_name else None
 
 
 def _flatten_data(value: Any, prefix: str = "") -> list[str]:

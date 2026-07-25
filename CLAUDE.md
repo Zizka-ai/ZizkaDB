@@ -8,7 +8,7 @@ ZizkaDB is a causal event database for AI agents. It lets you log every agent ac
 
 | Layer | Technology | Entry point |
 |---|---|---|
-| API | FastAPI 0.111 + asyncpg (no ORM) | `core/main.py` — 14 routers at `/v1/` |
+| API | FastAPI 0.111 + asyncpg (no ORM) | `core/main.py` — 9 routers at `/v1/` |
 | Database | PostgreSQL 16 + pgvector | `core/db/schema.sql` + `core/db/connection.py` |
 | Vector search | Qdrant 1.13 | Collection `agent_events`, 1536-dim cosine |
 | Cache | Redis 7 | Embedding cache (24 h TTL) — cache key uses `hashlib.sha256`, not `hash()` |
@@ -101,13 +101,12 @@ cd dashboard && npm run lint && npm run build
 
 **Auth split** — Two FastAPI dependency functions:
 - `get_tenant` (`core/api/deps.py`): accepts API keys + JWTs. Use for SDK-callable routes (`/v1/events`, `/v1/search`, `/v1/memory`, etc.)
-- `require_dashboard_session` (`core/api/deps.py`): JWT only, rejects API keys. Use for any route that accesses `user_id`, manages API keys, or performs destructive ops.
-- `require_admin` (`core/api/admin.py`): checks `FOUNDER_EMAIL` env var. Use for `/v1/admin/**`.
-- `assert_agent_allowed(tenant, agent_id)` (`core/api/deps.py`): call at the top of any per-agent analytics route to enforce scoped-key isolation.
+- `require_dashboard_session` (`core/api/deps.py`): JWT only, rejects API keys. Use for any route that accesses `user_id`, manages API keys, or performs destructive ops. (There is no admin router / `require_admin` in this codebase.)
+- `assert_agent_allowed(tenant, agent_id)` (`core/api/deps.py`): call at the top of any per-agent analytics route AND any SDK read scoped to one agent (`memory/context`, `memory/diff`, `events/why`) to enforce scoped-key isolation.
 
 **Billing stub** — `billing_status_payload()` always returns `has_access: True`. No Stripe or payment provider is wired. The architecture is ready for Stripe to be added; billing routes exist but are stubs.
 
-**Rate limiting** — In-process Python dicts in `core/api/utils.py` (`check_rate()`). Used by community, demo requests, marketing subscriptions, and OTP login routes. Known limitations: (1) state resets on restart; (2) with `--workers 4` each worker has its own dict, so the effective limit is 4× the configured value — the OTP brute-force protection is particularly affected. See `docs/adr/005-in-process-rate-limiting.md`.
+**Rate limiting** — In-process Python dicts in `core/api/utils.py` (`check_rate()`). Used by the OTP login routes and the per-tenant throttle on the AI `/v1/agents/{id}/suggestions` endpoint (tighter cap on `?refresh=`). Known limitations: (1) state resets on restart; (2) with `--workers 4` each worker has its own dict, so the effective limit is 4× the configured value — the OTP brute-force protection is particularly affected. See `docs/adr/005-in-process-rate-limiting.md`.
 
 **Schema migrations** — Fresh install: `core/db/schema.sql` (run by Docker on first boot). Running install: `ALTER TABLE IF EXISTS` in `core/db/connection.py::init_db()` (runs on every startup). Always write idempotent DDL.
 

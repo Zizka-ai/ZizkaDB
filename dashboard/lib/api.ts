@@ -301,6 +301,147 @@ export async function getAgentBaseline(
   )
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Reports — one consolidated, date-ranged per-agent report (see core/services/reports.py)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type ReportGranularity = 'day' | 'week'
+export type ReportHealth = 'healthy' | 'attention' | 'idle' | 'drift' | 'error'
+export type ReportSeverity = 'critical' | 'warning' | 'info' | 'positive'
+
+export interface ReportSummary {
+  total_events: number
+  unique_event_types: number
+  sessions: number
+  active_days: number
+  error_count: number
+  error_rate_pct: number
+  first_event: string | null
+  last_event: string | null
+  health: ReportHealth
+  previous: { total_events: number; sessions: number; error_rate_pct: number }
+}
+
+export interface ReportBucket {
+  bucket: string
+  events: number
+  errors: number
+  sessions: number
+}
+
+export interface ReportTopEvent {
+  event_type: string
+  count: number
+  pct: number
+}
+
+export interface ReportSession {
+  session_id: string
+  event_count: number
+  event_types: number
+  started_at: string
+  ended_at: string
+  duration_seconds: number
+}
+
+export interface ReportDrift {
+  score: number
+  verdict: 'stable' | 'minor_drift' | 'noticeable_drift' | 'significant_drift'
+  behavior_change_pct: number
+  error_rate_change_pp: number
+  biggest_changes: BaselineChange[]
+}
+
+export interface ReportRecommendation {
+  severity: ReportSeverity
+  category: string
+  title: string
+  detail: string
+}
+
+export interface ReportPayload {
+  agent: string
+  generated_at: string
+  report_version: string
+  period: { from: string; to: string; days: number; granularity: ReportGranularity }
+  summary: ReportSummary
+  timeseries: ReportBucket[]
+  top_events: ReportTopEvent[]
+  distribution: {
+    event_distribution: Record<string, number>
+    transitions: Record<string, number>
+  }
+  sessions: ReportSession[]
+  drift: ReportDrift | null
+  recommendations: ReportRecommendation[]
+}
+
+export async function getAgentReport(
+  token: string,
+  agentId: string,
+  params: { from: string; to: string; granularity?: ReportGranularity },
+): Promise<ReportPayload> {
+  const qs = new URLSearchParams({ from: params.from, to: params.to })
+  if (params.granularity) qs.set('granularity', params.granularity)
+  return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/report?${qs.toString()}`, token)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Suggestions — evidence-grounded AI recommendations (see core/services/suggestions)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type SuggestionSeverity = 'critical' | 'high' | 'medium' | 'low' | 'informational'
+export type SuggestionCategory =
+  | 'general'
+  | 'token_optimization'
+  | 'error_prevention'
+  | 'performance'
+  | 'reliability'
+  | 'code'
+export type SuggestionStatus = 'ok' | 'no_evidence' | 'ai_not_configured'
+
+export interface SuggestionEvidence {
+  id: string
+  category: SuggestionCategory
+  label: string
+  summary: string
+  metrics: Record<string, unknown>
+  samples: string[]
+  strength: number
+}
+
+export interface Suggestion {
+  title: string
+  category: SuggestionCategory
+  severity: SuggestionSeverity
+  confidence: number
+  evidence: string[]
+  recommendation: string
+  expected_impact: string
+  code_fix?: { language: string; code: string }
+}
+
+export interface SuggestionsResult {
+  agent: string
+  status: SuggestionStatus
+  period: { from: string; to: string; days: number }
+  model: string | null
+  generated_at: string
+  suggestions: Suggestion[]
+  evidence: SuggestionEvidence[]
+  meta: Record<string, unknown>
+}
+
+export async function getAgentSuggestions(
+  token: string,
+  agentId: string,
+  params: { from: string; to: string; refresh?: boolean },
+): Promise<SuggestionsResult> {
+  const qs = new URLSearchParams({ from: params.from, to: params.to })
+  if (params.refresh) qs.set('refresh', '1')
+  return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/suggestions?${qs.toString()}`, token)
+}
+
 export async function getApiKeys(token: string) {
   return apiFetch('/v1/auth/api-keys', token)
 }
@@ -418,14 +559,6 @@ export interface BillingStatus {
 export async function getBillingStatus(token: string): Promise<BillingStatus> {
   return apiFetch('/v1/billing/status', token)
 }
-
-export async function selectBillingPlan(token: string, plan: 'pro' | 'team'): Promise<BillingStatus> {
-  return apiFetch('/v1/billing/select-plan', token, {
-    method: 'POST',
-    body: JSON.stringify({ plan }),
-  })
-}
-
 
 export interface AccountOptions {
   managed_cloud: boolean

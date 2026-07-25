@@ -102,6 +102,19 @@ bash infra/deploy-selfhost.sh
 
 **Never** `docker compose down -v` on a server with real users.
 
+## Staging (prod-like rehearsal)
+
+Same host can run a second Compose project with isolated volumes and ports. Templates and deploy order: [docs/staging.md](../docs/staging.md).
+
+```bash
+export COMPOSE_PROJECT_NAME=zizkadb-staging
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.staging.yml \
+  --env-file infra/.env.staging up -d --build
+ZIZKADB_API_KEY='...' bash scripts/smoke-test.sh https://staging-db.zizka.ai
+```
+
+Use `ENV=production`, `NEXT_PUBLIC_DEV_MODE=false`, and **different** JWT secrets than production.
+
 Local laptop reset only:
 
 ```bash
@@ -131,6 +144,22 @@ bash scripts/validate-selfhost-config.sh --production
 Set `OPENAI_API_KEY` in `infra/.env` for semantic search, memory context, and drift embeddings. Logging and `why()` work without it.
 
 Dashboard → Settings → choose embedding model (OpenAI platform key or bring your own).
+
+## AI Suggestions
+
+The **Suggestions** tab generates evidence-grounded recommendations from an agent's recorded
+behavior using the Claude API. Set `ANTHROPIC_API_KEY` in `infra/.env` to enable it:
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-sonnet-4-6   # optional; this is the default
+```
+
+Without a key the endpoint returns `status: "ai_not_configured"` (HTTP 200) and the dashboard shows a
+setup card — every other feature keeps working. Advanced overrides (rarely needed):
+`ANTHROPIC_BASE_URL` (default `https://api.anthropic.com`) and `ANTHROPIC_VERSION` (default
+`2023-06-01`). Suggestions are computed on demand, cached in Redis by an evidence fingerprint, and
+per-tenant rate-limited.
 
 ## Backups
 

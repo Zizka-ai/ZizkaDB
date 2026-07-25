@@ -17,9 +17,12 @@ import { useCallback, useEffect, useState } from "react";
 export function AgentApiKeys({
   agentId,
   onTestSuccess,
+  oneKeyMax = false,
 }: {
   agentId: string;
   onTestSuccess?: () => void;
+  /** OSS: allow only one key — hide "New key" while a key already exists. */
+  oneKeyMax?: boolean;
 }) {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,15 +91,15 @@ export function AgentApiKeys({
   return (
     <div
       className="rounded-xl overflow-hidden mb-6"
-      style={{ border: "1px solid #1f1f1f" }}
+      style={{ border: "1px solid #2a3340" }}
     >
       <div
         className="px-5 py-4 flex items-center justify-between gap-3"
-        style={{ background: "#111", borderBottom: "1px solid #1f1f1f" }}
+        style={{ background: "#161c26", borderBottom: "1px solid #2a3340" }}
       >
         <div>
           <h2 className="text-sm font-medium text-white">API keys</h2>
-          <p className="text-xs mt-0.5" style={{ color: "#e5e5e5" }}>
+          <p className="text-xs mt-0.5" style={{ color: "#e8edf5" }}>
             Keys for this agent only. Set as{" "}
             <span className="font-mono">ZIZKADB_API_KEY</span> or{" "}
             <span className="font-mono">AGENTDB_API_KEY</span> in your app.
@@ -123,35 +126,39 @@ export function AgentApiKeys({
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
             style={{
-              background: "#1a1a1a",
-              color: "#e5e5e5",
-              border: "1px solid #2a2a2a",
+              background: "#1f2733",
+              color: "#e8edf5",
+              border: "1px solid #3a4453",
             }}
           >
             <Zap size={13} style={{ color: "#22c55e" }} />
             {testBusy ? "Sending…" : "Test agent"}
           </button>
-          <button
-            type="button"
-            disabled={creating || quota.at_limit}
-            onClick={handleCreate}
-            title={
-              quota.at_limit
-                ? "API key limit reached — upgrade your plan to create more"
-                : undefined
-            }
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ background: "#22c55e" }}
-          >
-            <Plus size={13} />
-            {creating ? "Creating…" : "New key"}
-          </button>
+          {/* OSS allows a single key: only offer "New key" when none exists
+              (delete the running key to reveal the button again). */}
+          {(!oneKeyMax || (!loading && keys.length === 0)) && (
+            <button
+              type="button"
+              disabled={creating || quota.at_limit}
+              onClick={handleCreate}
+              title={
+                quota.at_limit
+                  ? "API key limit reached — upgrade your plan to create more"
+                  : undefined
+              }
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: "#22c55e" }}
+            >
+              <Plus size={13} />
+              {creating ? "Creating…" : "New key"}
+            </button>
+          )}
         </div>
       </div>
       {!quota.unlimited && (
         <div
           className="px-5 py-3"
-          style={{ background: "#111", borderBottom: "1px solid #1f1f1f" }}
+          style={{ background: "#161c26", borderBottom: "1px solid #2a3340" }}
         >
           <ApiKeyUsage quota={quota} />
         </div>
@@ -161,8 +168,8 @@ export function AgentApiKeys({
           className="px-5 py-2 text-xs"
           style={{
             color: "#22c55e",
-            background: "#111",
-            borderBottom: "1px solid #1f1f1f",
+            background: "#161c26",
+            borderBottom: "1px solid #2a3340",
           }}
         >
           {testMsg}
@@ -172,7 +179,7 @@ export function AgentApiKeys({
       {newKey && (
         <div
           className="px-5 py-4"
-          style={{ background: "#0d2010", borderBottom: "1px solid #1f1f1f" }}
+          style={{ background: "#0d2010", borderBottom: "1px solid #2a3340" }}
         >
           <p className="text-xs font-medium mb-2" style={{ color: "#22c55e" }}>
             New key — copy now, it won&apos;t be shown again.
@@ -180,7 +187,7 @@ export function AgentApiKeys({
           <div className="flex items-center gap-2">
             <code
               className="flex-1 text-xs font-mono rounded-lg px-3 py-2 truncate"
-              style={{ background: "#0a0a0a", color: "#e5e5e5" }}
+              style={{ background: "#0b0f16", color: "#e8edf5" }}
             >
               {newKey}
             </code>
@@ -188,12 +195,12 @@ export function AgentApiKeys({
               type="button"
               onClick={() => copy(newKey)}
               className="p-2 rounded-lg shrink-0"
-              style={{ background: "#1a1a1a" }}
+              style={{ background: "#1f2733" }}
             >
               {copied ? (
                 <Check size={14} style={{ color: "#22c55e" }} />
               ) : (
-                <Copy size={14} style={{ color: "#e5e5e5" }} />
+                <Copy size={14} style={{ color: "#e8edf5" }} />
               )}
             </button>
           </div>
@@ -201,26 +208,26 @@ export function AgentApiKeys({
             type="button"
             onClick={() => setNewKey(null)}
             className="text-xs mt-2"
-            style={{ color: "#e5e5e5" }}
+            style={{ color: "#e8edf5" }}
           >
             Dismiss
           </button>
         </div>
       )}
 
-      <div style={{ background: "#111" }}>
+      <div style={{ background: "#161c26" }}>
         {loading ? (
           <div className="p-5 space-y-2">
             {[1, 2].map((i) => (
               <div
                 key={i}
                 className="h-10 rounded animate-pulse"
-                style={{ background: "#1a1a1a" }}
+                style={{ background: "#1f2733" }}
               />
             ))}
           </div>
         ) : keys.length === 0 ? (
-          <div className="p-6 text-center text-sm" style={{ color: "#e5e5e5" }}>
+          <div className="p-6 text-center text-sm" style={{ color: "#e8edf5" }}>
             No keys yet. Create one to connect your app to this agent.
           </div>
         ) : (
@@ -228,12 +235,12 @@ export function AgentApiKeys({
             <div
               key={key.key_id}
               className="flex items-center justify-between px-5 py-4"
-              style={{ borderTop: i > 0 ? "1px solid #1a1a1a" : "none" }}
+              style={{ borderTop: i > 0 ? "1px solid #1f2733" : "none" }}
             >
               <div className="flex items-center gap-3 min-w-0">
                 <Key
                   size={14}
-                  style={{ color: "#e5e5e5" }}
+                  style={{ color: "#e8edf5" }}
                   className="shrink-0"
                 />
                 <div className="min-w-0">
@@ -242,14 +249,14 @@ export function AgentApiKeys({
                   </div>
                   <div
                     className="text-xs font-mono mt-0.5"
-                    style={{ color: "#e5e5e5" }}
+                    style={{ color: "#e8edf5" }}
                   >
                     {key.prefix}...
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <span className="text-xs" style={{ color: "#e5e5e5" }}>
+                <span className="text-xs" style={{ color: "#e8edf5" }}>
                   {key.last_used
                     ? `Used ${new Date(key.last_used).toLocaleDateString()}`
                     : "Never used"}
@@ -259,7 +266,7 @@ export function AgentApiKeys({
                   disabled={revokingId === key.key_id}
                   onClick={() => handleRevoke(key)}
                   className="p-1.5 rounded-lg disabled:opacity-40"
-                  style={{ background: "#1a1a1a" }}
+                  style={{ background: "#1f2733" }}
                   title="Revoke key"
                 >
                   <Trash2 size={14} style={{ color: "#f87171" }} />

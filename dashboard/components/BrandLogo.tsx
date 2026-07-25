@@ -3,7 +3,7 @@ import Link from 'next/link'
 import type { CSSProperties } from 'react'
 
 /** Zizka AI brand mark — shared across ZizkaDB surfaces */
-export const LOGO_SRC = '/zizka-logo.png'
+const LOGO_SRC = '/zizka-logo.png'
 
 type BrandLogoProps = {
   /** nav: compact mark + ZizkaDB · full: centered logo on auth pages · mark: icon only */

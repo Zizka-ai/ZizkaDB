@@ -12,8 +12,11 @@ const path = require('path')
 module.exports = {
   apps: [{
     name: 'zizkadb-dashboard',
-    script: 'npm',
-    args: 'start',
+    // next.config.mjs sets output: 'standalone' (needed for the Docker build).
+    // "next start" is not supported with standalone output, so PM2 must run
+    // the standalone server directly — see infra/deploy-selfhost.sh, which
+    // copies public/ and .next/static/ into .next/standalone/ before this runs.
+    script: '.next/standalone/server.js',
     cwd: path.join(__dirname),
     env: {
       PORT: '3001',

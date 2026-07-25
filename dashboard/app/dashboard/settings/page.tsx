@@ -1,7 +1,9 @@
 "use client";
 
 import { ApiKeyUsage } from "@/components/ApiKeyUsage";
+import { AgentKeysSection } from "@/components/dashboard/AgentKeysSection";
 import { useApiKeyQuota } from "@/hooks/useApiKeyQuota";
+import { useEdition } from "@/hooks/useEdition";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 import {
   createApiKey,
@@ -54,6 +56,10 @@ export default function SettingsPage() {
   const [accountMsg, setAccountMsg] = useState("");
   const [accountErr, setAccountErr] = useState("");
   const quota = useApiKeyQuota();
+  // Self-hosted (OSS) has no Zizka platform, so it always brings its own
+  // embedding key and has no tenant-wide key. Pro/Team keep both.
+  const { edition } = useEdition();
+  const isOss = edition === "oss";
 
   useEffect(() => {
     let token: string;
@@ -108,47 +114,54 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
-      <h1 className="text-white font-semibold text-xl mb-1">Settings</h1>
-      <p className="text-sm mb-4" style={{ color: "#e5e5e5" }}>
-        Embeddings and account-wide overview.
+    <div className="max-w-2xl">
+      <h1 className="font-semibold text-lg mb-1" style={{ color: "#ffffff" }}>
+        Settings
+      </h1>
+      <p className="text-sm mb-5" style={{ color: "#9aa7b8" }}>
+        Embeddings, API keys, and account.
       </p>
       <p
-        className="text-xs mb-8 rounded-lg px-3 py-2"
+        className="text-xs mb-8 rounded-lg px-3 py-2.5"
         style={{
-          color: "#e5e5e5",
-          background: "#1a1a1a",
-          border: "1px solid #2a2a2a",
+          color: "#9aa7b8",
+          background: "#161c26",
+          border: "1px solid #2a3340",
         }}
       >
-        API keys belong to an agent.{" "}
-        <Link
-          href="/dashboard"
-          className="underline"
-          style={{ color: "#22c55e" }}
-        >
-          Create an agent
-        </Link>{" "}
-        to get a key, or open an agent to add more keys. Legacy tenant-wide keys
-        (no agent) still work.
+        {isOss ? (
+          <>
+            API keys belong to an agent. Your agent is created automatically the
+            first time it logs an event with the SDK; create its key in the
+            section below.
+          </>
+        ) : (
+          <>
+            API keys belong to an agent.{" "}
+            <Link href="/dashboard/fleet" className="underline" style={{ color: "#22c55e" }}>
+              Create an agent
+            </Link>{" "}
+            to get a key, or open an agent to add more keys. Legacy tenant-wide
+            keys (no agent) still work.
+          </>
+        )}
       </p>
 
       {/* Embeddings */}
       <div
         className="rounded-xl p-5 mb-6"
-        style={{ background: "#111", border: "1px solid #1f1f1f" }}
+        style={{ background: "#161c26", border: "1px solid #2a3340" }}
       >
         <h2 className="text-sm font-medium text-white mb-1">Embeddings</h2>
-        <p className="text-xs mb-4" style={{ color: "#e5e5e5" }}>
-          Choose the model used for semantic search and context injection (like
-          Pinecone&apos;s embedding choice). All models use 1536 dimensions. New
-          events use this model; existing vectors are not re-indexed
-          automatically.
+        <p className="text-xs mb-4" style={{ color: "#9aa7b8" }}>
+          {isOss
+            ? "Add your OpenAI API key to enable semantic search and context injection (OpenAI text-embedding-3-small)."
+            : "Choose the model used for semantic search and context injection (like Pinecone's embedding choice). All models use 1536 dimensions. New events use this model; existing vectors are not re-indexed automatically."}
         </p>
         {embLoading ? (
           <div
             className="h-20 rounded animate-pulse"
-            style={{ background: "#1a1a1a" }}
+            style={{ background: "#1f2733" }}
           />
         ) : (
           <form
@@ -159,11 +172,13 @@ export default function SettingsPage() {
               setEmbMsg("");
               try {
                 const token = requireAuth();
+                // OSS never uses the platform key — always send the user's own.
+                const platformKey = isOss ? false : usePlatformKey;
                 await updateEmbeddingSettings(token, {
                   provider: embProvider,
                   model: embModel,
-                  use_platform_key: usePlatformKey,
-                  api_key: usePlatformKey ? undefined : customApiKey,
+                  use_platform_key: platformKey,
+                  api_key: platformKey ? undefined : customApiKey,
                 });
                 setEmbMsg("Saved. New events will use this embedding model.");
                 setEmbReady(true);
@@ -175,38 +190,45 @@ export default function SettingsPage() {
               }
             }}
           >
-            <label className="block text-xs mb-1" style={{ color: "#e5e5e5" }}>
-              Model
-            </label>
-            <select
-              value={embModel}
-              onChange={(e) => setEmbModel(e.target.value)}
-              className="w-full rounded-lg px-3 py-2 text-sm text-white mb-4 outline-none"
-              style={{ background: "#1a1a1a", border: "1px solid #2a2a2a" }}
-            >
-              {(catalog.find((p) => p.id === embProvider)?.models ?? []).map(
-                (m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.label}
-                  </option>
-                ),
-              )}
-            </select>
+            {/* Model picker is managed-cloud only; OSS uses OpenAI
+                text-embedding-3-small (1536-dim) with the user's own key. */}
+            {!isOss && (
+              <>
+                <label className="block text-xs mb-1" style={{ color: "#e8edf5" }}>
+                  Model
+                </label>
+                <select
+                  value={embModel}
+                  onChange={(e) => setEmbModel(e.target.value)}
+                  className="w-full rounded-lg px-3 py-2 text-sm text-white mb-4 outline-none"
+                  style={{ background: "#1f2733", border: "1px solid #3a4453" }}
+                >
+                  {(catalog.find((p) => p.id === embProvider)?.models ?? []).map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
 
-            <label className="flex items-center gap-2 text-sm text-white mb-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={usePlatformKey}
-                onChange={(e) => setUsePlatformKey(e.target.checked)}
-              />
-              Use Zizka platform embeddings (included on managed cloud)
-            </label>
+            {/* Platform-key option is managed-cloud only; OSS always brings its own key. */}
+            {!isOss && (
+              <label className="flex items-center gap-2 text-sm text-white mb-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={usePlatformKey}
+                  onChange={(e) => setUsePlatformKey(e.target.checked)}
+                />
+                Use Zizka platform embeddings (included on managed cloud)
+              </label>
+            )}
 
-            {!usePlatformKey && (
+            {(isOss || !usePlatformKey) && (
               <>
                 <label
                   className="block text-xs mb-1"
-                  style={{ color: "#e5e5e5" }}
+                  style={{ color: "#e8edf5" }}
                 >
                   Your OpenAI API key
                 </label>
@@ -216,7 +238,7 @@ export default function SettingsPage() {
                   onChange={(e) => setCustomApiKey(e.target.value)}
                   placeholder="sk-..."
                   className="w-full rounded-lg px-3 py-2 text-sm text-white mb-3 outline-none font-mono"
-                  style={{ background: "#1a1a1a", border: "1px solid #2a2a2a" }}
+                  style={{ background: "#1f2733", border: "1px solid #3a4453" }}
                 />
               </>
             )}
@@ -251,15 +273,17 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Connection test */}
+      {/* Connection test — managed only; OSS keeps Settings minimal and can use
+          the per-agent "Test agent" button below. */}
+      {!isOss && (
       <div
         className="rounded-xl p-5 mb-6"
-        style={{ background: "#111", border: "1px solid #1f1f1f" }}
+        style={{ background: "#161c26", border: "1px solid #2a3340" }}
       >
         <h2 className="text-sm font-medium text-white mb-1">
           Test event logging
         </h2>
-        <p className="text-xs mb-4" style={{ color: "#e5e5e5" }}>
+        <p className="text-xs mb-4" style={{ color: "#9aa7b8" }}>
           Logs to agent{" "}
           <span className="font-mono">dashboard-connection-test</span> (not your
           app agent). To test a specific agent, open that agent and click{" "}
@@ -298,28 +322,25 @@ export default function SettingsPage() {
           </p>
         )}
       </div>
+      )}
 
-      {/* Tenant-wide key (multi-agent apps) */}
+      {/* Per-agent keys (relocated from the old agent-detail page) */}
+      <AgentKeysSection />
+
+      {/* Tenant-wide key — managed only. OSS uses a single per-agent key. */}
+      {!isOss && (
       <div
         className="rounded-xl p-5 mb-6"
-        style={{ background: "#111", border: "1px solid #1f1f1f" }}
+        style={{ background: "#161c26", border: "1px solid #2a3340" }}
       >
         <h2 className="text-sm font-medium text-white mb-1">
           Tenant-wide API key
         </h2>
-        <p className="text-xs mb-3" style={{ color: "#e5e5e5" }}>
+        <p className="text-xs mb-3" style={{ color: "#9aa7b8" }}>
           For apps that log to <strong>many agent names</strong> with one key
           (e.g. one key → <span className="font-mono">conv-user1</span>,{" "}
           <span className="font-mono">conv-user2</span>). Most users should
-          create per-agent keys on the{" "}
-          <Link
-            href="/dashboard"
-            className="underline"
-            style={{ color: "#22c55e" }}
-          >
-            Agents
-          </Link>{" "}
-          page instead.
+          create per-agent keys in the section above instead.
         </p>
         {!quota.unlimited && <ApiKeyUsage quota={quota} className="mb-3" />}
         {tenantNewKey && (
@@ -333,7 +354,7 @@ export default function SettingsPage() {
             <div className="flex items-center gap-2">
               <code
                 className="flex-1 text-xs font-mono truncate rounded px-2 py-1.5"
-                style={{ background: "#0a0a0a", color: "#e5e7eb" }}
+                style={{ background: "#0b0f16", color: "#e8edf5" }}
               >
                 {tenantNewKey}
               </code>
@@ -341,12 +362,12 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => copy(tenantNewKey)}
                 className="p-1.5 rounded"
-                style={{ background: "#1a1a1a" }}
+                style={{ background: "#1f2733" }}
               >
                 {copied ? (
                   <Check size={14} style={{ color: "#22c55e" }} />
                 ) : (
-                  <Copy size={14} style={{ color: "#e5e5e5" }} />
+                  <Copy size={14} style={{ color: "#e8edf5" }} />
                 )}
               </button>
             </div>
@@ -392,7 +413,7 @@ export default function SettingsPage() {
             placeholder="Key name (e.g. zizka.ai production)"
             disabled={tenantKeyCreating || quota.at_limit}
             className="flex-1 rounded-lg px-3 py-2 text-sm text-white outline-none disabled:opacity-40"
-            style={{ background: "#1a1a1a", border: "1px solid #2a2a2a" }}
+            style={{ background: "#1f2733", border: "1px solid #3a4453" }}
           />
           <button
             type="submit"
@@ -410,17 +431,20 @@ export default function SettingsPage() {
           </button>
         </form>
       </div>
+      )}
 
-      {/* Key list (overview) */}
+      {/* All-keys overview — managed only. OSS has a single per-agent key,
+          already shown above, so the overview is redundant. */}
+      {!isOss && (
       <div
         className="rounded-xl overflow-hidden"
-        style={{ border: "1px solid #1f1f1f" }}
+        style={{ border: "1px solid #2a3340" }}
       >
         <div
           className="px-5 py-3 border-b"
-          style={{ background: "#111", borderColor: "#1f1f1f" }}
+          style={{ background: "#161c26", borderColor: "#2a3340" }}
         >
-          <span className="text-xs font-medium" style={{ color: "#e5e5e5" }}>
+          <span className="text-xs font-medium" style={{ color: "#e8edf5" }}>
             ALL API KEYS (OVERVIEW)
           </span>
         </div>
@@ -430,42 +454,42 @@ export default function SettingsPage() {
               <div
                 key={i}
                 className="h-10 rounded animate-pulse"
-                style={{ background: "#1a1a1a" }}
+                style={{ background: "#1f2733" }}
               />
             ))}
           </div>
         ) : keys.length === 0 ? (
           <div
             className="p-8 text-center text-sm"
-            style={{ color: "#e5e5e5", background: "#111" }}
+            style={{ color: "#e8edf5", background: "#161c26" }}
           >
             No API keys yet. Create an agent on the dashboard to get one.
           </div>
         ) : (
-          <div style={{ background: "#111" }}>
+          <div style={{ background: "#161c26" }}>
             {keys.map((key, i) => (
               <div
                 key={key.key_id}
                 className="flex items-center justify-between px-5 py-4"
-                style={{ borderTop: i > 0 ? "1px solid #1a1a1a" : "none" }}
+                style={{ borderTop: i > 0 ? "1px solid #1f2733" : "none" }}
               >
                 <div className="flex items-center gap-3">
-                  <Key size={14} style={{ color: "#e5e5e5" }} />
+                  <Key size={14} style={{ color: "#e8edf5" }} />
                   <div>
                     <div className="text-sm text-white">
                       {key.name ?? "Unnamed"}
                     </div>
                     <div
                       className="text-xs font-mono mt-0.5"
-                      style={{ color: "#e5e5e5" }}
+                      style={{ color: "#e8edf5" }}
                     >
                       {key.prefix}...
                       {key.agent_id ? (
-                        <span className="ml-2" style={{ color: "#e5e5e5" }}>
+                        <span className="ml-2" style={{ color: "#e8edf5" }}>
                           · agent: {key.agent_id}
                         </span>
                       ) : (
-                        <span className="ml-2" style={{ color: "#e5e5e5" }}>
+                        <span className="ml-2" style={{ color: "#e8edf5" }}>
                           · tenant-wide (legacy)
                         </span>
                       )}
@@ -473,7 +497,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="text-xs" style={{ color: "#e5e5e5" }}>
+                  <div className="text-xs" style={{ color: "#e8edf5" }}>
                     {key.last_used
                       ? `Last used ${new Date(key.last_used).toLocaleDateString()}`
                       : "Never used"}
@@ -483,7 +507,7 @@ export default function SettingsPage() {
                     disabled={!key.key_id || revokingId === key.key_id}
                     onClick={() => handleRevoke(key)}
                     className="p-1.5 rounded-lg transition disabled:opacity-40"
-                    style={{ background: "#1a1a1a" }}
+                    style={{ background: "#1f2733" }}
                     title="Revoke key"
                   >
                     <Trash2 size={14} style={{ color: "#f87171" }} />
@@ -494,11 +518,12 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      )}
 
       {accountOpts?.managed_cloud && (
         <div
           className="rounded-xl p-5 mt-6"
-          style={{ background: "#111", border: "1px solid #7f1d1d55" }}
+          style={{ background: "#161c26", border: "1px solid #7f1d1d55" }}
         >
           <div className="flex items-start gap-3 mb-3">
             <AlertTriangle
@@ -511,7 +536,7 @@ export default function SettingsPage() {
               </h2>
               <p
                 className="text-xs"
-                style={{ color: "#e5e5e5", lineHeight: 1.6 }}
+                style={{ color: "#e8edf5", lineHeight: 1.6 }}
               >
                 Managed cloud only. This permanently removes your account,
                 agents, events, and API keys. Self-hosted / open-source users
@@ -562,8 +587,8 @@ export default function SettingsPage() {
           <div
             className="rounded-xl p-6"
             style={{
-              background: "#111",
-              border: "1px solid #2a2a2a",
+              background: "#161c26",
+              border: "1px solid #3a4453",
               maxWidth: 440,
               width: "100%",
             }}
@@ -576,7 +601,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => !accountBusy && setDeleteOpen(false)}
-                style={{ color: "#888" }}
+                style={{ color: "#7c8798" }}
               >
                 <X size={18} />
               </button>
@@ -592,7 +617,7 @@ export default function SettingsPage() {
                 </p>
                 <p
                   className="text-xs mb-3"
-                  style={{ color: "#e5e5e5", lineHeight: 1.6 }}
+                  style={{ color: "#e8edf5", lineHeight: 1.6 }}
                 >
                   Stay on ZizkaDB cloud with one extra month on your trial — no
                   charge today. One-time offer when deleting your account.
@@ -639,7 +664,7 @@ export default function SettingsPage() {
 
             <p
               className="text-xs mb-3"
-              style={{ color: "#e5e5e5", lineHeight: 1.6 }}
+              style={{ color: "#e8edf5", lineHeight: 1.6 }}
             >
               Or delete permanently. Type{" "}
               <strong style={{ color: "#fff" }}>DELETE</strong> to confirm.
@@ -649,7 +674,7 @@ export default function SettingsPage() {
               onChange={(e) => setDeleteConfirm(e.target.value)}
               placeholder="DELETE"
               className="w-full rounded-lg px-3 py-2 text-sm text-white mb-3 outline-none font-mono"
-              style={{ background: "#1a1a1a", border: "1px solid #2a2a2a" }}
+              style={{ background: "#1f2733", border: "1px solid #3a4453" }}
             />
             <button
               type="button"

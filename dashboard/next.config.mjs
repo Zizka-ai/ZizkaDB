@@ -5,6 +5,9 @@ const nextConfig = {
   // NEXT_PUBLIC_API_URL can be set at build time for external API hosts.
   // If not set, relative URLs are used and Nginx routes /v1/ to FastAPI.
   output: 'standalone',
+  // Standalone mode needs `sharp` for next/image server-side optimization;
+  // skip it rather than add a native-binary dependency for a static logo.
+  images: { unoptimized: true },
   async redirects() {
     return [
       { source: '/api-explorer', destination: '/swagger', permanent: false },

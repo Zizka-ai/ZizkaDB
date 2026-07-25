@@ -95,27 +95,52 @@ dashboard/
 │   │   ├── checkout/page.tsx# Legacy redirect → /signup/plan
 │   │   └── success/page.tsx # Legacy redirect → /dashboard
 │   ├── dashboard/
-│   │   ├── layout.tsx       # DashboardShell only (no billing gate)
-│   │   ├── page.tsx         # Agents home (list/create/delete)
-│   │   ├── agents/[id]/page.tsx  # Agent detail (events, sessions, drift)
-│   │   ├── search/page.tsx  # Semantic search
-│   │   └── settings/page.tsx# API keys, embeddings, account delete, retention trial
+│   │   ├── layout.tsx       # DashboardTabsShell (tabs + agent selector; no billing gate)
+│   │   ├── page.tsx         # redirect → /dashboard/activity
+│   │   ├── activity/page.tsx     # Events | Sessions | Time Travel segments
+│   │   ├── behavior/page.tsx     # Baseline / drift analysis
+│   │   ├── reports/page.tsx      # Agent report — GET /v1/agents/{id}/report
+│   │   ├── suggestions/page.tsx  # AI suggestions — GET /v1/agents/{id}/suggestions
+│   │   ├── fleet/page.tsx        # Managed only; OSS redirects to activity
+│   │   ├── agents/[id]/page.tsx  # redirect → /dashboard/activity?agent={id}
+│   │   ├── search/page.tsx  # redirect → /dashboard/activity (search is inline now)
+│   │   └── settings/page.tsx# API keys (tenant + per-agent), embeddings, account
 │   ├── admin/               # Operator console (separate auth)
 │   ├── community/           # Public community board
 │   ├── docs/                # Docs pages
 │   └── trust/page.tsx
 ├── components/
-│   ├── DashboardShell.tsx, TenantPlanBanner.tsx, ApiKeyUsage.tsx
-│   ├── hooks/useApiKeyQuota.ts
+│   ├── ui/                  # Presentational primitives: Tabs, PageHeader, Card,
+│   │                        # Button, EmptyState, ErrorState, Skeleton,
+│   │                        # StatusBadge, MetaRow, JsonBlock, CopyButton
+│   ├── dashboard/           # Composition: DashboardTabsShell, AgentSelector,
+│   │                        # EventList, EventDetailPanel, EventsSegment,
+│   │                        # SessionsSegment, TimeTravelSegment, BehaviorPanel,
+│   │                        # FleetTable, AgentKeysSection
+│   ├── TenantPlanBanner.tsx, ApiKeyUsage.tsx
 │   ├── ConnectionStatus.tsx (+ GettingStartedChecklist)
 │   ├── SiteNav.tsx, BrandLogo.tsx, AgentApiKeys.tsx, brand.ts
 │   └── marketing/  (CalendlyBookModal, CompetitorCompare, etc.)
+├── hooks/                   # All data fetching lives here, never in components:
+│   ├── useEdition.ts        # oss | managed (fails closed to oss)
+│   ├── useSelectedAgent.ts  # ?agent= resolution + fallback
+│   ├── useAgents.ts         # shared module-level store + single poll
+│   ├── useAgentEvents.ts    # paging, filter, search
+│   ├── useAgentStats.ts, useAgentSessions.ts
+│   ├── useAgentBehavior.ts, useTimeTravel.ts, useWhyChain.ts
+│   └── useApiKeyQuota.ts, useCopyToClipboard.ts, useResendCooldown.ts
 └── lib/
     ├── api.ts               # All API calls + redirect helpers
     ├── auth.ts              # token get/set/clear (localStorage + cookie)
+    ├── design-tokens.ts     # colours, radii, spacing, status vocabulary
+    ├── events.ts            # pure helpers (eventColor, groupBySession, topN,
+    │                        # normalizeSearchResults, deriveStatus)
     ├── session-cookies.ts   # cookie name constants
     ├── community.ts, demo.ts
 ```
+
+**Note:** `components/DashboardShell.tsx` (the old sidebar) was removed in the tab
+redesign — `components/dashboard/DashboardTabsShell.tsx` replaces it.
 
 ---
 
@@ -154,10 +179,28 @@ flowchart TD
   Login -->|verifyOtp| Dash
   Login -->|DEV_MODE dev-token| Dash
   Middleware["middleware.ts"] -->|no token| Login
-  Dash --> AgentDetail["/dashboard/agents/[id]"]
-  Dash --> Search["/dashboard/search"]
-  Dash --> Settings["/dashboard/settings"]
+  Dash -->|redirect| Activity["/dashboard/activity"]
+  Activity --> Behavior["/dashboard/behavior"]
+  Activity --> Reports["/dashboard/reports"]
+  Activity --> Suggestions["/dashboard/suggestions"]
+  Activity -->|managed only| Fleet["/dashboard/fleet"]
+  Activity --> Settings["/dashboard/settings"]
+  LegacyAgent["/dashboard/agents/[id]"] -->|redirect| Activity
+  LegacySearch["/dashboard/search"] -->|redirect| Activity
 ```
+
+**Tab bar (`components/dashboard/DashboardTabsShell.tsx`):** Activity · Agent Behavior ·
+Reports · Suggestions, plus **Agent Fleets** on managed plans only. Settings is a
+header icon, not a tab. Tabs are `<Link>`s carrying the current `?agent=` forward, so
+switching tabs keeps the selected agent. Fleet is not agent-scoped.
+
+**Agent scoping:** `?agent=<name>` on Activity / Agent Behavior / Settings.
+`useSelectedAgent()` auto-selects the first agent when the param is absent, and falls
+back with a visible notice when it names an agent that no longer exists.
+
+**Edition gating:** `useEdition()` reads `NEXT_PUBLIC_DEPLOYMENT_MODE`
+(`self_hosted` | `managed`), falling back to a plan lookup and **failing closed to
+OSS**. `/dashboard/fleet` redirects to Activity on OSS.
 
 **Route guards / redirects:**
 - **Edge (`middleware.ts`):** `/dashboard*` without `zizkadb_token` → `/login?next=<path>` (all responses `X-Robots-Tag: noindex`). `/admin*` subpaths without `zizkadb_admin_token` → `/admin`.
@@ -513,6 +556,29 @@ Router prefixes are mounted in `core/main.py:66-79`.
 | `getAgentStats` | GET `/v1/agents/{id}/stats` | `agents.py:239` |
 | `getAgentSessions` | GET `/v1/agents/{id}/sessions` | `agents.py:280` |
 | `getAgentBaseline` | GET `/v1/agents/{id}/baseline` | `agents.py:453` |
+| `getAgentReport` | GET `/v1/agents/{id}/report?from=&to=&granularity=` | `agents.py` → `services/reports.py` |
+| `getAgentSuggestions` | GET `/v1/agents/{id}/suggestions?from=&to=&refresh=` | `agents.py` → `services/suggestions/` + `services/ai/` |
+
+The **report** endpoint composes one date-ranged payload for an agent: summary KPIs
+(with previous-period figures for deltas), a gap-filled events/errors/sessions time
+series, event breakdown + transitions, sessions, behavior drift (null when <50 prior
+events), and deterministic rule-based recommendations. Auth: `get_tenant` +
+`assert_agent_allowed`. Range validated (`from<to`, ≤366 days); granularity auto
+(day ≤92d else week). All aggregation is real events — no fabricated cost/token/SLA.
+
+The **suggestions** endpoint returns AI recommendations grounded in an agent's real
+recorded behavior. A deterministic extractor (`services/suggestions/evidence.py`,
+reusing `reports.py`) computes threshold-gated *signals* (recurring errors, low
+success rate, retry loops, long causal chains, missing sessions, slow sessions,
+drift, sparse activity, and coverage-gated token/latency signals) from the events
+table; Claude (`services/ai/claude_provider.py`, `ANTHROPIC_MODEL`, forced tool use,
+temperature 0) only elaborates on those supplied facts; a validation layer drops any
+suggestion referencing evidence not in the bundle and clamps confidence to the
+signal's strength ceiling. No signal above threshold → no Claude call. Response
+`status` is `ok`, `no_evidence`, or `ai_not_configured` (no `ANTHROPIC_API_KEY` set —
+HTTP 200, not an error). Results are Redis-cached by an evidence fingerprint;
+`?refresh=1` bypasses the read cache. Auth: `get_tenant` + `assert_agent_allowed`;
+range validated like `/report`. Provider failure → 503 (never 500). Never invented.
 
 **Events / Search / Memory (dashboard read side):**
 | Dashboard fn | Method · Path | Backend |
@@ -643,30 +709,45 @@ flowchart TD
 
 Exhaustive behavior per file (state, effects, API order, branches, edge cases, navigation). Line numbers reflect the state at time of writing; re-confirm before relying on exact positions.
 
-### 19.1 Agents home — `app/dashboard/page.tsx`
+### 19.1 Activity — `app/dashboard/activity/page.tsx`
 
-- **State (`:21-31`):** `agents`, `loading`, `error`, `lastSync`, `newAgentId`, `creating`, `createErr`, `deletingAgent`, `newAgentKey`, `newAgentName`, `copied`.
-- **Effect (`:33-72`):** on mount + `[router]`; no token → `router.replace('/login')` (`:34-37`); `loadAgents(true)` then **10s `setInterval`** `loadAgents(false)` (`:66`); cleanup sets `cancelled` + `clearInterval`.
-- **API:** `getAgents` initial (`:44`) + poll (`:66`); `createAgent` (`:82`) → optional one-time key display (`:84-87`) → `getAgents` refresh; `deleteAgent` (`:105`).
-- **Branches:** `loading`→Skeleton (`:114`); `error`→error + "Sign in again" (`:116-133`); `newAgentKey`→one-time key banner (`:159-197`); `agents.length===0`→`GettingStartedChecklist` else grid (`:223-237`); `AgentCard` green dot if `last_seen` < 5 min (`:254`).
-- **Rules/edge:** 401 / "invalid token" → `/login` (`:54-56`); poll errors silent (only initial-load errors surface, `:58`); empty trimmed id blocks create (`:77`); `window.confirm` before delete (`:99-100`); non-array response → `[]` (`:47`); copy resets after 2s (`:176`, no cleanup).
-- **Nav:** card → `router.push('/dashboard/agents/{encoded}')` (`:233`).
+Replaces the old agents home + agent-detail Events/Sessions/Time Travel tabs.
 
-### 19.2 Agent detail — `app/dashboard/agents/[id]/page.tsx`
+- **Composition:** `useAgents()` → `useSelectedAgent()` → `useAgentEvents()` + `useAgentStats()`. All fetching is in hooks; the page only chooses a segment.
+- **Segments:** `Events` (default) · `Sessions` · `Time Travel`, a local segmented control (not routes — they share the same agent and header).
+- **Branches:** agents loading → `Skeleton`; agents error → `ErrorState`; **zero agents → `EmptyState` + `GettingStartedChecklist`** (fresh install must not show a broken page); otherwise header stat strip + segments.
+- **Stale `?agent=`:** `invalidAgent` renders an inline notice and falls back to the first agent rather than blanking.
 
-- **Route:** `id` from `useParams` → `decodeURIComponent` → `agentId` (`:100-101`). `PAGE=50` (`:95`).
-- **State:** tabs (`tab` default `'events'`, `:104`), stats/loading/refreshing/lastSync/deleting (`:105-109`); events cluster (`:127-139`); sessions cluster (`:142-147`); time-travel (`:150-153`); behavior/baseline (`:156-157`).
-- **Effects:** initial `Promise.all([loadStats, loadEvents(1)])` (`:182-186`); **10s tab-aware poll** (`:189-214`, skips while `loading`; deps include `tab`, `filterSession`, `filterType`, `searchResults`, `agentId`). Note: comment says 30s but interval is `10_000` (`:208`).
-- **API:** `getEvents` (`:167,197,233,242,298`), `getAgentStats` (`:177,195,224`), `searchEvents` (`:252`), `getWhyChain` (`:273`), `getAgentSessions` (`:203,285`), `getMemoryDiff` (`.catch(()=>null)`, `:299`), `timeTravel` (`:328`), `getAgentBaseline` (`:200,313`), `deleteAgent` (`:118`).
-- **Branches/rules:** `displayEvents = searchResults ?? events` (`:341`); filter pills only if `stats.top_events.length>0 && !searchResults` (`:427`); re-click event deselects (`:259`); cached why-chain / sessions / baseline skip refetch (`:267,280,308`); `hasMore = evs.length===PAGE` (`:169`); Behavior tab renders `insufficient_data` / `warming_up` / full drift (`:904-981`).
-- **Edge:** search shape `res.results ?? res` (`:253`); events auth failure → `/login` (`:170`); stats errors swallowed (`:179`). **Nav:** delete → `/dashboard` (`:119`); back → `/dashboard` (`:1265`). Renders `<AgentApiKeys agentId onTestSuccess={refresh} />` (`:345`).
+**Events segment (`components/dashboard/EventsSegment.tsx`)**
+- `PAGE_SIZE = 50`; `hasMore = rows.length === PAGE_SIZE`; `loadMore` **appends** at `offset = (page-1)*50`.
+- Type filter pills come from `stats.top_events`; hidden while search results are showing. `applyFilter` resets page and clears search.
+- Inline semantic search is **agent-scoped** (`searchEvents(token, q, agentId)`), normalised by `normalizeSearchResults`. `displayEvents = searchResults ?? events`.
+- Re-clicking the selected event **deselects** it; selecting resets the panel to `data`. Why-chains are cached per event id (`useWhyChain`).
+- Polling pauses while search results are displayed so they aren't clobbered.
 
-### 19.3 Search — `app/dashboard/search/page.tsx`
+**Sessions segment** — `useAgentSessions()` loads the list, then events + memory diff **in parallel** on open. The diff is best-effort (`.catch(() => null)`): older sessions have none, and that must not block the event list.
 
-- **State (`:19-22`):** `query`, `results`, `loading`, `searched`. **No effect** — form-driven.
-- **API:** submit → `requireAuth()` (`:30`) → `searchEvents(token, query)` **tenant-wide, no agentId** (`:31`); catch → `results=[]` (`:33-34`); assumes `res.results` (`:32`).
-- **Branches:** submit disabled if `loading || !query.trim()` (`:65`); empty-after-search state (`:74-78`); score badge if `event.score !== undefined` (`:103-107`); example queries when `!searched` (`:115-138`, buttons only set `query`).
-- **Rules:** empty query no-ops (`:26`); no page-load auth redirect (relies on layout gate + `requireAuth` on submit).
+**Time Travel segment** — `datetime-local` input + quick picks (1h/6h/1d/1w). The naive local value is converted to a real `Date` before being sent. Empty/unparseable input → inline error. An agent with no `STATE_SET` events gets an explainer, not a bare empty object.
+
+**Fixed here (pre-existing bugs):** a failed event load used to `router.push('/login')` on **any** error, so a transient 500 signed the user out — it now shows an `ErrorState`. Search had no `catch`, so a 400 from an unconfigured embedding provider was a silent dead end — it now shows a setup message. Both are covered by regression tests in `hooks/useAgentEvents.test.tsx`.
+
+### 19.2 Agent Behavior — `app/dashboard/behavior/page.tsx`
+
+- **Logic is unchanged** from the old Behavior tab; only the presentation was restyled. `useAgentBehavior()` fetches, `components/dashboard/BehaviorPanel.tsx` renders.
+- **Window selector:** `Sessions` (undefined — backend default) · `24h` · `7d` · `30d`.
+- **All three backend states render:** `insufficient_data` → `EmptyState` with the server message; `warming_up` → warming banner + current-behavior window card; `ok` → drift headline, biggest changes, and Baseline vs Recent window cards.
+- The four verdicts (`stable` / `minor_drift` / `noticeable_drift` / `significant_drift`) each have their own colour and copy. `Recompute` re-fetches.
+- Every number shown is computed by the backend; this file only formats it.
+
+### 19.3 Reports & Suggestions — `app/dashboard/{reports,suggestions}/page.tsx`
+
+Empty states only. **No backend, no API calls** — deliberately placeholders so the tab bar matches the product shape.
+
+### 19.3b Agent Fleets — `app/dashboard/fleet/page.tsx`
+
+- **Managed plans only.** OSS redirects to `/dashboard/activity` via `useEdition()`.
+- `FleetTable` columns: Agent · Status · Events · Last event · delete. **No "Active Threads" column** — `thread_id` does not exist in the schema, so there is nothing truthful to show (asserted by a test).
+- Absorbs create-agent, delete-agent (`window.confirm` first) and the one-time API key banner from the old agents home. Create and delete both refresh the shared `useAgents()` store, so the header selector stays in sync.
 
 ### 19.4 Settings — `app/dashboard/settings/page.tsx`
 
@@ -675,10 +756,16 @@ Exhaustive behavior per file (state, effects, API order, branches, edge cases, n
 - **API:** `updateEmbeddingSettings` (`:116-121`, platform key → `api_key:undefined`), `sendTestEvent` (agent `dashboard-connection-test`, `:202`), `createApiKey` (`:255`, optimistic append w/ placeholder key_id `:258-264`), `revokeApiKey` (`:77`), `grantRetentionTrial` (`:412`), `deleteManagedAccount` (`:452`).
 - **Branches/rules:** delete section + modal only if `accountOpts?.managed_cloud` (`:345,375`); retention offer if `retention_trial_available` (`:395-432`); delete button enabled only when `deleteConfirm === 'DELETE'` (`:446`); confirm before revoke (`:71-72`); copy resets after 2s (`:242`).
 - **Nav:** after delete → `clearToken()` → `router.replace('/login?deleted=1')` (`:454`).
+- **Per-agent API keys:** `<AgentKeysSection />` renders `AgentApiKeys` for the agent in `?agent=`, relocated here from the old agent-detail page. The tenant-wide key section now points at it instead of the removed Agents page.
 
 ### 19.5 Dashboard layout — `app/dashboard/layout.tsx`
 
-Server component; `metadata.robots` = noindex/nofollow (`:5-7`); wraps children in `DashboardShell` only (`:8-10`). No API, no branching of its own.
+Server component; `metadata.robots` = noindex/nofollow; wraps children in `DashboardTabsShell`. No API, no branching of its own.
+
+`DashboardTabsShell` (`components/dashboard/DashboardTabsShell.tsx`) renders the brand, the
+`AgentSelector`, Settings/Sign-out icons, and the `Tabs` bar, then `TenantPlanBanner` +
+`ConnectionStatus` above the page. It reads `useSearchParams` via `useSelectedAgent`, so it
+sits inside a `<Suspense>` boundary — required or the build fails on CSR bailout.
 
 ### 19.6 Login — `app/login/page.tsx`
 
