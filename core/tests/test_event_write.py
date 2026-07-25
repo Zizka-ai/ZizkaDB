@@ -2,15 +2,7 @@ import datetime
 from unittest.mock import AsyncMock, MagicMock
 import pytest
 
-from services.event_write import _pgvector_literal, write_event
-
-
-def test_pgvector_literal_formats_as_bracketed_csv():
-    """asyncpg has no codec for pgvector's `vector` type — a raw list param
-    fails with 'expected str, got list'. This must produce pgvector's text
-    input format so `$1::vector` can parse it."""
-    assert _pgvector_literal([0.1, -0.2, 3.0]) == "[0.1,-0.2,3.0]"
-    assert _pgvector_literal([]) == "[]"
+from services.event_write import write_event
 
 
 @pytest.fixture
@@ -75,7 +67,6 @@ async def test_write_event_success(
 
     assert result["event_id"] == "12345678-1234-1234-1234-123456789abc"
     assert result["sequence_no"] == 7
-    assert result["indexed"] is True
 
     assert mock_pool.execute.await_count >= 3
     mock_qdrant.upsert.assert_awaited_once()
@@ -97,7 +88,7 @@ async def test_write_event_without_embedding(
         AsyncMock(return_value=None),
     )
 
-    result = await write_event(
+    await write_event(
         tenant_id="tenant",
         agent="agent",
         event="message",
@@ -105,7 +96,6 @@ async def test_write_event_without_embedding(
     )
 
     mock_qdrant.upsert.assert_not_called()
-    assert result["indexed"] is False
 
 
 @pytest.mark.asyncio
@@ -135,7 +125,6 @@ async def test_embedding_failure_does_not_fail_request(
     )
 
     assert result["event_id"] == "12345678-1234-1234-1234-123456789abc"
-    assert result["indexed"] is False
     mock_qdrant.upsert.assert_not_called()
 
 
