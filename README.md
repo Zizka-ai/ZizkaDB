@@ -4,348 +4,201 @@
 
 **Know why your agent did what it did.**
 
+Operational database for AI agents — replay sessions, trace decisions, detect drift.
+
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/Zizka-ai/ZizkaDB?label=release)](https://github.com/Zizka-ai/ZizkaDB/releases)
+[![Release](https://img.shields.io/github/v/release/Zizka-ai/ZizkaDB?label=release&color=f97316)](https://github.com/Zizka-ai/ZizkaDB/releases)
 [![Python](https://img.shields.io/pypi/v/zizkadb-sdk?label=Python)](https://pypi.org/project/zizkadb-sdk/)
 [![npm](https://img.shields.io/npm/v/zizkadb-sdk?label=npm)](https://www.npmjs.com/package/zizkadb-sdk)
 [![MCP](https://img.shields.io/pypi/v/zizkadb-mcp?label=MCP)](https://pypi.org/project/zizkadb-mcp/)
 
-[Get started](#get-started) · [SDKs](#sdks) · [Wiki](https://github.com/Zizka-ai/ZizkaDB/wiki) · [Managed cloud](https://db.zizka.ai)
+**[Open Source ↓](#open-source-self-host)** · **[Pro ↓](#pro-managed-cloud)** · **[Team ↓](#team-managed-cloud)** · **[Docs](https://db.zizka.ai/docs)** · **[Live site](https://db.zizka.ai)**
 
 </div>
 
 <p align="center">
-  <img src="docs/assets/why-demo.gif" alt="ZizkaDB showing why an AI agent made a decision" width="100%"/>
+  <a href="https://db.zizka.ai">
+    <img src="docs/assets/why-demo.gif" alt="Replay an agent session and trace why a tool was called" width="100%"/>
+  </a>
 </p>
 
-ZizkaDB is a database built specifically for AI agents. It gives you:
-
-- **Causal lineage** — trace every decision your agent made and understand exactly why it happened (`db.why()`)
-- **Time-travel state** — go back to any moment and see exactly what your agent knew (`db.at()`)
-- **Memory injection** — give your agent relevant past context in a single call (`db.context_for()`)
-- **Semantic search** — search your agent's entire history in plain English (`db.search()`)
-
-No more guessing. No more digging through logs.
-
-> **This repository is the open-source product runtime** (API, self-host dashboard, SDKs, MCP, examples).  
-> Managed cloud marketing pages and the operator admin panel live in a **private** repo (`zizkadb-cloud`) and are **not** part of a public clone.  
-> All product links on GitHub point here: **https://github.com/Zizka-ai/ZizkaDB**
-
 <p align="center">
-  <img src="docs/assets/gallery-why.png" alt="Causal chain view in the ZizkaDB dashboard" width="32%"/>
-  <img src="docs/assets/gallery-dashboard.png" alt="Agent fleet dashboard" width="32%"/>
-  <img src="docs/assets/gallery-mcp.png" alt="ZizkaDB MCP tools inside Cursor" width="32%"/>
-</p>
-<p align="center">
-  <sub>Causal chain view &nbsp;·&nbsp; Agent fleet dashboard &nbsp;·&nbsp; MCP tools inside Cursor</sub>
+  <sub>↑ Live product demo · Same dashboard runs on your machine after <code>quickstart</code></sub>
 </p>
 
 ---
 
-## Who uses ZizkaDB?
+## Pick your path
 
-| | |
-|---|---|
-| **AI / ML engineers** | Causal lineage, time-travel debugging, and semantic search — built for agents in production |
-| **Indie hackers & vibe-coders** | Two lines of code add full observability to any agent. No setup required on Zizka Cloud. |
-| **LangChain / CrewAI users** | Native adapters — pass a callback handler and every step is logged automatically |
-| **Enterprise & teams** | Self-hostable, open source (AGPL-3.0), GDPR-ready, audit logs, fleet dashboard |
-| **Investors & evaluators** | [Live cloud →](https://db.zizka.ai) · [Wiki →](https://github.com/Zizka-ai/ZizkaDB/wiki) · [Architecture →](https://github.com/Zizka-ai/ZizkaDB/wiki/Architecture) |  
+| | **Open Source** | **Pro** | **Team** |
+| :--- | :--- | :--- | :--- |
+| **Best for** | Self-hosters & contributors | Solo devs & early prod | Teams with multiple agents |
+| **Price** | Free forever (AGPL) | €29 / month | €69 / month |
+| **Hosting** | Your machine / VPC | [db.zizka.ai](https://db.zizka.ai) | [db.zizka.ai](https://db.zizka.ai) |
+| **Events / month** | Unlimited (your infra) | 50k | 100k |
+| **Projects** | Unlimited | 2 | 5 |
+| **Dashboard** | Activity · Behavior · Reports · Suggestions | Same + **Fleet** (managed) | Same + **Fleet** + priority support |
+| **Support** | Community | Email | Priority |
+| **Jump to** | [4 steps ↓](#open-source-self-host) | [4 steps ↓](#pro-managed-cloud) | [4 steps ↓](#team-managed-cloud) |
+
+> **Enterprise VPC?** Single-tenant deploy, commercial license → [db.zizka.ai/enterprise](https://db.zizka.ai/enterprise)
+
+> This repo is the **open-source product runtime** (API, dashboard, SDKs, MCP). Managed operator tools live in a private repo; all product links point here.
 
 ---
 
-## Get started
+## Open Source (self-host)
 
-Choose how you want to run ZizkaDB:
+**Free · AGPL-3.0 · Your infrastructure**
 
-| | Zizka Cloud | Run Locally |
-|---|---|---|
-| **Setup** | Sign up, get an API key | Docker on your machine |
-| **Best for** | Getting started fast, no setup | Full control, offline use |
-| **Cost** | Free to start | Free, always |
-| **Start** | [Sign up →](https://db.zizka.ai/signup) | See below |
+| Step | What you get |
+| :---: | :--- |
+| **① What it is** | ZizkaDB stores every agent step as a **linked event** — not scattered logs. Trace decisions with **`why()`**, rewind with **`at()`**, search history in plain English, and catch **behavioral drift** before users notice. You run the full stack: API + dashboard + SDKs. |
+| **② How to integrate** | Run locally in ~2 min: `curl -fsSL …/quickstart-remote.sh \| bash` then `pip install zizkadb-sdk` (or TS / MCP / REST). Link events with `parent_id` so `why()` can walk the chain. → **[Full connect guide](CONNECT.md)** |
+| **③ Documentation** | [CONNECT.md](CONNECT.md) · [Docs](https://db.zizka.ai/docs) · [Self-hosting](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) · [Examples](examples/) · [Architecture](https://github.com/Zizka-ai/ZizkaDB/wiki/Architecture) |
+| **④ Live dashboard** | **[localhost:3001/login](http://localhost:3001/login)** → **Open my dashboard** (no signup). Log from SDK → refresh → see sessions live. |
 
-**Run locally (no sign-up needed):**
+**Quickstart**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh | bash
 ```
 
-> Downloads ~4 config files and pulls pre-built Docker images. No code is cloned.
-> Once running: open **http://localhost:3001/login** → click **Open my dashboard**.
-
-<details>
-<summary>Other install options</summary>
-
-**Already have the repo cloned?**
-```bash
-bash scripts/quickstart.sh
+```python
+async with ZizkaDB(host="http://localhost:8000") as db:
+    user = await db.log(agent="my-bot", event="user_message", data={"text": "Why is my order late?"})
+    tool = await db.log(agent="my-bot", event="tool_call", data={"tool": "lookup_order"}, parent_id=user.event_id)
+    await db.why(tool.event_id).print()
 ```
 
-**No Docker?** → [Self-hosting guide](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting)
+<p align="center">
+  <img src="docs/assets/gallery-dashboard.png" alt="Self-hosted ZizkaDB dashboard — Activity, Behavior, Reports, Suggestions" width="640"/>
+</p>
+
+---
+
+## Pro (managed cloud)
+
+**Hosted for you · No Docker to maintain**
+
+| Step | What you get |
+| :---: | :--- |
+| **① What it is** | Same engine, **hosted on [db.zizka.ai](https://db.zizka.ai)**. Replay sessions and trace causal chains without running your own databases. **vs OSS:** zero infra · instant API keys · **Fleet** tab on managed cloud. |
+| **② How to integrate** | [Sign up →](https://db.zizka.ai/signup?plan=pro) · create agent · copy API key · `pip install zizkadb-sdk` · log with `api_key="zizkadb_live_..."`. Also: npm, MCP, REST. → **[CONNECT.md](CONNECT.md)** |
+| **③ Documentation** | [db.zizka.ai/docs](https://db.zizka.ai/docs) · [Swagger](https://db.zizka.ai/swagger) · [Community](https://db.zizka.ai/community) · **50k events/mo · 2 projects · email support** |
+| **④ Live dashboard** | **[db.zizka.ai/dashboard](https://db.zizka.ai/dashboard)** — sign up, log from SDK, sessions appear in seconds. Same UI as self-host, always online. |
+
+```python
+async with ZizkaDB(api_key="zizkadb_live_...") as db:
+    await db.log(agent="support-bot", event="user_message", data={"text": "Hello"})
+```
+
+<p align="center">
+  <a href="https://db.zizka.ai/dashboard">
+    <img src="docs/assets/gallery-why.png" alt="Causal chain replay on managed cloud" width="640"/>
+  </a>
+  <br/>
+  <a href="https://db.zizka.ai/signup?plan=pro"><strong>Get started with Pro →</strong></a>
+</p>
+
+---
+
+## Team (managed cloud)
+
+**Multiple agents & projects in production**
+
+| Step | What you get |
+| :---: | :--- |
+| **① What it is** | Everything in **Pro**, with room to grow. **vs Pro:** 100k events (vs 50k) · 5 projects (vs 2) · **priority support** · built for multi-agent ops with **Fleet** ranking. |
+| **② How to integrate** | [Sign up for Team →](https://db.zizka.ai/signup?plan=team) · one agent per service · consistent `session_id` per conversation. → **[Multi-agent wiki](https://github.com/Zizka-ai/ZizkaDB/wiki/Multi-Agent-Apps)** |
+| **③ Documentation** | [Plan picker](https://db.zizka.ai/signup/plan) · [Docs](https://db.zizka.ai/docs) · [Production wiki](https://github.com/Zizka-ai/ZizkaDB/wiki/Production-Deployment) · **100k events/mo · 5 projects · priority support** |
+| **④ Live dashboard** | **[db.zizka.ai/dashboard](https://db.zizka.ai/dashboard)** — switch agents, compare baselines, Fleet ranking across your workspace. |
+
+```typescript
+const db = new ZizkaDB({ apiKey: process.env.ZIZKADB_API_KEY! })
+await db.log({ agent: 'sales-bot', event: 'tool_call', data: { tool: 'crm_lookup' }, parentId: prev.eventId })
+```
+
+<p align="center">
+  <a href="https://db.zizka.ai">
+    <img src="docs/assets/hero-dashboard.png" alt="Team dashboard on managed cloud" width="640"/>
+  </a>
+  <br/>
+  <a href="https://db.zizka.ai/signup?plan=team"><strong>Get started with Team →</strong></a>
+</p>
+
+---
+
+## Compare capabilities
+
+| Capability | OSS | Pro | Team |
+| --- | :---: | :---: | :---: |
+| `db.log()` · `db.why()` · `db.at()` | ✓ | ✓ | ✓ |
+| Semantic search & drift baselines | ✓ | ✓ | ✓ |
+| Activity · Behavior · Reports · Suggestions | ✓ | ✓ | ✓ |
+| **Fleet** tab (managed cloud) | — | ✓ | ✓ |
+| Self-host / AGPL | ✓ | — | — |
+| Managed hosting | — | ✓ | ✓ |
+| 50k events / month | — | ✓ | — |
+| 100k events / month | — | — | ✓ |
+| 2 projects | — | ✓ | — |
+| 5 projects | — | — | ✓ |
+| Priority support | — | — | ✓ |
+| Enterprise VPC | [Contact →](https://db.zizka.ai/enterprise) | | |
+
+---
+
+## Integrations
+
+| Python | TypeScript | LangChain | CrewAI | MCP (Cursor) | REST |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| [`pip install zizkadb-sdk`](https://pypi.org/project/zizkadb-sdk/) | [`npm i zizkadb-sdk`](https://www.npmjs.com/package/zizkadb-sdk) | [Guide →](CONNECT.md#langchain) | [Guide →](CONNECT.md#crewai) | `uvx zizkadb-mcp` | [Swagger →](https://db.zizka.ai/swagger) |
+
+<p align="center">
+  <img src="docs/assets/gallery-mcp.png" alt="ZizkaDB MCP in Cursor" width="45%"/>
+  &nbsp;
+  <img src="docs/assets/gallery-homepage.png" alt="ZizkaDB product site" width="45%"/>
+</p>
+
+<details>
+<summary><strong>All SDK examples (Python · TypeScript · LangChain · CrewAI · MCP · REST)</strong></summary>
+
+See **[CONNECT.md](CONNECT.md)** for full copy-paste examples.
+
+```bash
+pip install zizkadb-sdk
+npm install zizkadb-sdk
+uvx zizkadb-mcp
+zizkadb init my-agent --template basic
+```
 
 </details>
 
 ---
 
-## SDKs
+## Core API
 
-**Pick your language and install:**
-
-| Language / Framework | Install |
-|---|---|
-| **Python** | `pip install zizkadb-sdk` |
-| **TypeScript / JavaScript** | `npm install zizkadb-sdk` |
-| **LangChain** | `pip install zizkadb-sdk "zizkadb-langchain @ git+https://github.com/Zizka-ai/ZizkaDB.git@main#subdirectory=integrations/langchain"` |
-| **CrewAI** | `pip install zizkadb-sdk "zizkadb-crewai @ git+https://github.com/Zizka-ai/ZizkaDB.git@main#subdirectory=integrations/crewai"` |
-| **AI Editor (Cursor, Claude)** | `uvx zizkadb-mcp` |
-| **REST (any language)** | No install needed — use any HTTP client |
-
----
-
-### Python
-
-```bash
-pip install zizkadb-sdk
-```
-
-**Minimal working example (Python):**
-
-```python
-import asyncio
-from zizkadb import ZizkaDB
-
-async def main():
-    # Use api_key for Zizka Cloud, or host for local
-    async with ZizkaDB(api_key="zizkadb_live_...") as db:
-    # async with ZizkaDB(host="http://localhost:8000") as db:   ← local
-
-        # Log three linked events
-        user = await db.log(agent="my-bot", event="user_message", data={"text": "Why is my order delayed?"})
-        llm  = await db.log(agent="my-bot", event="llm_response", data={"model": "gpt-4o"},      parent_id=user.event_id)
-        tool = await db.log(agent="my-bot", event="tool_call",    data={"tool": "lookup_order"}, parent_id=llm.event_id)
-
-        # Ask why the tool was called — walks the causal chain backward
-        chain = await db.why(tool.event_id)
-        chain.print()
-
-asyncio.run(main())
-```
-
-Expected output:
-
-```
-tool_call · lookup_order
-  └── llm_response · gpt-4o
-        └── user_message · Why was my order delayed?
-```
-
-> **`parent_id`** links one event to the previous one — this is how ZizkaDB builds causal lineage.
-> **`session_id`** groups events into a single run (useful for `db.baseline()` and `db.memory_diff()`).
-
-→ [Full Python guide](CONNECT.md#python-sdk) · `zizkadb init my-agent --template basic`
+| Function | What it does |
+| --- | --- |
+| `db.log()` | Record any agent step; use `parent_id` for causal links |
+| `db.why()` | Walk backward from any event to root cause |
+| `db.search()` | Semantic search over agent history |
+| `db.at()` | Reconstruct state at a point in time |
+| `db.baseline()` | Detect behavioral drift |
+| `db.context_for()` | Inject relevant past events into prompts |
+| `db.forget()` | GDPR erasure by metadata filter |
 
 ---
 
-### TypeScript / JavaScript
-
-```bash
-npm install zizkadb-sdk
-```
-
-**Minimal working example (TypeScript / JavaScript):**
-
-```typescript
-import { ZizkaDB } from 'zizkadb-sdk'
-
-const db = new ZizkaDB({ apiKey: 'zizkadb_live_...' })
-// const db = new ZizkaDB({ host: 'http://localhost:8000' })   ← local
-
-const user = await db.log({ agent: 'my-bot', event: 'user_message', data: { text: 'Hello' } })
-const tool = await db.log({ agent: 'my-bot', event: 'tool_call', data: { tool: 'search' }, parentId: user.eventId })
-
-const chain = await db.why(tool.eventId)
-console.log(chain)
-```
-
-> TypeScript uses camelCase: `parentId`, `eventId`. LangChain and CrewAI adapters are Python-only.
-
-→ [Full TypeScript guide](CONNECT.md#typescript-sdk)
-
----
-
-### LangChain
-
-```bash
-pip install zizkadb-sdk zizkadb-langchain
-```
-
-**Minimal working example (LangChain):**
-
-```python
-from zizkadb import ZizkaDB
-from zizkadb_langchain import ZizkaDBCallbackHandler
-
-async with ZizkaDB(api_key="zizkadb_live_...") as db:
-    handler = ZizkaDBCallbackHandler(db, agent="my-bot")
-
-    # Pass the handler to any LangChain chain — events are logged automatically
-    result = await chain.ainvoke({"input": "..."}, config={"callbacks": [handler]})
-
-    # Trace why the agent made its final decision
-    await db.why(handler.last_event_id).print()
-```
-
-→ [Full LangChain guide](CONNECT.md#langchain) · `zizkadb init my-agent --template langchain`
-
----
-
-### CrewAI
-
-```bash
-pip install zizkadb-sdk zizkadb-crewai
-```
-
-**Minimal working example (CrewAI):**
-
-```python
-from zizkadb import ZizkaDB
-from zizkadb_crewai import ZizkaDBCrewLogger
-
-async with ZizkaDB(api_key="zizkadb_live_...") as db:
-    logger = ZizkaDBCrewLogger(db, agent="research-crew")
-
-    kickoff = await logger.log_kickoff(goal="Research AI trends")
-    result = crew.kickoff()
-    await logger.log_output(str(result), parent_id=kickoff.event_id)
-```
-
-→ [Full CrewAI guide](CONNECT.md#crewai) · `zizkadb init my-agent --template crewai`
-
----
-
-### AI Editor (Cursor, Claude Desktop, Windsurf)
-
-```bash
-uvx zizkadb-mcp
-```
-
-**Minimal working example (MCP config):**
-
-```json
-{
-  "mcpServers": {
-    "zizkadb": {
-      "command": "uvx",
-      "args": ["zizkadb-mcp"],
-      "env": {
-        "ZIZKADB_API_KEY": "zizkadb_live_...",
-        "ZIZKADB_HOST": "http://localhost:8000"
-      }
-    }
-  }
-}
-```
-
-Add this to `~/.cursor/mcp.json` (or your editor's MCP config file). Your AI editor can now call ZizkaDB tools directly from chat.
-
-→ [Full MCP guide](mcp/README.md) · `zizkadb init my-agent --template mcp-cursor`
-
----
-
-### REST — any language
-
-**Minimal working example (REST):**
-
-```bash
-curl -X POST http://localhost:8000/v1/events \
-  -H "Authorization: Bearer zizkadb_dev_local" \
-  -H "Content-Type: application/json" \
-  -d '{"agent":"my-bot","event":"user_message","data":{"text":"Hello"}}'
-```
-
-Expected response:
-
-```json
-{ "event_id": "b3a1c...", "timestamp": "2026-07-15T10:00:00Z", "sequence_no": 1 }
-```
-
-→ [Swagger / API explorer](http://localhost:8000/swagger) · [Docs](https://db.zizka.ai/docs)
-
----
-
-## What you can do
-
-| Function | What it does | When to use it |
-|---|---|---|
-| `db.log()` | Save any agent action as a structured event | Track every step your agent takes |
-| `db.why()` | Trace back every decision that led to an event | Root cause analysis |
-| `db.search()` | Search your agent's history in plain English | Find similar past failures |
-| `db.at()` | See what your agent knew at a specific point in time | Time-travel debugging |
-| `db.context_for()` | Get relevant past events formatted as a prompt block | Inject memory into your system prompt |
-| `db.memory_diff()` | Compare one session to previous sessions | Spot unexpected behavior changes |
-| `db.baseline()` | Check if your agent is behaving consistently over time | Detect drift |
-| `db.query()` | Fetch raw events with filters (type, session, time range) | Build dashboards or audit logs |
-| `db.forget()` | Delete all events matching a specific value | GDPR / delete a user's data |
-| `db.agents()` | List all agents in your project | Manage multiple agents |
-
-> `db.log()`, `db.why()`, and `db.at()` work without an OpenAI key.
-> `db.search()` and `db.context_for()` require `OPENAI_API_KEY` for embeddings. On self-hosted deployments, also set `EMBEDDINGS_ENABLED=true` (default off).
-
----
-
-## Common workflows
-
-| I want to… | Start here |
-|---|---|
-| Add observability to my agent | `db.log(agent, event, data)` with `parent_id` on each step |
-| Understand why my agent did something | `db.why(event_id)` |
-| Search past behavior in plain English | `db.search("describe what you're looking for")` |
-| Give my agent memory of past runs | `db.context_for(agent, task)` |
-| See what my agent knew at a specific time | `db.at(agent, timestamp)` |
-| Check if my agent is behaving differently than before | `db.baseline(agent)` |
-| Delete a specific user's data | `db.forget("user_id", "usr_123")` |
-| Use ZizkaDB directly in Cursor or Claude | [AI Editor setup](#ai-editor-cursor-claude-desktop-windsurf) |
-| Start a new project from a template | `zizkadb init my-agent --template basic` |
-
----
-
-## Environment variables
-
-| Variable | What it does | Example |
-|---|---|---|
-| `ZIZKADB_API_KEY` | Your Zizka Cloud API key | `zizkadb_live_...` |
-| `ZIZKADB_HOST` | URL of your local or self-hosted ZizkaDB | `http://localhost:8000` |
-| `ZIZKADB_AGENT` | Default agent name (used in templates) | `my-bot` |
-| `OPENAI_API_KEY` | Required for `db.search()` and `db.context_for()` when embeddings are enabled | `sk-...` |
-| `EMBEDDINGS_ENABLED` | Self-host only: set `true` to index events for semantic search (requires `OPENAI_API_KEY`) | `false` |
-| `ZIZKADB_TELEMETRY` | Set to `false` to turn off anonymous usage data | `false` |
-
-> **Local dev tip:** When connecting to `localhost:8000`, no API key is needed — the local stack uses a built-in dev key automatically.
-
----
-
-## More resources
+## Community & license
 
 | Resource | Link |
-|---|---|
-| Full connect guide (all SDKs) | [CONNECT.md](CONNECT.md) |
-| Docs site | [db.zizka.ai/docs](https://db.zizka.ai/docs) |
-| Examples | [examples/](examples/) |
-| Start from a template | `zizkadb init my-agent --template basic` |
-| Available templates | `basic` · `openai` · `langchain` · `crewai` · `mcp-cursor` |
-| Self-hosting guide | [wiki/Self-Hosting](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) |
-| Production deployment | [wiki/Production-Deployment](https://github.com/Zizka-ai/ZizkaDB/wiki/Production-Deployment) |
-| Troubleshooting | [wiki/Troubleshooting](https://github.com/Zizka-ai/ZizkaDB/wiki/Troubleshooting) |
+| --- | --- |
+| Issues | [GitHub Issues](https://github.com/Zizka-ai/ZizkaDB/issues) |
+| Discussions | [GitHub Discussions](https://github.com/Zizka-ai/ZizkaDB/discussions) |
+| Forum | [db.zizka.ai/community](https://db.zizka.ai/community) |
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Community | [db.zizka.ai/community](https://db.zizka.ai/community) |
 | Security | [SECURITY.md](SECURITY.md) |
+| License | API & dashboard [AGPL-3.0](LICENSE) · MCP [MIT](mcp/LICENSE) |
 
----
-
-## License
-
-- API, dashboard, and SDKs: [AGPL-3.0](LICENSE)
-- MCP server: [MIT](mcp/LICENSE)
-
-> To turn off anonymous telemetry: `export ZIZKADB_TELEMETRY=false`
+Disable telemetry: `export ZIZKADB_TELEMETRY=false`
