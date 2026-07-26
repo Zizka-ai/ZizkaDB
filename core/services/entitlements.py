@@ -34,8 +34,8 @@ class PlanEntitlements:
 # The only plans with entitlement caps. Extend this dict to add plans.
 PLAN_ENTITLEMENTS: dict[str, PlanEntitlements] = {
     "self_hosted": PlanEntitlements(max_api_keys=1),
-    "pro": PlanEntitlements(max_api_keys=3),
-    "team": PlanEntitlements(max_api_keys=10),
+    "pro": PlanEntitlements(max_api_keys=2),
+    "team": PlanEntitlements(max_api_keys=5),
     "enterprise": PlanEntitlements(max_api_keys=50),
 }
 
@@ -96,3 +96,20 @@ def is_self_hosted_deployment() -> bool:
     (which self-host installs never populate).
     """
     return os.getenv("DEPLOYMENT_MODE", "managed").strip().lower() == "self_hosted"
+
+
+def embeddings_enabled() -> bool:
+    """Whether event indexing and semantic search may call an embedding provider.
+
+    Managed cloud: enabled (tenant/platform embedding config applies).
+    Self-hosted OSS: disabled unless ``EMBEDDINGS_ENABLED=true`` — avoids
+    silently using the operator's OpenAI key or platform defaults.
+    """
+    if not is_self_hosted_deployment():
+        return True
+    return os.getenv("EMBEDDINGS_ENABLED", "false").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )

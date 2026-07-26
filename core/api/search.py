@@ -8,6 +8,7 @@ from qdrant_client.models import FieldCondition, Filter, MatchValue
 from api.deps import assert_agent_allowed, get_tenant
 from db.connection import get_pool, get_qdrant
 from services.embeddings import generate_embedding
+from services.entitlements import embeddings_enabled, is_self_hosted_deployment
 
 router = APIRouter()
 
@@ -27,6 +28,15 @@ async def semantic_search(
     agent = body.agent or tenant.get("agent_id")
     if agent:
         assert_agent_allowed(tenant, agent)
+
+    if not embeddings_enabled():
+        if is_self_hosted_deployment():
+            raise bad_request(
+                "Semantic search is disabled on this self-hosted install. "
+                "Set EMBEDDINGS_ENABLED=true in infra/.env, restart the API, "
+                "then add your embedding API key in Dashboard → Settings."
+            )
+        raise bad_request("Semantic search is disabled for this deployment.")
 
     embedding = await generate_embedding(body.query, tenant_id)
     if not embedding:

@@ -155,7 +155,7 @@ export default function SettingsPage() {
         <h2 className="text-sm font-medium text-white mb-1">Embeddings</h2>
         <p className="text-xs mb-4" style={{ color: "#9aa7b8" }}>
           {isOss
-            ? "Add your OpenAI API key to enable semantic search and context injection (OpenAI text-embedding-3-small)."
+            ? "Self-hosted installs do not index vectors by default. Set EMBEDDINGS_ENABLED=true in infra/.env, restart the API, then add your OpenAI API key here to enable semantic search and context injection (OpenAI text-embedding-3-small)."
             : "Choose the model used for semantic search and context injection (like Pinecone's embedding choice). All models use 1536 dimensions. New events use this model; existing vectors are not re-indexed automatically."}
         </p>
         {embLoading ? (

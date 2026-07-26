@@ -75,7 +75,7 @@ GET /v1/events/{event_id}/why?depth=10
 | GET | `/v1/auth/api-keys/usage` | Plan key quota `{plan, limit, used, unlimited, at_limit}` |
 | DELETE | `/v1/auth/api-keys/{id}` | Revoke key |
 
-**API key creation** requires a dashboard login session (JWT), not an API key. Active keys per tenant are limited by plan (Self-Hosted 1, Pro 3, Team 10, Enterprise 50; unknown/no plan unlimited); exceeding the limit returns `409` with `{detail:{code:"api_key_limit_reached", plan, limit, used}}`. Enforcement is gated by the `API_KEY_LIMITS_ENFORCED` server flag; self-hosted deployments resolve their plan via `DEPLOYMENT_MODE=self_hosted`, not the `users.plan` column.
+**API key creation** requires a dashboard login session (JWT), not an API key. Active keys per tenant are limited by plan (Self-Hosted 1, Pro 2, Team 5, Enterprise 50; unknown/no plan unlimited); exceeding the limit returns `409` with `{detail:{code:"api_key_limit_reached", plan, limit, used}}`. Enforcement is gated by the `API_KEY_LIMITS_ENFORCED` server flag; self-hosted deployments resolve their plan via `DEPLOYMENT_MODE=self_hosted`, not the `users.plan` column.
 
 ## Health
 

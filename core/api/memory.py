@@ -17,6 +17,7 @@ import logging
 from api.deps import get_tenant, assert_agent_allowed
 from db.connection import get_pool, get_qdrant
 from services.embeddings import generate_embedding
+from services.entitlements import embeddings_enabled, is_self_hosted_deployment
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -79,6 +80,16 @@ async def get_context(
 
     # 2. Semantically relevant events via Qdrant
     semantic_rows = []
+    if not embeddings_enabled():
+        if is_self_hosted_deployment():
+            raise bad_request(
+                detail=(
+                    "Semantic memory is disabled on this self-hosted install. "
+                    "Set EMBEDDINGS_ENABLED=true in infra/.env, restart the API, "
+                    "then add your embedding API key in Dashboard → Settings."
+                ),
+            )
+        raise bad_request(detail="Semantic memory is disabled for this deployment.")
     embedding = await generate_embedding(body.task, tenant_id)
     if not embedding:
         raise bad_request(
