@@ -9,6 +9,7 @@ import logging
 from db.connection import get_pool, get_qdrant
 from qdrant_client.models import PointStruct
 from services.embeddings import generate_embedding, event_to_text
+from services.entitlements import embeddings_enabled
 from services.exceptions import bad_request
 
 logger = logging.getLogger(__name__)
@@ -80,6 +81,8 @@ async def write_event(
 
     indexed = False
     try:
+        if not embeddings_enabled():
+            raise RuntimeError("embeddings disabled for this deployment")
         text = event_to_text(event, data)
         embedding = await generate_embedding(text, tenant_id)
         if embedding:

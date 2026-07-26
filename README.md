@@ -290,7 +290,7 @@ Expected response:
 | `db.agents()` | List all agents in your project | Manage multiple agents |
 
 > `db.log()`, `db.why()`, and `db.at()` work without an OpenAI key.
-> `db.search()` and `db.context_for()` require `OPENAI_API_KEY` for embeddings.
+> `db.search()` and `db.context_for()` require `OPENAI_API_KEY` for embeddings. On self-hosted deployments, also set `EMBEDDINGS_ENABLED=true` (default off).
 
 ---
 
@@ -317,7 +317,8 @@ Expected response:
 | `ZIZKADB_API_KEY` | Your Zizka Cloud API key | `zizkadb_live_...` |
 | `ZIZKADB_HOST` | URL of your local or self-hosted ZizkaDB | `http://localhost:8000` |
 | `ZIZKADB_AGENT` | Default agent name (used in templates) | `my-bot` |
-| `OPENAI_API_KEY` | Required for `db.search()` and `db.context_for()` | `sk-...` |
+| `OPENAI_API_KEY` | Required for `db.search()` and `db.context_for()` when embeddings are enabled | `sk-...` |
+| `EMBEDDINGS_ENABLED` | Self-host only: set `true` to index events for semantic search (requires `OPENAI_API_KEY`) | `false` |
 | `ZIZKADB_TELEMETRY` | Set to `false` to turn off anonymous usage data | `false` |
 
 > **Local dev tip:** When connecting to `localhost:8000`, no API key is needed — the local stack uses a built-in dev key automatically.

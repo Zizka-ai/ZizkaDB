@@ -2,7 +2,7 @@
 
 > Single source of truth for the Dashboard module. Reverse-engineered directly from the codebase.
 >
-> **Last verified:** 2026-07-08 · **No payment provider:** signup is plan → consent → OTP → `/dashboard` with a 30-day trial. Legacy `/signup/checkout` redirects to `/signup/plan`; `/signup/success` redirects to `/dashboard`. API key limits: Self-Hosted 1 / Pro 3 / Team 10 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`).
+> **Last verified:** 2026-07-26 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
 >
 > **Important finding:** There is **no "Pricing Modal"** in this codebase. Pricing is a static section on the landing page (`app/page.tsx`, `#pricing`). The only actual modal is the **Calendly "Book demo" modal** (`components/marketing/CalendlyBookModal.tsx`).
 >
