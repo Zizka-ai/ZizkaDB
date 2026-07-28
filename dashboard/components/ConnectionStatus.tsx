@@ -1,6 +1,6 @@
 "use client";
 
-import { IS_DEV_MODE as IS_DEV } from "@/lib/constants";
+import { useEdition } from "@/hooks/useEdition";
 
 // Note: the old full-width ConnectionStatus banner has been folded into the
 // header AccountMenu (see components/dashboard/AccountMenu.tsx) so the content
@@ -9,8 +9,9 @@ import { IS_DEV_MODE as IS_DEV } from "@/lib/constants";
 // checklist shown in the Activity zero-agent state.
 
 export function GettingStartedChecklist() {
-  const snippet = IS_DEV
-    ? `# OSS — same tenant as "Open my dashboard →"
+  const isOss = useEdition().edition === "oss";
+  const snippet = isOss
+    ? `# Self-hosted — SDK points at your own instance
 pip install zizkadb-sdk
 zizkadb demo`
     : `# Managed cloud — use your key from Settings
@@ -24,7 +25,7 @@ async def main():
         print('Logged:', r.event_id)
 asyncio.run(main())"`
 
-  const steps = IS_DEV
+  const steps = isOss
     ? [
         {
           title: 'Run OSS quickstart',
@@ -61,7 +62,7 @@ asyncio.run(main())"`
     >
       <h3 className="text-white font-medium mb-1">Getting started</h3>
       <p className="text-sm mb-6" style={{ color: '#e8edf5' }}>
-        {IS_DEV
+        {isOss
           ? 'OSS quickstart — taste causal lineage, then connect your stack.'
           : 'Three steps to see your first agent in the dashboard.'}
       </p>
@@ -90,7 +91,7 @@ asyncio.run(main())"`
         {snippet}
       </pre>
       <p className="text-xs mt-4" style={{ color: '#e8edf5' }}>
-        {IS_DEV ? (
+        {isOss ? (
           <>
             Connect guide:{' '}
             <a

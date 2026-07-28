@@ -246,8 +246,16 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3">
               <button
                 type="submit"
-                disabled={embSaving}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-black disabled:opacity-40"
+                disabled={
+                  embSaving ||
+                  ((isOss || !usePlatformKey) && !customApiKey.trim())
+                }
+                title={
+                  (isOss || !usePlatformKey) && !customApiKey.trim()
+                    ? "Enter your OpenAI API key first"
+                    : undefined
+                }
+                className="px-4 py-2 rounded-lg text-sm font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: "#22c55e" }}
               >
                 {embSaving ? "Saving…" : "Save embeddings"}

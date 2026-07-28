@@ -3,6 +3,7 @@
 import { ApiKeyUsage } from "@/components/ApiKeyUsage";
 import { useApiKeyQuota } from "@/hooks/useApiKeyQuota";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
+import { useEdition } from "@/hooks/useEdition";
 import {
   createAgentApiKey,
   getAgentApiKeys,
@@ -30,6 +31,7 @@ export function AgentApiKeys({
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [newKey, setNewKey] = useState<string | null>(null);
   const { copied, copy } = useCopyToClipboard();
+  const isOss = useEdition().edition === "oss";
   const [err, setErr] = useState("");
   const [testBusy, setTestBusy] = useState(false);
   const [testMsg, setTestMsg] = useState("");
@@ -143,7 +145,9 @@ export function AgentApiKeys({
               onClick={handleCreate}
               title={
                 quota.at_limit
-                  ? "API key limit reached — upgrade your plan to create more"
+                  ? isOss
+                    ? "API key limit reached — raise API_KEY_LIMIT_<plan> in your server env"
+                    : "API key limit reached — upgrade your plan to create more"
                   : undefined
               }
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-black disabled:opacity-40 disabled:cursor-not-allowed"

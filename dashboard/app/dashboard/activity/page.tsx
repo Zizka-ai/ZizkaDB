@@ -3,11 +3,13 @@
 import { Suspense, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { GettingStartedChecklist } from '@/components/ConnectionStatus'
+import { CreateApiKeyCard } from '@/components/dashboard/CreateApiKeyCard'
 import { EmptyState, ErrorState, PageHeader, Skeleton } from '@/components/ui'
 import { EventsSegment } from '@/components/dashboard/EventsSegment'
 import { SessionsSegment } from '@/components/dashboard/SessionsSegment'
 import { TimeTravelSegment } from '@/components/dashboard/TimeTravelSegment'
 import { useAgents } from '@/hooks/useAgents'
+import { useEdition } from '@/hooks/useEdition'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
 import { useAgentEvents } from '@/hooks/useAgentEvents'
 import { useAgentStats } from '@/hooks/useAgentStats'
@@ -65,6 +67,7 @@ function SegmentedControl({
 function ActivityContent() {
   const { agents, loading: agentsLoading, error: agentsError } = useAgents()
   const { agentId, invalidAgent } = useSelectedAgent(agents)
+  const isOss = useEdition().edition === 'oss'
   const [segment, setSegment] = useState<Segment>('events')
 
   // Hooks must run unconditionally; they no-op on a null agent.
@@ -85,13 +88,28 @@ function ActivityContent() {
           title="Activity"
           description="Everything your agents record, as it happens."
         />
-        <EmptyState
-          title="No agents yet"
-          description="An agent is created automatically the first time it logs an event. Follow the steps below to send your first one."
-        />
-        <div className="mt-5">
-          <GettingStartedChecklist />
-        </div>
+        {isOss ? (
+          <>
+            <p className="text-sm mb-4" style={{ color: colors.textMuted }}>
+              Welcome to ZizkaDB. Create an API key, add it to your app, and your
+              first agent appears here the moment it logs an event.
+            </p>
+            <div className="mb-5">
+              <CreateApiKeyCard />
+            </div>
+            <GettingStartedChecklist />
+          </>
+        ) : (
+          <>
+            <EmptyState
+              title="No agents yet"
+              description="An agent is created automatically the first time it logs an event. Follow the steps below to send your first one."
+            />
+            <div className="mt-5">
+              <GettingStartedChecklist />
+            </div>
+          </>
+        )}
       </>
     )
   }
