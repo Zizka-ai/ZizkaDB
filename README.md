@@ -18,7 +18,7 @@ Operational database for AI agents — replay sessions, trace decisions, detect 
 
 <p align="center">
   <a href="https://db.zizka.ai/dashboard">
-    <img src="docs/assets/hero-dashboard.png" alt="ZizkaDB dashboard — Activity, Agent Behavior, Reports, and AI suggestions" width="100%"/>
+    <img src="docs/assets/readme-hero-dashboard.png" alt="ZizkaDB dashboard — Activity, Agent Behavior, Reports, and AI suggestions" width="100%"/>
   </a>
 </p>
 
