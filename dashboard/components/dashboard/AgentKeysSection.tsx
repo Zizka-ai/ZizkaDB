@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react'
 import { AgentApiKeys } from '@/components/AgentApiKeys'
+import { CreateApiKeyCard } from '@/components/dashboard/CreateApiKeyCard'
 import { LoadingLine } from '@/components/ui'
 import { useAgents } from '@/hooks/useAgents'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
@@ -14,6 +15,9 @@ function Inner() {
   const isOss = useEdition().edition === 'oss'
 
   if (loading) return <LoadingLine label="Loading agents…" />
+
+  // First-run OSS: no agent yet → offer key creation instead of a dead end.
+  if (!agentId && isOss) return <CreateApiKeyCard />
 
   return (
     <div

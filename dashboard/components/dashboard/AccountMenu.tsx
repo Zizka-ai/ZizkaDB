@@ -9,6 +9,7 @@ import { clearToken, getSessionEmail, getToken } from '@/lib/auth'
 import { IS_DEV_MODE } from '@/lib/constants'
 import { colors, radii } from '@/lib/design-tokens'
 import { useConnectionHealth, type HealthState } from '@/hooks/useConnectionHealth'
+import { useEdition } from '@/hooks/useEdition'
 
 const PLAN_LABELS: Record<string, string> = { pro: 'Pro', team: 'Team', enterprise: 'Enterprise' }
 
@@ -48,6 +49,7 @@ export function AccountMenu() {
   // disagree and React throws a hydration mismatch, so resolve it after mount.
   const [email, setEmail] = useState<string | null>(null)
   const health = useConnectionHealth()
+  const isOss = useEdition().edition === 'oss'
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -86,6 +88,11 @@ export function AccountMenu() {
   const trialing = billing?.subscription_status === 'trialing'
   const hm = HEALTH_META[health]
   const initial = (email?.[0] ?? 'U').toUpperCase()
+  // Plan/trial is a managed-cloud billing concept — never meaningful on a
+  // self-hosted install, so hide it there. The email in dev mode is the
+  // synthetic `dev@localhost` login placeholder, so hide that too.
+  const showBilling = !isOss && !!planLabel
+  const showEmail = !!email && !IS_DEV_MODE
 
   function signOut() {
     clearToken()
@@ -132,7 +139,7 @@ export function AccountMenu() {
             }}
           />
         </span>
-        {planLabel && (
+        {showBilling && (
           <span className="text-xs font-medium hidden sm:inline" style={{ color: colors.textMuted }}>
             {planLabel}
           </span>
@@ -152,38 +159,40 @@ export function AccountMenu() {
             boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
           }}
         >
-          {/* Identity */}
-          <div className="px-4 py-3" style={{ borderBottom: `1px solid ${colors.border}` }}>
-            <div className="flex items-center gap-2 flex-wrap">
-              {planLabel && (
-                <span
-                  className="text-xs font-semibold px-2 py-0.5"
-                  style={{
-                    background: colors.surfaceHover,
-                    color: colors.text,
-                    borderRadius: radii.full,
-                  }}
-                >
-                  {planLabel}
-                </span>
+          {/* Identity — plan/trial (managed only) + email (real accounts only) */}
+          {(showBilling || showEmail) && (
+            <div className="px-4 py-3" style={{ borderBottom: `1px solid ${colors.border}` }}>
+              {showBilling && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className="text-xs font-semibold px-2 py-0.5"
+                    style={{
+                      background: colors.surfaceHover,
+                      color: colors.text,
+                      borderRadius: radii.full,
+                    }}
+                  >
+                    {planLabel}
+                  </span>
+                  {trialing && billing?.trial_ends_at && (
+                    <span className="text-xs" style={{ color: colors.textMuted }}>
+                      Trial ends {formatDate(billing.trial_ends_at)}
+                    </span>
+                  )}
+                  {billing?.subscription_status === 'active' && !trialing && (
+                    <span className="text-xs" style={{ color: colors.success }}>
+                      Active
+                    </span>
+                  )}
+                </div>
               )}
-              {trialing && billing?.trial_ends_at && (
-                <span className="text-xs" style={{ color: colors.textMuted }}>
-                  Trial ends {formatDate(billing.trial_ends_at)}
-                </span>
-              )}
-              {billing?.subscription_status === 'active' && !trialing && (
-                <span className="text-xs" style={{ color: colors.success }}>
-                  Active
-                </span>
+              {showEmail && (
+                <p className="text-sm mt-1.5 truncate" style={{ color: colors.text }} title={email ?? undefined}>
+                  {email}
+                </p>
               )}
             </div>
-            {email && (
-              <p className="text-sm mt-1.5 truncate" style={{ color: colors.text }} title={email}>
-                {email}
-              </p>
-            )}
-          </div>
+          )}
 
           {/* Connection */}
           <div className="px-4 py-3" style={{ borderBottom: `1px solid ${colors.border}` }}>
