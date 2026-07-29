@@ -2,6 +2,15 @@
 
 Default assets come from `python scripts/generate-readme-assets.py` (styled terminal animation).
 
+The README hero uses `hero-dashboard.png`. Regenerate from a fresh screenshot with:
+
+```bash
+python scripts/sanitize-readme-hero.py path/to/screenshot.png
+```
+
+That blurs agent names, account badge, session IDs, and event payloads before writing
+`docs/assets/hero-dashboard.png` and `docs/assets/gallery-dashboard.png`.
+
 For a **live terminal** recording (~15s loop), use `python scripts/demo-why.py` after setup.
 
 ## Prereqs
