@@ -48,11 +48,14 @@ def main() -> int:
     im = Image.open(src).convert("RGB")
     clean = _blur_regions(im)
 
+    _save_png(clean, ASSETS / "readme-hero-dashboard.png", width=1200)
     _save_png(clean, ASSETS / "hero-dashboard.png", width=1200)
     _save_png(clean, ASSETS / "gallery-dashboard.png", width=640)
 
+    readme_kb = (ASSETS / "readme-hero-dashboard.png").stat().st_size // 1024
     hero_kb = (ASSETS / "hero-dashboard.png").stat().st_size // 1024
     gallery_kb = (ASSETS / "gallery-dashboard.png").stat().st_size // 1024
+    print(f"Wrote {ASSETS / 'readme-hero-dashboard.png'} ({readme_kb} KB)")
     print(f"Wrote {ASSETS / 'hero-dashboard.png'} ({hero_kb} KB)")
     print(f"Wrote {ASSETS / 'gallery-dashboard.png'} ({gallery_kb} KB)")
     return 0
