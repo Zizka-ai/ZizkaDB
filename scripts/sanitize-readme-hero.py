@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Sanitize a dashboard screenshot for public README use.
 
-Blurs agent selector, account badge, and event-feed text (session IDs + payloads).
-Outputs hero-dashboard.png and a smaller gallery-dashboard.png for README embeds.
+Blurs only account-level identifiers (agent dropdown + profile badge).
+Activity feed, events, reports, and suggestions stay fully visible.
 """
 
 from __future__ import annotations
@@ -15,11 +15,9 @@ from PIL import Image, ImageFilter
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "docs" / "assets"
 
-# Fractional regions (x0, y0, x1, y1) applied after resize.
+# Fractional regions (x0, y0, x1, y1) — keep tight; do not blur Activity feed.
 BLUR_REGIONS = [
     (0.66, 0.01, 0.995, 0.095),  # agent dropdown + account badge
-    (0.0, 0.24, 0.355, 0.995),  # session IDs + event JSON in Activity feed
-    (0.67, 0.50, 0.995, 0.63),  # agent name in Behavior panel (right column)
 ]
 
 
