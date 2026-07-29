@@ -17,13 +17,13 @@ Operational database for AI agents — replay sessions, trace decisions, detect 
 </div>
 
 <p align="center">
-  <a href="https://db.zizka.ai">
-    <img src="docs/assets/why-demo.gif" alt="Replay an agent session and trace why a tool was called" width="100%"/>
+  <a href="https://db.zizka.ai/dashboard">
+    <img src="docs/assets/hero-dashboard.png" alt="ZizkaDB dashboard — Activity, Agent Behavior, Reports, and AI suggestions" width="100%"/>
   </a>
 </p>
 
 <p align="center">
-  <sub>↑ Live product demo · Same dashboard runs on your machine after <code>quickstart</code></sub>
+  <sub>↑ Activity · Behavior · Reports · Suggestions — same dashboard on <a href="https://db.zizka.ai">managed cloud</a> and after <code>quickstart</code></sub>
 </p>
 
 ---
@@ -72,7 +72,9 @@ async with ZizkaDB(host="http://localhost:8000") as db:
 ```
 
 <p align="center">
-  <img src="docs/assets/gallery-dashboard.png" alt="Self-hosted ZizkaDB dashboard — Activity, Behavior, Reports, Suggestions" width="640"/>
+  <img src="docs/assets/why-demo.gif" alt="Terminal demo — trace why an agent called a tool with db.why()" width="640"/>
+  <br/>
+  <sub>Causal chain replay with <code>db.why()</code> after <code>quickstart</code></sub>
 </p>
 
 ---
@@ -120,8 +122,8 @@ await db.log({ agent: 'sales-bot', event: 'tool_call', data: { tool: 'crm_lookup
 ```
 
 <p align="center">
-  <a href="https://db.zizka.ai">
-    <img src="docs/assets/hero-dashboard.png" alt="Team dashboard on managed cloud" width="640"/>
+  <a href="https://db.zizka.ai/signup?plan=team">
+    <img src="docs/assets/gallery-why.png" alt="Causal chain replay across agents on managed cloud" width="640"/>
   </a>
   <br/>
   <a href="https://db.zizka.ai/signup?plan=team"><strong>Get started with Team →</strong></a>
