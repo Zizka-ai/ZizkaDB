@@ -8,8 +8,9 @@ The README hero uses `hero-dashboard.png`. Regenerate from a fresh screenshot wi
 python scripts/sanitize-readme-hero.py path/to/screenshot.png
 ```
 
-That blurs agent names, account badge, session IDs, and event payloads before writing
+That blurs only the agent dropdown and account badge before writing
 `docs/assets/hero-dashboard.png` and `docs/assets/gallery-dashboard.png`.
+The Activity feed and event payloads remain visible.
 
 For a **live terminal** recording (~15s loop), use `python scripts/demo-why.py` after setup.
 
