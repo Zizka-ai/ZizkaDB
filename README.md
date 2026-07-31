@@ -129,6 +129,24 @@ await db.log({ agent: 'sales-bot', event: 'tool_call', data: { tool: 'crm_lookup
   <a href="https://db.zizka.ai/signup?plan=team"><strong>Get started with Team →</strong></a>
 </p>
 
+### Tests
+
+Core unit tests plus the SDK and MCP package tests do not require a running ZizkaDB stack:
+
+```bash
+# Core tests
+(cd core && python -m pip install -r requirements.txt -r requirements-dev.txt && python -m pytest tests -q)
+
+# Python SDK tests
+(cd sdk/python && python -m pip install -e '.[dev]' && python -m pytest tests -q)
+
+# MCP tests
+(cd mcp && python -m pip install -e '.[dev]' && python -m pytest tests -q)
+
+# TypeScript SDK tests
+(cd sdk/typescript && npm ci && npm test)
+```
+
 ---
 
 ## Compare capabilities
