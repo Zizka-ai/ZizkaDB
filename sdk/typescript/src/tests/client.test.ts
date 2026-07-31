@@ -274,6 +274,25 @@ describe('error mapping', () => {
     await expect(db.agents()).rejects.toThrow(AuthError)
   })
 
+  it('cloud 401 points to the cloud dashboard', async () => {
+    mockFetch(401, {})
+    const db = new ZizkaDB({ apiKey: 'zizkadb_live_bad' })
+    const err = await db.agents().catch(e => e)
+    expect(err).toBeInstanceOf(AuthError)
+    expect(err.message).toContain('db.zizka.ai/dashboard')
+  })
+
+  it('self-hosted 401 points to the own instance, not the cloud dashboard', async () => {
+    mockFetch(401, { detail: "Send it as 'Authorization: Bearer <api-key>'." })
+    const db = new ZizkaDB({ host: 'http://localhost:8000' })
+    const err = await db.agents().catch(e => e)
+    expect(err).toBeInstanceOf(AuthError)
+    expect(err.message).toContain('http://localhost:8000')
+    expect(err.message).not.toContain('db.zizka.ai/dashboard')
+    // The server's actionable guidance is surfaced to the caller.
+    expect(err.message).toContain('Authorization: Bearer')
+  })
+
   it('throws NotFoundError on 404', async () => {
     mockFetch(404, { detail: 'Not found' })
     const db = new ZizkaDB({ apiKey: 'zizkadb_live_test' })
