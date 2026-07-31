@@ -1,0 +1,131 @@
+/**
+ * ZizkaDB TypeScript SDK — Vitest coverage.
+ *
+ * No external services.  Mock fetch, disable telemetry, and test that the
+ * SDK constructs expected request shapes and maps errors correctly.
+ *
+ * Uses the package's existing Vitest test runner.
+ */
+
+import { afterAll, expect, it } from 'vitest'
+
+// Save the original fetch so we can restore it after all tests finish.
+const _originalFetch = globalThis.fetch
+
+// Disable telemetry before loading the SDK so the constructor doesn't fire it.
+process.env.ZIZKADB_TELEMETRY = 'false'
+
+import { AgentScopeError, AuthError, ZizkaDB, ZizkaDBError } from '../src/index.ts'
+
+
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+
+it('log posts the expected event payload', async () => {
+  const calls = []
+
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init })
+    return jsonResponse({
+      event_id: '00000000-0000-0000-0000-000000000001',
+      timestamp: '2026-06-19T00:00:00Z',
+      sequence_no: 1,
+      checksum: 'abc123',
+    })
+  }
+
+  const db = new ZizkaDB({
+    apiKey: 'zizkadb_live_test',
+    host: 'https://example.test',
+  })
+
+  const result = await db.log({
+    agent: 'test-agent',
+    event: 'tool_call',
+    data: { tool: 'search' },
+    parentId: 'parent-1',
+    sessionId: 'session-1',
+  })
+
+  expect(calls).toHaveLength(1)
+  expect(calls[0].url).toBe('https://example.test/v1/events')
+  expect(calls[0].init.method).toBe('POST')
+  expect(calls[0].init.headers.Authorization).toBe('Bearer zizkadb_live_test')
+
+  const body = JSON.parse(calls[0].init.body)
+  expect(body.agent).toBe('test-agent')
+  expect(body.event).toBe('tool_call')
+  expect(body.data).toEqual({ tool: 'search' })
+  expect(body.parent_id).toBe('parent-1')
+  expect(body.session_id).toBe('session-1')
+  expect(result.eventId).toBe('00000000-0000-0000-0000-000000000001')
+})
+
+
+it('403 responses raise AgentScopeError', async () => {
+  globalThis.fetch = async () =>
+    jsonResponse({ detail: 'wrong agent' }, 403)
+
+  const db = new ZizkaDB({
+    apiKey: 'zizkadb_live_test',
+    host: 'https://example.test',
+  })
+
+  await expect(db.query({ agent: 'wrong-agent' })).rejects.toBeInstanceOf(AgentScopeError)
+})
+
+
+it('401 responses raise AuthError', async () => {
+  globalThis.fetch = async () =>
+    jsonResponse({ detail: 'bad key' }, 401)
+
+  const db = new ZizkaDB({
+    apiKey: 'zizkadb_live_test',
+    host: 'https://example.test',
+  })
+
+  await expect(db.query({ agent: 'test-agent' })).rejects.toBeInstanceOf(AuthError)
+})
+
+
+it('500 responses raise ZizkaDBError', async () => {
+  globalThis.fetch = async () =>
+    jsonResponse({ detail: 'boom' }, 500)
+
+  const db = new ZizkaDB({
+    apiKey: 'zizkadb_live_test',
+    host: 'https://example.test',
+  })
+
+  await expect(db.query({ agent: 'test-agent' })).rejects.toBeInstanceOf(ZizkaDBError)
+})
+
+
+it('localhost auto-injects dev key', async () => {
+  delete process.env.ZIZKADB_API_KEY
+  delete process.env.AGENTDB_API_KEY
+  delete process.env.DEV_API_KEY
+
+  let authHeader
+
+  globalThis.fetch = async (url, init) => {
+    authHeader = init.headers.Authorization
+    return jsonResponse({ event_id: 'evt-1', timestamp: '2026-01-01T00:00:00Z', sequence_no: 1, checksum: 'x' })
+  }
+
+  const db = new ZizkaDB({ host: 'http://localhost:8000' })
+  await db.log({ agent: 'test-agent', event: 'tool_call', data: {} })
+
+  expect(authHeader).toBe('Bearer zizkadb_dev_local')
+})
+
+
+// Restore original fetch after all tests run.
+afterAll(() => {
+  globalThis.fetch = _originalFetch
+})

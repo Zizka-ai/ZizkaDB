@@ -24,6 +24,9 @@ dependencies = [
     "httpx>=0.27.0",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+
 [project.scripts]
 zizkadb-mcp = "zizkadb_mcp.server:main"
 
