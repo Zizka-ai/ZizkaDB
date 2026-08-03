@@ -5,20 +5,21 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { EmptyState, ErrorState, PageHeader, Skeleton } from '@/components/ui'
 import { ReportToolbar } from '@/components/dashboard/report/ReportToolbar'
 import { ReportsSubTabs } from '@/components/dashboard/report/ReportsSubTabs'
-import { ReportView } from '@/components/dashboard/report/ReportView'
+import { TokenUsageView } from '@/components/dashboard/token-usage/TokenUsageView'
 import { useAgents } from '@/hooks/useAgents'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
-import { useAgentReport } from '@/hooks/useAgentReport'
+import { useAgentTokenUsage } from '@/hooks/useAgentTokenUsage'
+import { hasAnyData } from '@/lib/token-usage'
 import {
   PERIOD_OPTIONS,
   isPeriodType,
-  resolveRange,
+  resolveTokenUsageRange,
   type PeriodType,
-  type ResolvedRange,
+  type ResolvedTokenUsageRange,
 } from '@/lib/report'
 import { colors, radii } from '@/lib/design-tokens'
 
-function ReportsContent() {
+function TokenUsageContent() {
   const { agents, loading: agentsLoading, error: agentsError } = useAgents()
   const { agentId, invalidAgent } = useSelectedAgent(agents)
 
@@ -30,9 +31,11 @@ function ReportsContent() {
   const [period, setPeriod] = useState<PeriodType>(isPeriodType(urlPeriod) ? urlPeriod : 'monthly')
   const [custom, setCustom] = useState({ from: params.get('from') ?? '', to: params.get('to') ?? '' })
 
-  // The resolved range is pinned when the period changes / Generate is pressed —
-  // not recomputed every render — so rolling windows don't trigger a refetch loop.
-  const [range, setRange] = useState<ResolvedRange | null>(null)
+  // Pinned like Reports Overview — rolling windows resolve immediately, custom
+  // waits for Generate — so switching periods doesn't cause a refetch loop.
+  const [range, setRange] = useState<ResolvedTokenUsageRange | null>(null)
+
+  const agentQuery = agentId ? `?agent=${encodeURIComponent(agentId)}` : ''
 
   const syncUrl = useCallback(
     (p: PeriodType, c: { from: string; to: string }) => {
@@ -50,9 +53,8 @@ function ReportsContent() {
     [params, pathname, router],
   )
 
-  // Resolve rolling periods immediately; custom waits for Generate.
   useEffect(() => {
-    if (period !== 'custom') setRange(resolveRange(period))
+    if (period !== 'custom') setRange(resolveTokenUsageRange(period))
   }, [period])
 
   const onPeriodChange = (p: PeriodType) => {
@@ -60,18 +62,16 @@ function ReportsContent() {
     syncUrl(p, custom)
   }
   const onGenerateCustom = () => {
-    setRange(resolveRange('custom', custom))
+    setRange(resolveTokenUsageRange('custom', custom))
     syncUrl('custom', custom)
   }
 
-  const { report, loading, refreshing, error, refetch } = useAgentReport(agentId, range)
+  const { usage, loading, refreshing, error, refetch } = useAgentTokenUsage(agentId, range)
 
   const periodLabel = useMemo(
     () => PERIOD_OPTIONS.find((o) => o.value === period)?.label ?? '',
     [period],
   )
-
-  const agentQuery = agentId ? `?agent=${encodeURIComponent(agentId)}` : ''
 
   if (agentsLoading) return <Skeleton rows={6} />
   if (agentsError) return <ErrorState message={agentsError} />
@@ -80,10 +80,10 @@ function ReportsContent() {
     return (
       <>
         <PageHeader title="Reports" />
-        <ReportsSubTabs active="overview" agentQuery={agentQuery} />
+        <ReportsSubTabs active="token-usage" agentQuery={agentQuery} />
         <EmptyState
           title="No agents yet"
-          description="Reports are generated per agent from recorded events. Once an agent starts logging, its report appears here."
+          description="Token usage is aggregated per agent from recorded events. Once an agent starts logging, its report appears here."
         />
       </>
     )
@@ -93,10 +93,10 @@ function ReportsContent() {
     <>
       <PageHeader
         title="Reports"
-        description="Executive-ready summaries of an agent's activity, health and behavior."
+        description="Token and cost usage aggregated from events carrying a token_usage field."
       />
 
-      <ReportsSubTabs active="overview" agentQuery={agentQuery} />
+      <ReportsSubTabs active="token-usage" agentQuery={agentQuery} />
 
       {invalidAgent && (
         <div
@@ -121,26 +121,33 @@ function ReportsContent() {
         onGenerateCustom={onGenerateCustom}
         onRegenerate={refetch}
         onPrint={() => window.print()}
-        canExport={!!report && !loading}
+        canExport={!!usage && !loading}
         refreshing={refreshing}
+        showExport={false}
+        periodLabel="Usage period"
       />
 
       {loading ? (
         <Skeleton rows={8} />
       ) : error ? (
         <ErrorState message={error} />
-      ) : report ? (
-        <ReportView report={report} periodLabel={periodLabel} />
-      ) : null}
+      ) : usage && hasAnyData(usage) ? (
+        <TokenUsageView usage={usage} periodLabel={periodLabel} />
+      ) : (
+        <EmptyState
+          title="No token usage data yet"
+          description="Log events with a token_usage field in their data payload to see this report. See docs for the event schema."
+        />
+      )}
     </>
   )
 }
 
-export default function ReportsPage() {
+export default function TokenUsagePage() {
   // useSelectedAgent / useSearchParams require a Suspense boundary (CSR bailout).
   return (
     <Suspense fallback={<Skeleton rows={6} />}>
-      <ReportsContent />
+      <TokenUsageContent />
     </Suspense>
   )
 }
