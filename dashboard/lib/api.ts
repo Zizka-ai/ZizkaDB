@@ -387,6 +387,81 @@ export async function getAgentReport(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Token usage — per-agent token/cost report (see core/services/token_usage.py)
+// Reads events.data.token_usage; no schema migration. See docs/adr for the
+// JSONB convention SDKs must adopt for data to appear here.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Wider than ReportGranularity: the token-usage endpoint additionally accepts
+// 'hour' (for the 24h preset). /report intentionally keeps its narrower set.
+export type TokenUsageGranularity = 'hour' | 'day' | 'week'
+
+export interface TokenUsageTotals {
+  total_requests: number
+  success_count: number
+  failed_count: number
+  success_rate_pct: number
+  total_tokens: number
+  input_tokens: number
+  output_tokens: number
+  cached_tokens: number
+  reasoning_tokens: number
+  avg_tokens_per_request: number
+  total_cost: number
+}
+
+export interface TokenUsageBreakdownRow {
+  key: string
+  tokens: number
+  cost: number
+  requests: number
+}
+
+export type TokenUsageBreakdown = TokenUsageBreakdownRow[]
+
+export interface TokenUsageTrendPoint {
+  bucket: string
+  input_tokens: number
+  output_tokens: number
+  tokens: number
+  cost: number
+  requests: number
+}
+
+export interface TokenUsagePayload {
+  agent: string
+  generated_at: string
+  period: { from: string; to: string; granularity: TokenUsageGranularity }
+  totals: TokenUsageTotals
+  unpriced_models: string[]
+  breakdown: {
+    model: TokenUsageBreakdown
+    agent: TokenUsageBreakdown
+    workflow: TokenUsageBreakdown
+    tool: TokenUsageBreakdown
+    user: TokenUsageBreakdown
+  }
+  trend: TokenUsageTrendPoint[]
+  top_consumers: {
+    model: TokenUsageBreakdown
+    agent: TokenUsageBreakdown
+    workflow: TokenUsageBreakdown
+    tool: TokenUsageBreakdown
+    user: TokenUsageBreakdown
+  }
+}
+
+export async function getAgentTokenUsage(
+  token: string,
+  agentId: string,
+  params: { from: string; to: string; granularity?: TokenUsageGranularity },
+): Promise<TokenUsagePayload> {
+  const qs = new URLSearchParams({ from: params.from, to: params.to })
+  if (params.granularity) qs.set('granularity', params.granularity)
+  return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/token-usage?${qs.toString()}`, token)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Suggestions — evidence-grounded AI recommendations (see core/services/suggestions)
 // ─────────────────────────────────────────────────────────────────────────────
 

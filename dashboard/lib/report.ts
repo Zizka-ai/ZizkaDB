@@ -1,4 +1,4 @@
-import type { ReportGranularity } from '@/lib/api'
+import type { ReportGranularity, TokenUsageGranularity } from '@/lib/api'
 
 /**
  * Report period presets and pure formatting helpers.
@@ -8,25 +8,39 @@ import type { ReportGranularity } from '@/lib/api'
  * from/to. Everything here is pure and unit-tested.
  */
 
-export type PeriodType = 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom'
+export type PeriodType =
+  | 'daily'
+  | 'weekly'
+  | 'monthly'
+  | 'quarterly'
+  | 'semiannual'
+  | 'yearly'
+  | 'custom'
 
 export interface PeriodOption {
   value: PeriodType
   label: string
 }
 
+// 'daily' and 'semiannual' were added for the Token Usage report (24h and 6mo
+// presets). This list/type is shared with Reports Overview and Suggestions —
+// additive only, so existing callers are unaffected.
 export const PERIOD_OPTIONS: PeriodOption[] = [
+  { value: 'daily', label: 'Daily (last 24 hours)' },
   { value: 'weekly', label: 'Weekly (last 7 days)' },
   { value: 'monthly', label: 'Monthly (last 30 days)' },
   { value: 'quarterly', label: 'Quarterly (last 90 days)' },
+  { value: 'semiannual', label: 'Semiannual (last 6 months)' },
   { value: 'yearly', label: 'Yearly (last 12 months)' },
   { value: 'custom', label: 'Custom range' },
 ]
 
 const ROLLING_DAYS: Record<Exclude<PeriodType, 'custom'>, number> = {
+  daily: 1,
   weekly: 7,
   monthly: 30,
   quarterly: 90,
+  semiannual: 182,
   yearly: 365,
 }
 
@@ -36,6 +50,14 @@ export interface ResolvedRange {
   granularity: ReportGranularity
 }
 
+/** Same as ResolvedRange but with the wider token-usage granularity ('hour'
+ * included) — used by the Token Usage tab's 24h preset. */
+export interface ResolvedTokenUsageRange {
+  from: string
+  to: string
+  granularity: TokenUsageGranularity
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
 /** Bucket size that keeps the series readable (mirrors the backend). */
@@ -43,8 +65,25 @@ export function granularityForSpan(fromMs: number, toMs: number): ReportGranular
   return (toMs - fromMs) / DAY_MS <= 92 ? 'day' : 'week'
 }
 
+/** Same as `granularityForSpan` but allows 'hour' for very short (<=2 day) spans
+ * — used by the Token Usage tab, which accepts a wider granularity set than
+ * /report. Kept as a separate function so /report's behavior never changes. */
+export function tokenUsageGranularityForSpan(fromMs: number, toMs: number): TokenUsageGranularity {
+  const days = (toMs - fromMs) / DAY_MS
+  if (days <= 2) return 'hour'
+  return granularityForSpan(fromMs, toMs)
+}
+
 export function isPeriodType(v: string | null | undefined): v is PeriodType {
-  return v === 'weekly' || v === 'monthly' || v === 'quarterly' || v === 'yearly' || v === 'custom'
+  return (
+    v === 'daily' ||
+    v === 'weekly' ||
+    v === 'monthly' ||
+    v === 'quarterly' ||
+    v === 'semiannual' ||
+    v === 'yearly' ||
+    v === 'custom'
+  )
 }
 
 /**
@@ -72,6 +111,35 @@ export function resolveRange(
     from: from.toISOString(),
     to: to.toISOString(),
     granularity: granularityForSpan(from.getTime(), to.getTime()),
+  }
+}
+
+/**
+ * Same resolution as `resolveRange`, but produces the wider
+ * `TokenUsageGranularity` (including 'hour' for the 24h preset). Kept as a
+ * separate function — used only by the Token Usage tab — so Reports Overview
+ * and Suggestions (which call `resolveRange`) are completely unaffected.
+ */
+export function resolveTokenUsageRange(
+  period: PeriodType,
+  custom?: { from?: string; to?: string },
+  now: Date = new Date(),
+): ResolvedTokenUsageRange {
+  if (period === 'custom') {
+    const from = custom?.from ? new Date(custom.from) : new Date(now.getTime() - 30 * DAY_MS)
+    const to = custom?.to ? new Date(custom.to) : now
+    return {
+      from: from.toISOString(),
+      to: to.toISOString(),
+      granularity: tokenUsageGranularityForSpan(from.getTime(), to.getTime()),
+    }
+  }
+  const to = now
+  const from = new Date(now.getTime() - ROLLING_DAYS[period] * DAY_MS)
+  return {
+    from: from.toISOString(),
+    to: to.toISOString(),
+    granularity: tokenUsageGranularityForSpan(from.getTime(), to.getTime()),
   }
 }
 
