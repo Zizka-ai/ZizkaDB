@@ -220,5 +220,6 @@ zizkadb init my-agent --template basic
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Security | [SECURITY.md](SECURITY.md) |
 | License | API & dashboard [AGPL-3.0](LICENSE) · MCP [MIT](mcp/LICENSE) |
+[![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/c3411d91-26eb-49df-a8e3-7ef5914a48dd)
 
 Disable telemetry: `export ZIZKADB_TELEMETRY=false`
