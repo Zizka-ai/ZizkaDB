@@ -100,6 +100,7 @@ dashboard/
 │   │   ├── activity/page.tsx     # Events | Sessions | Time Travel segments
 │   │   ├── behavior/page.tsx     # Baseline / drift analysis
 │   │   ├── reports/page.tsx      # Agent report — GET /v1/agents/{id}/report
+│   │   ├── reports/token-usage/page.tsx # Token/cost report — GET /v1/agents/{id}/token-usage
 │   │   ├── suggestions/page.tsx  # AI suggestions — GET /v1/agents/{id}/suggestions
 │   │   ├── fleet/page.tsx        # Managed only; OSS redirects to activity
 │   │   ├── agents/[id]/page.tsx  # redirect → /dashboard/activity?agent={id}
@@ -557,6 +558,7 @@ Router prefixes are mounted in `core/main.py:66-79`.
 | `getAgentSessions` | GET `/v1/agents/{id}/sessions` | `agents.py:280` |
 | `getAgentBaseline` | GET `/v1/agents/{id}/baseline` | `agents.py:453` |
 | `getAgentReport` | GET `/v1/agents/{id}/report?from=&to=&granularity=` | `agents.py` → `services/reports.py` |
+| `getAgentTokenUsage` | GET `/v1/agents/{id}/token-usage?from=&to=&granularity=` | `agents.py` → `services/token_usage.py` + `services/pricing.py` |
 | `getAgentSuggestions` | GET `/v1/agents/{id}/suggestions?from=&to=&refresh=` | `agents.py` → `services/suggestions/` + `services/ai/` |
 
 The **report** endpoint composes one date-ranged payload for an agent: summary KPIs
@@ -565,6 +567,26 @@ series, event breakdown + transitions, sessions, behavior drift (null when <50 p
 events), and deterministic rule-based recommendations. Auth: `get_tenant` +
 `assert_agent_allowed`. Range validated (`from<to`, ≤366 days); granularity auto
 (day ≤92d else week). All aggregation is real events — no fabricated cost/token/SLA.
+
+The **token-usage** endpoint composes a date-ranged token/cost payload for an agent,
+aggregated from `events.data->'token_usage'` (a documented JSONB convention — no
+schema migration, no new table; see `docs/adr/006-token-usage-jsonb-convention.md`).
+Only events carrying the `token_usage` key are read (`data ? 'token_usage'`); older
+events without it are excluded, not zero-filled. Response: totals (tokens by
+type, request count, success/failed split, avg tokens/request, total cost), a
+gap-filled trend series (input vs output tokens per bucket), breakdowns by
+model/agent/workflow/tool/user (rows missing a dimension are grouped under a
+literal `"Unknown"` bucket rather than dropped, so breakdown sums reconcile
+against the top-level totals), and top-10 consumers per dimension. Cost is
+computed server-side from a hardcoded pricing map (`services/pricing.py`, mirrors
+`entitlements.py`'s structure) — never trusted from client input; an unknown
+model contributes `$0` cost and its name is added to `unpriced_models` (tokens
+are still counted) so the UI can show "cost not available" instead of a silently
+wrong total. Auth: `get_tenant` + `assert_agent_allowed`. Range validated the same
+way as `/report`; granularity additionally accepts `hour` (for the dashboard's 24h
+preset) — `/report`'s own accepted granularity values are unchanged. All
+aggregation is real events — no fabricated cost/token/SLA, consistent with the
+`/report` endpoint's guarantee.
 
 The **suggestions** endpoint returns AI recommendations grounded in an agent's real
 recorded behavior. A deterministic extractor (`services/suggestions/evidence.py`,
@@ -741,7 +763,38 @@ Replaces the old agents home + agent-detail Events/Sessions/Time Travel tabs.
 
 ### 19.3 Reports & Suggestions — `app/dashboard/{reports,suggestions}/page.tsx`
 
-Empty states only. **No backend, no API calls** — deliberately placeholders so the tab bar matches the product shape.
+Agent-scoped, date-ranged reports backed by real endpoints (see §17.3 for the full
+endpoint map and payload description) — not placeholders.
+
+Reports has two sub-tabs sharing one `ReportsSubTabs` strip (`components/dashboard/report/ReportsSubTabs.tsx`,
+built on `Tabs.tsx`) and one `ReportToolbar` (period `Select` + Regenerate + optional
+Print/Download PDF via `showExport`):
+- **Overview** (`reports/page.tsx`) — `GET /v1/agents/{id}/report`, rendered by
+  `components/dashboard/report/ReportView.tsx` (ExecutiveSummary/KPIs, TrendChart,
+  DistributionBars, SessionsTable, ReliabilitySection, Recommendations).
+- **Token Usage** (`reports/token-usage/page.tsx`) — `GET /v1/agents/{id}/token-usage`,
+  fetched via `useAgentTokenUsage` (mirrors `useAgentReport`'s loading/refreshing/error
+  shape and `cancelled`-guarded effect keyed on `[agentId, range.from, range.to,
+  range.granularity]`) and rendered by `components/dashboard/token-usage/TokenUsageView.tsx`:
+  KPI row (`TokenUsageSummary`: total/input/output tokens, cached/reasoning tokens shown
+  only when non-zero, total cost with an `unpriced_models` callout, request count, avg
+  tokens/request, success rate), a stacked input-vs-output trend chart
+  (`TokenUsageTrendChart`, inline SVG + `sr-only` data table, same idiom as `TrendChart`),
+  per-dimension breakdown bars (`TokenUsageBreakdown`: model/agent/workflow/tool/user,
+  a dimension section hidden — with a one-line "N/A dimensions" note — only when no
+  event sets it) and a top-10 consumers table with a Model/Agent/Tool/User segmented
+  control (`TokenUsageTopConsumers`). Empty state when `hasAnyData()` (from
+  `lib/token-usage.ts`) is false. Period presets extend `lib/report.ts` additively
+  (`'daily'`/`'semiannual'` added to `PeriodType`; `resolveTokenUsageRange` /
+  `tokenUsageGranularityForSpan` are separate functions so `/report` callers are
+  unaffected) to support a 24h preset at `hour` granularity.
+- Every number traces to a real `token_usage` field on an event or a pure derivation
+  of one — no fabricated cost/token/SLA metrics, per the same guarantee as Reports
+  Overview. See `docs/adr/006-token-usage-jsonb-convention.md` for the ingestion
+  convention SDKs must adopt (`events.data.token_usage`) for this tab to show data.
+
+Suggestions (`suggestions/page.tsx`) is unchanged by this work — see §17.3 for its
+endpoint and evidence-grounding description.
 
 ### 19.3b Agent Fleets — `app/dashboard/fleet/page.tsx`
 
