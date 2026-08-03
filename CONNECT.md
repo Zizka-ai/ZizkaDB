@@ -124,7 +124,9 @@ from zizkadb_crewai import ZizkaDBCrewLogger
 
 db = ZizkaDB(host="http://localhost:8000")
 logger = ZizkaDBCrewLogger(db, agent="my-bot")
-# attach logger to your crew kickoff — see integrations/crewai/
+# log kickoff → task → task → output, then explain the run:
+# (await db.why(logger.last_event_id)).print()
+# see integrations/crewai/ and examples/crewai-agent/
 ```
 
 Or scaffold: `zizkadb init my-agent --template crewai`

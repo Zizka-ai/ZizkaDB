@@ -8,14 +8,16 @@ Two standalone adapter packages: **`zizkadb-langchain`** and **`zizkadb-crewai`*
 
 ## Packages
 
-| Package | Directory | Class | Installs from |
+Both adapters are **published on PyPI** (as is `zizkadb-sdk`), so users install directly — no git URLs.
+
+| Package | Directory | Class | PyPI (current) |
 |---|---|---|---|
-| `zizkadb-langchain` | `integrations/langchain/` | `ZizkaDBCallbackHandler` | git URL (not yet on PyPI) |
-| `zizkadb-crewai` | `integrations/crewai/` | `ZizkaDBCrewLogger` | git URL (not yet on PyPI) |
+| `zizkadb-langchain` | `integrations/langchain/` | `ZizkaDBCallbackHandler` (auto callback handler) | `0.1.0` |
+| `zizkadb-crewai` | `integrations/crewai/` | `ZizkaDBCrewLogger` (kickoff/task/output logger) | `0.1.0` |
 
 Install for users:
 ```bash
-pip install zizkadb-sdk "zizkadb-langchain @ git+https://github.com/Zizka-ai/ZizkaDB.git@main#subdirectory=integrations/langchain"
+pip install zizkadb-sdk zizkadb-langchain    # or zizkadb-crewai
 ```
 
 ---
@@ -49,16 +51,40 @@ async with ZizkaDB(api_key="zizkadb_live_...") as db:
 
 ## CrewAI usage
 
+`ZizkaDBCrewLogger` logs a crew run with causal `parent_id` lineage. Three methods, all chained
+via the logger's `last_event_id` (so you can omit `parent_id` to auto-link to the previous event):
+
+| Method | Event type | Purpose |
+|---|---|---|
+| `await log_kickoff(goal, **extra)` | `crew_kickoff` | Start of the run (root of the chain) |
+| `await log_task(description, *, parent_id=None, **extra)` | `crew_task` | One node per task |
+| `await log_output(output, *, parent_id=None, **extra)` | `crew_output` | Final result |
+
 ```python
 from zizkadb import ZizkaDB
 from zizkadb_crewai import ZizkaDBCrewLogger
 
-async with ZizkaDB(api_key="zizkadb_live_...") as db:
+# OSS-first: default to a local self-hosted instance; api_key only for remote/cloud.
+async with ZizkaDB(host="http://localhost:8000") as db:
     logger = ZizkaDBCrewLogger(db=db, agent="research-crew")
-    kickoff = await logger.log_kickoff(goal="Research AI trends")
-    result = crew.kickoff()
-    await logger.log_output(str(result), parent_id=kickoff.event_id)
+    await logger.log_kickoff(goal="Research AI trends")
+    result = await crew.kickoff_async()
+    for task_output in result.tasks_output:                      # one node per task
+        await logger.log_task(description=task_output.description, output=str(task_output.raw)[:2000])
+    await logger.log_output(str(result))
+
+    # The differentiator — explain WHY the output happened:
+    (await db.why(logger.last_event_id)).print()                 # kickoff → task → task → output
 ```
+
+The **value proposition** (not "just another logger"): `db.why()` walks the `parent_id` links back
+to the root cause, so a crew run becomes a causal tree, not a flat log. See the runnable proof at
+[`examples/crewai-agent/`](../examples/crewai-agent/).
+
+**Ecosystem contribution:** ZizkaDB is listed under CrewAI's community integrations —
+[`awesome-crewai` PR #91](https://github.com/crewAIInc/awesome-crewai/pull/91). Note: the historical
+`crewAIInc/crewAI-examples` repo is **archived** (read-only); `awesome-crewai` is the active home for
+third-party integrations.
 
 ---
 

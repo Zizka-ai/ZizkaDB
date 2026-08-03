@@ -10,7 +10,7 @@ ZizkaDB is open-source (AGPL-3.0, except MCP server which is MIT). It runs as a 
 - [Dashboard](dashboard/) — Next.js 14 App Router. Marketing + authenticated agent fleet view.
 - [Python SDK](sdk/python/) — `zizkadb-sdk` on PyPI. Async client, `zizkadb init` CLI.
 - [TypeScript SDK](sdk/typescript/) — `zizkadb-sdk` on npm. Sync constructor, camelCase fields.
-- [Integrations](integrations/) — `zizkadb-langchain`, `zizkadb-crewai` (git source, not yet on PyPI).
+- [Integrations](integrations/) — `zizkadb-langchain`, `zizkadb-crewai` on PyPI. `db.why()` causal debugging.
 - [MCP Server](mcp/) — `zizkadb-mcp` on PyPI. MIT license. `uvx zizkadb-mcp`.
 - [Infra](infra/) — Docker Compose. Production: `docker-compose.yml`. Dev overlay: `docker-compose.dev.yml`.
 
