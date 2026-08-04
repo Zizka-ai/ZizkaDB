@@ -53,11 +53,15 @@ def _clamp_nonneg(n) -> int:
     return max(n, 0)
 
 
-async def _fetch_rows(pool, tenant_id: str, agent_id: str, from_dt: datetime, to_dt: datetime):
+async def fetch_rows(pool, tenant_id: str, agent_id: str, from_dt: datetime, to_dt: datetime):
     """Single SQL pass pulling every event carrying a `token_usage` field.
 
     One row per event (no joins that could fan out rows), so summing in Python
     afterwards cannot double count.
+
+    Public (promoted from `_fetch_rows`): `services/token_optimization.py`
+    reuses this directly rather than re-querying, so it's a genuine
+    cross-module API now, not a private implementation detail.
     """
     return await pool.fetch(
         f"""
@@ -85,8 +89,11 @@ async def _fetch_rows(pool, tenant_id: str, agent_id: str, from_dt: datetime, to
     )
 
 
-def _row_metrics(r) -> dict:
-    """Per-row token counts + cost, with defensive clamping (never negative)."""
+def row_metrics(r) -> dict:
+    """Per-row token counts + cost, with defensive clamping (never negative).
+
+    Public (promoted from `_row_metrics`) — see `fetch_rows` docstring.
+    """
     input_tokens = _clamp_nonneg(r["input_tokens"])
     output_tokens = _clamp_nonneg(r["output_tokens"])
     cached_tokens = _clamp_nonneg(r["cached_tokens"])
@@ -214,9 +221,9 @@ async def build_token_usage_report(
     if granularity not in _VALID_GRANULARITY:
         raise ValueError(f"invalid granularity: {granularity!r}")
 
-    rows = await _fetch_rows(pool, tenant_id, agent_id, from_dt, to_dt)
+    rows = await fetch_rows(pool, tenant_id, agent_id, from_dt, to_dt)
 
-    metrics = [_row_metrics(r) for r in rows]
+    metrics = [row_metrics(r) for r in rows]
     timestamps = [r["timestamp"] for r in rows]
 
     total_requests = len(metrics)
