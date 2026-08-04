@@ -10,7 +10,13 @@ import { SuggestionList } from '@/components/dashboard/suggestions/SuggestionLis
 import { useAgents } from '@/hooks/useAgents'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
 import { useAgentSuggestions } from '@/hooks/useAgentSuggestions'
-import { isPeriodType, resolveRange, type PeriodType, type ResolvedRange } from '@/lib/report'
+import {
+  isPeriodType,
+  resolveRange,
+  validateCustomRange,
+  type PeriodType,
+  type ResolvedRange,
+} from '@/lib/report'
 import { colors, radii } from '@/lib/design-tokens'
 import type { SuggestionsResult } from '@/lib/api'
 
@@ -45,8 +51,14 @@ function SuggestionsContent() {
     [params, pathname, router],
   )
 
+  // Resolve rolling periods immediately; custom waits for Analyze — unless we
+  // landed here via a deep link that already carries a valid `from`/`to`, in
+  // which case the range should resolve automatically rather than showing an
+  // empty state until the user re-picks the same dates.
   useEffect(() => {
     if (period !== 'custom') setRange(resolveRange(period))
+    else if (!validateCustomRange(custom.from, custom.to)) setRange(resolveRange('custom', custom))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period])
 
   const onPeriodChange = (p: PeriodType) => {

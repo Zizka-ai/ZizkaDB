@@ -13,6 +13,7 @@ import { useAgentTokenOptimization } from '@/hooks/useAgentTokenOptimization'
 import {
   isPeriodType,
   resolveTokenUsageRange,
+  validateCustomRange,
   type PeriodType,
   type ResolvedTokenUsageRange,
 } from '@/lib/report'
@@ -53,8 +54,14 @@ function TokenOptimizationContent() {
     [params, pathname, router],
   )
 
+  // Resolve rolling periods immediately; custom waits for Generate — unless
+  // we landed here via a deep link that already carries a valid `from`/`to`,
+  // in which case the range should resolve automatically rather than
+  // showing an empty state until the user re-picks the same dates.
   useEffect(() => {
     if (period !== 'custom') setRange(resolveTokenUsageRange(period))
+    else if (!validateCustomRange(custom.from, custom.to)) setRange(resolveTokenUsageRange('custom', custom))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period])
 
   const onPeriodChange = (p: PeriodType) => {

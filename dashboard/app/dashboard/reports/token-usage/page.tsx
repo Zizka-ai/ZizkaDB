@@ -14,6 +14,7 @@ import {
   PERIOD_OPTIONS,
   isPeriodType,
   resolveTokenUsageRange,
+  validateCustomRange,
   type PeriodType,
   type ResolvedTokenUsageRange,
 } from '@/lib/report'
@@ -53,8 +54,16 @@ function TokenUsageContent() {
     [params, pathname, router],
   )
 
+  // Resolve rolling periods immediately; custom waits for Generate — unless
+  // we landed here via a deep link that already carries a valid `from`/`to`
+  // (e.g. "View in Token Usage report" from a Token Optimization
+  // suggestion), in which case the range should resolve automatically so
+  // the linked page loads its data right away instead of showing an empty
+  // state until the user re-picks the same dates and clicks Generate.
   useEffect(() => {
     if (period !== 'custom') setRange(resolveTokenUsageRange(period))
+    else if (!validateCustomRange(custom.from, custom.to)) setRange(resolveTokenUsageRange('custom', custom))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period])
 
   const onPeriodChange = (p: PeriodType) => {
