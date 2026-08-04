@@ -16,15 +16,30 @@ export function TokenOptimizationSummary({ result }: { result: TokenOptimization
   const a = result.aggregates
   const hasUnpriced = result.unpriced_models.length > 0
 
+  // "Optimization score" is easy to misread without context — higher means
+  // already well-optimized (less room to improve), lower means more savings
+  // are available. A bare "32/100" reads as "something's broken" to a
+  // non-technical user, so the footnote states the direction explicitly.
+  const scoreFootnote =
+    a.optimization_score >= 80
+      ? 'Already well-optimized'
+      : a.optimization_score >= 50
+        ? 'Some room to improve'
+        : 'Significant savings available below'
+
   const kpis: Array<{ label: string; value: string; footnote?: string }> = [
-    { label: 'Potential monthly savings', value: formatSavings(a.total_potential_monthly_savings_usd) },
-    { label: 'Cost reduction potential', value: `${a.cost_reduction_pct.toFixed(0)}%` },
-    { label: 'Optimization score', value: `${a.optimization_score}/100` },
+    {
+      label: 'Potential monthly savings',
+      value: formatSavings(a.total_potential_monthly_savings_usd),
+      footnote: a.total_potential_monthly_savings_usd > 0 ? 'If every recommendation below is applied' : undefined,
+    },
+    { label: 'Cost reduction potential', value: `${a.cost_reduction_pct.toFixed(0)}%`, footnote: 'Of current spend' },
+    { label: 'Optimization score', value: `${a.optimization_score}/100`, footnote: scoreFootnote },
     { label: 'Recommendations', value: `${a.suggestion_count}` },
     {
       label: 'Critical',
       value: `${a.critical_count}`,
-      footnote: a.critical_count > 0 ? 'Address these first' : undefined,
+      footnote: a.critical_count > 0 ? 'Address these first' : 'None right now',
     },
   ]
 
