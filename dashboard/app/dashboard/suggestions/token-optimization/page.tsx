@@ -2,19 +2,23 @@
 
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { KeyRound, Sparkles } from 'lucide-react'
 import { EmptyState, ErrorState, PageHeader, Skeleton } from '@/components/ui'
-import { SuggestionsToolbar } from '@/components/dashboard/suggestions/SuggestionsToolbar'
+import { ReportToolbar } from '@/components/dashboard/report/ReportToolbar'
 import { SuggestionsSubTabs } from '@/components/dashboard/suggestions/SuggestionsSubTabs'
-import { SuggestionList } from '@/components/dashboard/suggestions/SuggestionList'
+import { TokenOptimizationSummary } from '@/components/dashboard/token-optimization/TokenOptimizationSummary'
+import { TokenOptimizationList } from '@/components/dashboard/token-optimization/TokenOptimizationList'
 import { useAgents } from '@/hooks/useAgents'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
-import { useAgentSuggestions } from '@/hooks/useAgentSuggestions'
-import { isPeriodType, resolveRange, type PeriodType, type ResolvedRange } from '@/lib/report'
+import { useAgentTokenOptimization } from '@/hooks/useAgentTokenOptimization'
+import {
+  isPeriodType,
+  resolveTokenUsageRange,
+  type PeriodType,
+  type ResolvedTokenUsageRange,
+} from '@/lib/report'
 import { colors, radii } from '@/lib/design-tokens'
-import type { SuggestionsResult } from '@/lib/api'
 
-function SuggestionsContent() {
+function TokenOptimizationContent() {
   const { agents, loading: agentsLoading, error: agentsError } = useAgents()
   const { agentId, invalidAgent } = useSelectedAgent(agents)
 
@@ -25,9 +29,13 @@ function SuggestionsContent() {
   const urlPeriod = params.get('period')
   const [period, setPeriod] = useState<PeriodType>(isPeriodType(urlPeriod) ? urlPeriod : 'monthly')
   const [custom, setCustom] = useState({ from: params.get('from') ?? '', to: params.get('to') ?? '' })
-  // Pin the resolved range when the period changes / Analyze is pressed — so a
-  // rolling window doesn't trigger a refetch loop (matches Reports).
-  const [range, setRange] = useState<ResolvedRange | null>(null)
+
+  // Pinned like Reports Overview / Token Usage — rolling windows resolve
+  // immediately, custom waits for Generate — so switching periods doesn't
+  // cause a refetch loop.
+  const [range, setRange] = useState<ResolvedTokenUsageRange | null>(null)
+
+  const agentQuery = agentId ? `?agent=${encodeURIComponent(agentId)}` : ''
 
   const syncUrl = useCallback(
     (p: PeriodType, c: { from: string; to: string }) => {
@@ -46,7 +54,7 @@ function SuggestionsContent() {
   )
 
   useEffect(() => {
-    if (period !== 'custom') setRange(resolveRange(period))
+    if (period !== 'custom') setRange(resolveTokenUsageRange(period))
   }, [period])
 
   const onPeriodChange = (p: PeriodType) => {
@@ -54,12 +62,11 @@ function SuggestionsContent() {
     syncUrl(p, custom)
   }
   const onGenerateCustom = () => {
-    setRange(resolveRange('custom', custom))
+    setRange(resolveTokenUsageRange('custom', custom))
     syncUrl('custom', custom)
   }
 
-  const { result, loading, refreshing, error, refetch } = useAgentSuggestions(agentId, range)
-  const agentQuery = agentId ? `?agent=${encodeURIComponent(agentId)}` : ''
+  const { result, loading, refreshing, error, refetch } = useAgentTokenOptimization(agentId, range)
 
   if (agentsLoading) return <Skeleton rows={6} />
   if (agentsError) return <ErrorState message={agentsError} />
@@ -68,10 +75,10 @@ function SuggestionsContent() {
     return (
       <>
         <PageHeader title="Suggestions" />
-        <SuggestionsSubTabs active="ai-suggestions" agentQuery={agentQuery} />
+        <SuggestionsSubTabs active="token-optimization" agentQuery={agentQuery} />
         <EmptyState
           title="No agents yet"
-          description="Suggestions are generated per agent from recorded behavior. Once an agent starts logging events, evidence-backed recommendations appear here."
+          description="Token optimization suggestions are computed per agent from recorded token usage. Once an agent starts logging, recommendations appear here."
         />
       </>
     )
@@ -81,10 +88,10 @@ function SuggestionsContent() {
     <>
       <PageHeader
         title="Suggestions"
-        description="AI recommendations grounded in your agent's real recorded behavior — never invented."
+        description="Deterministic token-cost optimization opportunities computed from real usage — no AI, no estimates."
       />
 
-      <SuggestionsSubTabs active="ai-suggestions" agentQuery={agentQuery} />
+      <SuggestionsSubTabs active="token-optimization" agentQuery={agentQuery} />
 
       {invalidAgent && (
         <div
@@ -101,61 +108,45 @@ function SuggestionsContent() {
         </div>
       )}
 
-      <SuggestionsToolbar
+      <ReportToolbar
         period={period}
         onPeriodChange={onPeriodChange}
         custom={custom}
         onCustomChange={setCustom}
         onGenerateCustom={onGenerateCustom}
         onRegenerate={refetch}
-        canRegenerate={result?.status === 'ok'}
+        onPrint={() => window.print()}
+        canExport={!!result && !loading}
         refreshing={refreshing}
+        showExport={false}
+        showRegenerate={true}
+        periodLabel="Analysis period"
       />
 
       {loading ? (
         <Skeleton rows={8} />
       ) : error ? (
         <ErrorState message={error} />
-      ) : result ? (
-        <ResultBody result={result} refreshing={refreshing} />
-      ) : null}
+      ) : result && result.status === 'ok' && result.suggestions.length > 0 ? (
+        <div className="space-y-6" style={{ opacity: refreshing ? 0.6 : 1, transition: 'opacity 150ms' }}>
+          <TokenOptimizationSummary result={result} />
+          <TokenOptimizationList suggestions={result.suggestions} />
+        </div>
+      ) : (
+        <EmptyState
+          title="No optimization opportunities found"
+          description="Either this agent has no token_usage data in this period, or its usage doesn't cross any of the detection thresholds — often a sign it's already running efficiently. Widen the period or check back after more runs."
+        />
+      )}
     </>
   )
 }
 
-function ResultBody({ result, refreshing }: { result: SuggestionsResult; refreshing: boolean }) {
-  if (result.status === 'ai_not_configured') {
-    return (
-      <EmptyState
-        icon={<KeyRound size={22} style={{ color: colors.textFaint }} />}
-        title="AI analysis not configured"
-        description="Suggestions use the Claude API. Set ANTHROPIC_API_KEY on your ZizkaDB server to enable AI-generated recommendations. Everything else in the dashboard keeps working without it."
-      />
-    )
-  }
-
-  if (result.status === 'no_evidence' || result.suggestions.length === 0) {
-    return (
-      <EmptyState
-        icon={<Sparkles size={22} style={{ color: colors.textFaint }} />}
-        title="Not enough signal yet"
-        description="This agent hasn't produced enough recorded activity in this window to support evidence-backed suggestions — often a sign it's running cleanly. Widen the period or check back after more runs."
-      />
-    )
-  }
-
-  return (
-    <div style={{ opacity: refreshing ? 0.6 : 1, transition: 'opacity 150ms' }}>
-      <SuggestionList suggestions={result.suggestions} evidence={result.evidence} />
-    </div>
-  )
-}
-
-export default function SuggestionsPage() {
+export default function TokenOptimizationPage() {
   // useSelectedAgent / useSearchParams require a Suspense boundary (CSR bailout).
   return (
     <Suspense fallback={<Skeleton rows={6} />}>
-      <SuggestionsContent />
+      <TokenOptimizationContent />
     </Suspense>
   )
 }
