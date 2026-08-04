@@ -559,6 +559,7 @@ Router prefixes are mounted in `core/main.py:66-79`.
 | `getAgentBaseline` | GET `/v1/agents/{id}/baseline` | `agents.py:453` |
 | `getAgentReport` | GET `/v1/agents/{id}/report?from=&to=&granularity=` | `agents.py` → `services/reports.py` |
 | `getAgentTokenUsage` | GET `/v1/agents/{id}/token-usage?from=&to=&granularity=` | `agents.py` → `services/token_usage.py` + `services/pricing.py` |
+| `getAgentTokenOptimization` | GET `/v1/agents/{id}/token-optimization?from=&to=&granularity=` | `agents.py` → `services/token_optimization.py` |
 | `getAgentSuggestions` | GET `/v1/agents/{id}/suggestions?from=&to=&refresh=` | `agents.py` → `services/suggestions/` + `services/ai/` |
 
 The **report** endpoint composes one date-ranged payload for an agent: summary KPIs
@@ -587,6 +588,28 @@ way as `/report`; granularity additionally accepts `hour` (for the dashboard's 2
 preset) — `/report`'s own accepted granularity values are unchanged. All
 aggregation is real events — no fabricated cost/token/SLA, consistent with the
 `/report` endpoint's guarantee.
+
+The **token-optimization** endpoint returns deterministic, non-AI cost/token-savings
+recommendations for an agent — **zero LLM calls**, unlike `/suggestions` below (see
+`docs/adr/007-deterministic-token-optimization.md` for the full rationale). Five
+pure detector functions (`services/token_optimization.py`) — model optimization, high
+token consumption, cache opportunities, retry/tool-loop waste, cost anomalies — run
+over the same `token_usage.row_metrics()`/`_breakdown_from()`/`_trend()` aggregates
+`/token-usage` itself uses (fetched once, no duplicate full-table scans), each gated
+by a threshold in `services/token_optimization_config.py::THRESHOLDS` so a suggestion
+only appears once it crosses a defensible noise floor — a suggestion that fires is *by
+construction* relevant. Every `estimated_monthly_savings_usd`/
+`estimated_token_reduction_pct`/`confidence_score` is a reproducible computation over
+real historical token counts and `services/pricing.py`'s real price table — never
+AI-estimated. `total_potential_monthly_savings_usd` in the response's `aggregates` is
+always computed from the capped, *returned* suggestion list (max 12), never a larger
+pre-cap set. Response `status` is `ok` or `no_data` (no `token_usage` events in
+range — empty state, not an error); `meta.skipped_categories` explicitly lists Prompt
+Optimization / Context Optimization as out-of-v1-scope (no prompt/context text is
+captured by the `token_usage` convention — a data-availability gap, not an omission).
+Defaults to a 30-day window when `from`/`to` are omitted (matches `/suggestions`).
+Auth: `get_tenant` + `assert_agent_allowed`. No AI rate limiting (no external API
+call), no response caching in v1.
 
 The **suggestions** endpoint returns AI recommendations grounded in an agent's real
 recorded behavior. A deterministic extractor (`services/suggestions/evidence.py`,
@@ -798,8 +821,37 @@ Print/Download PDF via `showExport`):
   Overview. See `docs/adr/006-token-usage-jsonb-convention.md` for the ingestion
   convention SDKs must adopt (`events.data.token_usage`) for this tab to show data.
 
-Suggestions (`suggestions/page.tsx`) is unchanged by this work — see §17.3 for its
-endpoint and evidence-grounding description.
+Suggestions now has two sub-tabs sharing one `SuggestionsSubTabs` strip
+(`components/dashboard/suggestions/SuggestionsSubTabs.tsx`, a structural clone of
+`ReportsSubTabs.tsx`):
+- **AI Suggestions** (`suggestions/page.tsx`) — unchanged by this work; see §17.3 for
+  its endpoint and evidence-grounding description.
+- **Token Optimization** (`suggestions/token-optimization/page.tsx`) —
+  `GET /v1/agents/{id}/token-optimization`, fetched via `useAgentTokenOptimization`
+  (structural copy of `useAgentTokenUsage`: `cancelled`-guarded effect keyed on
+  `[agentId, range.from, range.to, range.granularity]`, `loading`/`refreshing`
+  states). Zero LLM calls — see `docs/adr/007-deterministic-token-optimization.md`.
+  Renders `TokenOptimizationSummary` (KPI row: total potential monthly savings, cost
+  reduction %, optimization score 0-100, recommendation count, critical count) above
+  `TokenOptimizationList` (sorted severity → savings via `sortTokenOptSuggestions`,
+  client-side category + severity filter chips — the list is capped at 12 items
+  server-side, so no server round-trip for filtering), each suggestion a
+  `TokenOptimizationCard`: category icon + generalized `SeverityBadge` (now accepts
+  an explicit `meta` prop so both AI Suggestions' and Token Optimization's separate
+  severity vocabularies share one implementation) + `ConfidenceMeter` (reused
+  unchanged) in the header; savings/reduction stat pair, current→recommended state
+  rendered as defensive key/value lines (unknown keys fall back to a generic label,
+  future-detector-proof), populated-only "affected" chips, a native `<details>` for
+  the deterministic `why` reasoning (no custom JS, keyboard-accessible by
+  construction), and an optional `related_report_link` deep-linking into the Token
+  Usage tab (agent id + dates URL-encoded via `encodeURIComponent`). Period presets
+  reuse `lib/report.ts` exactly like Token Usage. Toolbar reuses `ReportToolbar` with
+  `showExport={false}`, `showRegenerate={true}` (regenerate is meaningful here since
+  it recomputes fresh, unlike Token Usage which auto-refetches on filter change
+  alone). Empty state (`status !== "ok"` or zero suggestions) explains the agent may
+  simply be running efficiently rather than implying an error. Every `$`/`%` figure
+  traces to a real computation over `token_usage` data — see the ADR for the
+  ground-truth verification methodology behind that guarantee.
 
 ### 19.3b Agent Fleets — `app/dashboard/fleet/page.tsx`
 
