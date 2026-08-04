@@ -23,9 +23,9 @@ The nine routers mounted in `main.py` (`app.include_router`):
 | `api/account.py` | `/v1/account` | `require_dashboard_session` |
 
 Under `/v1/agents`: per-agent analytics (`/stats`, `/sessions`, `/baseline`, `/behavior-change`,
-`/report`, `/suggestions`, `/at`) use `get_tenant` + `assert_agent_allowed`; agent + API-key
-management (`create_agent`, `delete_agent`, and **all** `/api-keys` list/create/revoke) use
-`require_dashboard_session`.
+`/report`, `/token-usage`, `/token-optimization`, `/suggestions`, `/at`) use `get_tenant` +
+`assert_agent_allowed`; agent + API-key management (`create_agent`, `delete_agent`, and **all**
+`/api-keys` list/create/revoke) use `require_dashboard_session`.
 
 Swagger UI: `http://localhost:8000/swagger` · OpenAPI schema: `/openapi.json`
 
@@ -41,8 +41,8 @@ Is this route dashboard-only (manages keys, billing, user settings, destructive 
   → Depends(require_dashboard_session)   JWT only, rejects API keys
 
 Is this route per-agent analytics OR an SDK read scoped to one agent
-(stats, sessions, baseline, behavior-change, time-travel, report, suggestions,
-memory/context, memory/diff, events/why)?
+(stats, sessions, baseline, behavior-change, time-travel, report, token-usage,
+token-optimization, suggestions, memory/context, memory/diff, events/why)?
   → Depends(get_tenant)  AND  assert_agent_allowed(tenant, agent_id)  at the top of the handler
     (for memory/diff & events/why the agent is resolved from the row, then asserted;
      memory/forget constrains its delete to the scoped agent when the key is scoped)
@@ -94,6 +94,11 @@ Never use SQLAlchemy, never open a direct `asyncpg.connect()` — always use the
 | `services/embedding_config.py` | Per-tenant embedding model config (`QDRANT_COLLECTION`, `VECTOR_SIZE`) |
 | `services/event_write.py` | Core event ingestion: Postgres insert + Qdrant upsert (non-fatal if Qdrant fails) |
 | `services/account.py` | Trial activation, GDPR consent, account deletion |
+| `services/pricing.py` | Hardcoded per-model $/1K token pricing (`MODEL_PRICING`) + `cost_for()` — see ADR-006 |
+| `services/token_usage.py` | Per-agent token/cost aggregation from `events.data.token_usage` — see ADR-006 |
+| `services/token_optimization_config.py` | Tunable thresholds for the deterministic Token Optimization detectors |
+| `services/token_optimization_models.py` | `TokenOptimizationSuggestion`/`Aggregates`/`Result` dataclasses (unrelated to `services/suggestions/`'s types) |
+| `services/token_optimization.py` | 5 deterministic (no-LLM) detectors + orchestrator — see ADR-007 |
 
 ---
 

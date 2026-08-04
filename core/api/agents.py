@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field
 from api.deps import assert_agent_allowed, get_tenant, require_dashboard_session
 from api.utils import check_rate
 from db.connection import get_pool, get_redis
-from services import reports, token_usage
+from services import reports, token_optimization, token_usage
+from services import token_optimization_config
 from services.ai import config as ai_config
 from services.ai.provider import AIProviderError
 from services.suggestions import engine as suggestions_engine
@@ -385,6 +386,46 @@ async def agent_token_usage(
 
     pool = get_pool()
     return await token_usage.build_token_usage_report(
+        pool, tenant["tenant_id"], agent_id, from_dt, to_dt, granularity
+    )
+
+
+@router.get("/{agent_id}/token-optimization")
+async def agent_token_optimization(
+    agent_id: str,
+    from_: str | None = Query(default=None, alias="from", description="ISO-8601 window start"),
+    to: str | None = Query(default=None, description="ISO-8601 window end (exclusive)"),
+    granularity: str | None = Query(default=None, pattern=r"^(day|week)$"),
+    tenant: dict = Depends(get_tenant),
+):
+    """Deterministic, non-AI Token Optimization suggestions for one agent.
+
+    100% computed from real `token_usage`-bearing events (no LLM call) — see
+    services/token_optimization.py and docs/adr/007-deterministic-token-optimization.md.
+    Every $/% number is a real, reproducible computation, never AI-estimated.
+
+    Defaults to a 30-day window when `from`/`to` are omitted (matches
+    /suggestions' default — optimization needs enough history to be
+    meaningful). No AI rate limiting (no external API call, same reasoning
+    already documented for /token-usage). No caching in v1.
+    """
+    agent_id = _validate_agent_id(agent_id)
+    assert_agent_allowed(tenant, agent_id)
+
+    try:
+        if from_ is None or to is None:
+            to_dt = datetime.now(timezone.utc).replace(tzinfo=None)
+            from_dt = to_dt - timedelta(days=token_optimization_config.DEFAULT_WINDOW_DAYS)
+        else:
+            from_dt = reports.parse_utc_naive(from_, "from")
+            to_dt = reports.parse_utc_naive(to, "to")
+        reports.validate_range(from_dt, to_dt)
+    except ValueError as exc:
+        raise bad_request(detail=str(exc))
+
+    granularity = reports.resolve_granularity(from_dt, to_dt, granularity)
+    pool = get_pool()
+    return await token_optimization.build_token_optimization_report(
         pool, tenant["tenant_id"], agent_id, from_dt, to_dt, granularity
     )
 
