@@ -517,6 +517,70 @@ export async function getAgentSuggestions(
   return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/suggestions?${qs.toString()}`, token)
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Token Optimization — deterministic, non-AI cost/token savings suggestions
+// (see core/services/token_optimization.py + docs/adr/007). A separate,
+// unrelated vocabulary from the AI Suggestions above — this feature never
+// calls an LLM, so every number is a real, reproducible computation.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type TokenOptCategory =
+  | 'high_consumption'
+  | 'model_optimization'
+  | 'cache_opportunity'
+  | 'retry_analysis'
+  | 'cost_anomaly'
+export type TokenOptSeverity = 'critical' | 'high' | 'medium' | 'low'
+export type TokenOptStatus = 'ok' | 'no_data'
+
+export interface TokenOptimizationSuggestion {
+  id: string
+  title: string
+  category: TokenOptCategory
+  severity: TokenOptSeverity
+  estimated_monthly_savings_usd: number
+  estimated_token_reduction_pct: number
+  confidence_score: number
+  summary: string
+  why: string
+  recommended_action: string
+  current_state: Record<string, unknown>
+  recommended_state: Record<string, unknown>
+  affected: { agent?: string | null; workflow?: string | null; model?: string | null; user?: string | null }
+  related_report_link: string | null
+  sample_size: number
+}
+
+export interface TokenOptimizationAggregates {
+  total_potential_monthly_savings_usd: number
+  potential_token_reduction_pct: number
+  cost_reduction_pct: number
+  optimization_score: number
+  suggestion_count: number
+  critical_count: number
+}
+
+export interface TokenOptimizationResult {
+  agent: string
+  status: TokenOptStatus
+  period: { from: string; to: string; granularity?: TokenUsageGranularity }
+  generated_at: string
+  suggestions: TokenOptimizationSuggestion[]
+  aggregates: TokenOptimizationAggregates
+  unpriced_models: string[]
+  meta: Record<string, unknown>
+}
+
+export async function getAgentTokenOptimization(
+  token: string,
+  agentId: string,
+  params: { from: string; to: string; granularity?: TokenUsageGranularity },
+): Promise<TokenOptimizationResult> {
+  const qs = new URLSearchParams({ from: params.from, to: params.to })
+  if (params.granularity) qs.set('granularity', params.granularity)
+  return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/token-optimization?${qs.toString()}`, token)
+}
+
 export async function getApiKeys(token: string) {
   return apiFetch('/v1/auth/api-keys', token)
 }
