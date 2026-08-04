@@ -6,6 +6,8 @@ import {
   granularityForSpan,
   isPeriodType,
   resolveRange,
+  resolveTokenUsageRange,
+  tokenUsageGranularityForSpan,
   validateCustomRange,
 } from './report'
 
@@ -55,8 +57,51 @@ describe('isPeriodType', () => {
   it('guards known values', () => {
     expect(isPeriodType('weekly')).toBe(true)
     expect(isPeriodType('custom')).toBe(true)
+    expect(isPeriodType('daily')).toBe(true)
+    expect(isPeriodType('semiannual')).toBe(true)
     expect(isPeriodType('nope')).toBe(false)
     expect(isPeriodType(null)).toBe(false)
+  })
+})
+
+describe('daily/semiannual presets (additive, token usage)', () => {
+  it('daily = last 24h', () => {
+    const r = resolveRange('daily', undefined, NOW)
+    expect(r.from).toBe(new Date(NOW.getTime() - DAY).toISOString())
+    expect(r.granularity).toBe('day') // ReportGranularity has no 'hour'
+  })
+
+  it('semiannual = last ~182 days, week granularity', () => {
+    const r = resolveRange('semiannual', undefined, NOW)
+    expect(r.from).toBe(new Date(NOW.getTime() - 182 * DAY).toISOString())
+    expect(r.granularity).toBe('week')
+  })
+
+  it('existing weekly/monthly/quarterly/yearly/custom callers are unaffected', () => {
+    expect(resolveRange('monthly', undefined, NOW).granularity).toBe('day')
+    expect(resolveRange('quarterly', undefined, NOW).granularity).toBe('day')
+  })
+})
+
+describe('tokenUsageGranularityForSpan', () => {
+  it('hour for spans <= 2 days', () => {
+    expect(tokenUsageGranularityForSpan(0, DAY)).toBe('hour')
+    expect(tokenUsageGranularityForSpan(0, 2 * DAY)).toBe('hour')
+  })
+  it('falls back to day/week beyond 2 days', () => {
+    expect(tokenUsageGranularityForSpan(0, 30 * DAY)).toBe('day')
+    expect(tokenUsageGranularityForSpan(0, 200 * DAY)).toBe('week')
+  })
+})
+
+describe('resolveTokenUsageRange', () => {
+  it('daily preset resolves to hour granularity', () => {
+    const r = resolveTokenUsageRange('daily', undefined, NOW)
+    expect(r.granularity).toBe('hour')
+  })
+  it('semiannual preset resolves to week granularity', () => {
+    const r = resolveTokenUsageRange('semiannual', undefined, NOW)
+    expect(r.granularity).toBe('week')
   })
 })
 

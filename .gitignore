@@ -1,6 +1,7 @@
 # Environment
 .env
 *.env
+.env.local
 .env.staging
 infra/.env.staging
 

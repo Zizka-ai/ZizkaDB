@@ -21,6 +21,10 @@ export function ReportToolbar({
   onPrint,
   canExport,
   refreshing,
+  periodOptions = PERIOD_OPTIONS,
+  showExport = true,
+  showRegenerate = true,
+  periodLabel = 'Report period',
 }: {
   period: PeriodType
   onPeriodChange: (p: PeriodType) => void
@@ -31,6 +35,14 @@ export function ReportToolbar({
   onPrint: () => void
   canExport: boolean
   refreshing: boolean
+  /** Override the period dropdown's options (default: the full shared list). */
+  periodOptions?: typeof PERIOD_OPTIONS
+  /** Hide Print/Download PDF for tabs where export doesn't make sense (default: shown). */
+  showExport?: boolean
+  /** Hide Regenerate for tabs that already refetch automatically on every filter change (default: shown). */
+  showRegenerate?: boolean
+  /** Label above the period dropdown. */
+  periodLabel?: string
 }) {
   const customError = period === 'custom' ? validateCustomRange(custom.from, custom.to) : null
 
@@ -38,13 +50,13 @@ export function ReportToolbar({
     <div className="report-toolbar flex flex-wrap items-end gap-3 mb-5">
       <div>
         <label className="block text-xs mb-1" style={{ color: colors.textFaint }}>
-          Report period
+          {periodLabel}
         </label>
         <Select
-          options={PERIOD_OPTIONS}
+          options={periodOptions}
           value={period}
           onChange={(v) => onPeriodChange(v as PeriodType)}
-          ariaLabel="Report period"
+          ariaLabel={periodLabel}
           minWidth={210}
         />
       </div>
@@ -73,18 +85,24 @@ export function ReportToolbar({
       )}
 
       <div className="flex items-center gap-2 ml-auto">
-        <Button onClick={onRegenerate} disabled={!canExport || refreshing}>
-          <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-          Regenerate
-        </Button>
-        <Button onClick={onPrint} disabled={!canExport}>
-          <Printer size={14} />
-          Print
-        </Button>
-        <Button onClick={onPrint} tone="primary" disabled={!canExport}>
-          <Download size={14} />
-          Download PDF
-        </Button>
+        {showRegenerate && (
+          <Button onClick={onRegenerate} disabled={!canExport || refreshing}>
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            Regenerate
+          </Button>
+        )}
+        {showExport && (
+          <>
+            <Button onClick={onPrint} disabled={!canExport}>
+              <Printer size={14} />
+              Print
+            </Button>
+            <Button onClick={onPrint} tone="primary" disabled={!canExport}>
+              <Download size={14} />
+              Download PDF
+            </Button>
+          </>
+        )}
       </div>
     </div>
   )

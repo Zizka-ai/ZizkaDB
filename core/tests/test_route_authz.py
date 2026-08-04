@@ -115,3 +115,38 @@ def test_suggestions_route_is_rate_limited():
     """The expensive AI endpoint declares per-tenant throttle stores."""
     assert hasattr(agents_api, "_SUGGESTIONS_REFRESH_RATE")
     assert hasattr(agents_api, "_SUGGESTIONS_RATE")
+
+
+# ── per-agent analytics routes: get_tenant + assert_agent_allowed ────────────
+#
+# /report, /token-usage, and /token-optimization all use `get_tenant` (SDK-
+# callable, accepts API keys + JWTs) rather than `require_dashboard_session`,
+# then call `assert_agent_allowed(tenant, agent_id)` inline in the function
+# body (not via Depends()) to enforce agent-scoped-key isolation — matching
+# core/CLAUDE.md's documented auth decision tree for per-agent analytics
+# routes. `_auth_dependency()` only detects Depends()-wired params, so the
+# `assert_agent_allowed` call itself is verified via source inspection here
+# (there was no existing test asserting this for any of these three routes
+# before this change — a pre-existing gap, closed for all three at once).
+
+
+def _calls_assert_agent_allowed(func) -> bool:
+    return "assert_agent_allowed(tenant" in inspect.getsource(func)
+
+
+def test_report_route_requires_tenant_and_agent_scope():
+    src = inspect.getsource(agents_api.agent_report)
+    assert "Depends(get_tenant)" in src
+    assert _calls_assert_agent_allowed(agents_api.agent_report)
+
+
+def test_token_usage_route_requires_tenant_and_agent_scope():
+    src = inspect.getsource(agents_api.agent_token_usage)
+    assert "Depends(get_tenant)" in src
+    assert _calls_assert_agent_allowed(agents_api.agent_token_usage)
+
+
+def test_token_optimization_route_requires_tenant_and_agent_scope():
+    src = inspect.getsource(agents_api.agent_token_optimization)
+    assert "Depends(get_tenant)" in src
+    assert _calls_assert_agent_allowed(agents_api.agent_token_optimization)
