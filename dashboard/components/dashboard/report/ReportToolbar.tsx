@@ -23,6 +23,7 @@ export function ReportToolbar({
   refreshing,
   periodOptions = PERIOD_OPTIONS,
   showExport = true,
+  showRegenerate = true,
   periodLabel = 'Report period',
 }: {
   period: PeriodType
@@ -38,6 +39,8 @@ export function ReportToolbar({
   periodOptions?: typeof PERIOD_OPTIONS
   /** Hide Print/Download PDF for tabs where export doesn't make sense (default: shown). */
   showExport?: boolean
+  /** Hide Regenerate for tabs that already refetch automatically on every filter change (default: shown). */
+  showRegenerate?: boolean
   /** Label above the period dropdown. */
   periodLabel?: string
 }) {
@@ -82,10 +85,12 @@ export function ReportToolbar({
       )}
 
       <div className="flex items-center gap-2 ml-auto">
-        <Button onClick={onRegenerate} disabled={!canExport || refreshing}>
-          <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-          Regenerate
-        </Button>
+        {showRegenerate && (
+          <Button onClick={onRegenerate} disabled={!canExport || refreshing}>
+            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
+            Regenerate
+          </Button>
+        )}
         {showExport && (
           <>
             <Button onClick={onPrint} disabled={!canExport}>

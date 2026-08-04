@@ -780,14 +780,19 @@ Print/Download PDF via `showExport`):
   only when non-zero, total cost with an `unpriced_models` callout, request count, avg
   tokens/request, success rate), a stacked input-vs-output trend chart
   (`TokenUsageTrendChart`, inline SVG + `sr-only` data table, same idiom as `TrendChart`),
-  per-dimension breakdown bars (`TokenUsageBreakdown`: model/agent/workflow/tool/user,
-  a dimension section hidden — with a one-line "N/A dimensions" note — only when no
-  event sets it) and a top-10 consumers table with a Model/Agent/Tool/User segmented
-  control (`TokenUsageTopConsumers`). Empty state when `hasAnyData()` (from
-  `lib/token-usage.ts`) is false. Period presets extend `lib/report.ts` additively
-  (`'daily'`/`'semiannual'` added to `PeriodType`; `resolveTokenUsageRange` /
-  `tokenUsageGranularityForSpan` are separate functions so `/report` callers are
-  unaffected) to support a 24h preset at `hour` granularity.
+  and a top-10 consumers card with a Model/Agent/Workflow/Tool/User segmented control
+  (`TokenUsageTopConsumers` — the single per-dimension ranking view; only dimensions with
+  at least one row appear in the switcher). Each row is one colour-coded bar (sized
+  relative to its dimension's top row) with its label and tokens/cost/requests on the
+  same line — a single-column list, not a table or a side-by-side layout, so nothing
+  needs to line up across columns. Empty state when `hasAnyData()` (from
+  `lib/token-usage.ts`) is false. The toolbar hides both Regenerate (data already
+  refetches on every filter change — a manual regenerate button was redundant) and
+  Print/Download PDF (`showExport={false}`), unlike Reports Overview's toolbar. Period
+  presets extend `lib/report.ts` additively (`'daily'`/`'semiannual'` added to
+  `PeriodType`; `resolveTokenUsageRange` / `tokenUsageGranularityForSpan` are separate
+  functions so `/report` callers are unaffected) to support a 24h preset at `hour`
+  granularity.
 - Every number traces to a real `token_usage` field on an event or a pure derivation
   of one — no fabricated cost/token/SLA metrics, per the same guarantee as Reports
   Overview. See `docs/adr/006-token-usage-jsonb-convention.md` for the ingestion

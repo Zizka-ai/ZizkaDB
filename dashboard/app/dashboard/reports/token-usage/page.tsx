@@ -124,6 +124,7 @@ function TokenUsageContent() {
         canExport={!!usage && !loading}
         refreshing={refreshing}
         showExport={false}
+        showRegenerate={false}
         periodLabel="Usage period"
       />
 

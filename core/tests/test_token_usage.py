@@ -7,7 +7,7 @@ needs regression coverage here (SQL query shape is exercised manually per the
 plan's verification step against a real Postgres instance).
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -220,6 +220,29 @@ async def test_invalid_granularity_raises():
         await token_usage.build_token_usage_report(
             pool, "t1", "agent-a", datetime(2026, 1, 1), datetime(2026, 1, 2), "month"
         )
+
+
+@pytest.mark.asyncio
+async def test_trend_handles_tz_aware_row_timestamps():
+    """Regression test: asyncpg returns TIMESTAMPTZ columns as offset-aware
+    datetimes, while from_dt/to_dt (and the gap-filled bucket boundaries
+    derived from them) are always naive-UTC per services.reports.parse_utc_naive.
+    Sorting/comparing the two without normalizing raised
+    `TypeError: can't compare offset-naive and offset-aware datetimes` in
+    production against a real Postgres instance — the fake-pool unit tests
+    above didn't catch it because `_row()` always used naive datetimes.
+    """
+    rows = [
+        _row(timestamp=datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc), input_tokens=100, output_tokens=50),
+        _row(timestamp=datetime(2026, 1, 2, 6, 0, 0, tzinfo=timezone.utc), input_tokens=200, output_tokens=100),
+    ]
+    pool = _FakePool(rows)
+    result = await token_usage.build_token_usage_report(
+        pool, "t1", "agent-a", datetime(2026, 1, 1), datetime(2026, 1, 3), "day"
+    )
+    assert result["totals"]["total_requests"] == 2
+    assert result["totals"]["input_tokens"] == 300
+    assert len(result["trend"]) == 2
 
 
 def test_gap_fill_buckets_hour_on_long_range_is_bounded_by_route_cap():

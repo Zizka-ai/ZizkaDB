@@ -132,7 +132,19 @@ def _breakdown_from(rows_metrics: list[dict], key_fn) -> list[dict]:
     return out
 
 
+def _to_naive_utc(ts: datetime) -> datetime:
+    """Normalize to naive-UTC, matching services.reports.parse_utc_naive's
+    convention. asyncpg returns TIMESTAMPTZ columns as offset-aware datetimes,
+    while from_dt/to_dt (and therefore the gap-filled bucket boundaries) are
+    always naive — comparing/sorting the two raises TypeError otherwise.
+    """
+    if ts.tzinfo is not None:
+        return ts.astimezone(timezone.utc).replace(tzinfo=None)
+    return ts
+
+
 def _bucket_key(ts: datetime, granularity: str) -> datetime:
+    ts = _to_naive_utc(ts)
     ts = ts.replace(minute=0, second=0, microsecond=0) if granularity == "hour" else ts
     if granularity == "hour":
         return ts

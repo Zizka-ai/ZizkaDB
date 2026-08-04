@@ -5,12 +5,14 @@ import { formatUtcDate, formatUtcDateTime } from '@/lib/report'
 import type { TokenUsagePayload } from '@/lib/api'
 import { TokenUsageSummary } from './TokenUsageSummary'
 import { TokenUsageTrendChart } from './TokenUsageTrendChart'
-import { TokenUsageBreakdown } from './TokenUsageBreakdown'
 import { TokenUsageTopConsumers } from './TokenUsageTopConsumers'
 
 /**
- * Top-down composition for the Token Usage tab, mirroring report/ReportView's
- * structure: summary KPIs → trend → breakdown → top consumers.
+ * Top-down composition for the Token Usage tab: summary KPIs → trend → top
+ * consumers. Top Consumers doubles as the single per-dimension ranking view
+ * (model/agent/workflow/tool/user) — an earlier separate bar-list Breakdown
+ * section duplicated the same rankings in a second visual style and was
+ * removed for a cleaner, less repetitive page.
  */
 export function TokenUsageView({
   usage,
@@ -35,8 +37,6 @@ export function TokenUsageView({
       <TokenUsageSummary usage={usage} />
 
       <TokenUsageTrendChart points={usage.trend} granularity={p.granularity} />
-
-      <TokenUsageBreakdown usage={usage} />
 
       <TokenUsageTopConsumers usage={usage} />
 
