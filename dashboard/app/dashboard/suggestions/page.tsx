@@ -5,11 +5,18 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { KeyRound, Sparkles } from 'lucide-react'
 import { EmptyState, ErrorState, PageHeader, Skeleton } from '@/components/ui'
 import { SuggestionsToolbar } from '@/components/dashboard/suggestions/SuggestionsToolbar'
+import { SuggestionsSubTabs } from '@/components/dashboard/suggestions/SuggestionsSubTabs'
 import { SuggestionList } from '@/components/dashboard/suggestions/SuggestionList'
 import { useAgents } from '@/hooks/useAgents'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
 import { useAgentSuggestions } from '@/hooks/useAgentSuggestions'
-import { isPeriodType, resolveRange, type PeriodType, type ResolvedRange } from '@/lib/report'
+import {
+  isPeriodType,
+  resolveRange,
+  validateCustomRange,
+  type PeriodType,
+  type ResolvedRange,
+} from '@/lib/report'
 import { colors, radii } from '@/lib/design-tokens'
 import type { SuggestionsResult } from '@/lib/api'
 
@@ -44,8 +51,14 @@ function SuggestionsContent() {
     [params, pathname, router],
   )
 
+  // Resolve rolling periods immediately; custom waits for Analyze — unless we
+  // landed here via a deep link that already carries a valid `from`/`to`, in
+  // which case the range should resolve automatically rather than showing an
+  // empty state until the user re-picks the same dates.
   useEffect(() => {
     if (period !== 'custom') setRange(resolveRange(period))
+    else if (!validateCustomRange(custom.from, custom.to)) setRange(resolveRange('custom', custom))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period])
 
   const onPeriodChange = (p: PeriodType) => {
@@ -58,6 +71,7 @@ function SuggestionsContent() {
   }
 
   const { result, loading, refreshing, error, refetch } = useAgentSuggestions(agentId, range)
+  const agentQuery = agentId ? `?agent=${encodeURIComponent(agentId)}` : ''
 
   if (agentsLoading) return <Skeleton rows={6} />
   if (agentsError) return <ErrorState message={agentsError} />
@@ -66,6 +80,7 @@ function SuggestionsContent() {
     return (
       <>
         <PageHeader title="Suggestions" />
+        <SuggestionsSubTabs active="ai-suggestions" agentQuery={agentQuery} />
         <EmptyState
           title="No agents yet"
           description="Suggestions are generated per agent from recorded behavior. Once an agent starts logging events, evidence-backed recommendations appear here."
@@ -80,6 +95,8 @@ function SuggestionsContent() {
         title="Suggestions"
         description="AI recommendations grounded in your agent's real recorded behavior — never invented."
       />
+
+      <SuggestionsSubTabs active="ai-suggestions" agentQuery={agentQuery} />
 
       {invalidAgent && (
         <div

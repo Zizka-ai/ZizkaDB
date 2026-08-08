@@ -1,6 +1,6 @@
 # ZizkaDB Wiki
 
-**Know why your agent did what it did.** — causal lineage, time travel, semantic search, and dashboards for AI agents.
+**Dont Observe - Audit your AI Agent.** — causal lineage, time travel, semantic search, and dashboards for AI agents.
 
 | Resource | Link |
 |----------|------|

@@ -387,6 +387,81 @@ export async function getAgentReport(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Token usage — per-agent token/cost report (see core/services/token_usage.py)
+// Reads events.data.token_usage; no schema migration. See docs/adr for the
+// JSONB convention SDKs must adopt for data to appear here.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Wider than ReportGranularity: the token-usage endpoint additionally accepts
+// 'hour' (for the 24h preset). /report intentionally keeps its narrower set.
+export type TokenUsageGranularity = 'hour' | 'day' | 'week'
+
+export interface TokenUsageTotals {
+  total_requests: number
+  success_count: number
+  failed_count: number
+  success_rate_pct: number
+  total_tokens: number
+  input_tokens: number
+  output_tokens: number
+  cached_tokens: number
+  reasoning_tokens: number
+  avg_tokens_per_request: number
+  total_cost: number
+}
+
+export interface TokenUsageBreakdownRow {
+  key: string
+  tokens: number
+  cost: number
+  requests: number
+}
+
+export type TokenUsageBreakdown = TokenUsageBreakdownRow[]
+
+export interface TokenUsageTrendPoint {
+  bucket: string
+  input_tokens: number
+  output_tokens: number
+  tokens: number
+  cost: number
+  requests: number
+}
+
+export interface TokenUsagePayload {
+  agent: string
+  generated_at: string
+  period: { from: string; to: string; granularity: TokenUsageGranularity }
+  totals: TokenUsageTotals
+  unpriced_models: string[]
+  breakdown: {
+    model: TokenUsageBreakdown
+    agent: TokenUsageBreakdown
+    workflow: TokenUsageBreakdown
+    tool: TokenUsageBreakdown
+    user: TokenUsageBreakdown
+  }
+  trend: TokenUsageTrendPoint[]
+  top_consumers: {
+    model: TokenUsageBreakdown
+    agent: TokenUsageBreakdown
+    workflow: TokenUsageBreakdown
+    tool: TokenUsageBreakdown
+    user: TokenUsageBreakdown
+  }
+}
+
+export async function getAgentTokenUsage(
+  token: string,
+  agentId: string,
+  params: { from: string; to: string; granularity?: TokenUsageGranularity },
+): Promise<TokenUsagePayload> {
+  const qs = new URLSearchParams({ from: params.from, to: params.to })
+  if (params.granularity) qs.set('granularity', params.granularity)
+  return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/token-usage?${qs.toString()}`, token)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Suggestions — evidence-grounded AI recommendations (see core/services/suggestions)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -440,6 +515,70 @@ export async function getAgentSuggestions(
   const qs = new URLSearchParams({ from: params.from, to: params.to })
   if (params.refresh) qs.set('refresh', '1')
   return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/suggestions?${qs.toString()}`, token)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Token Optimization — deterministic, non-AI cost/token savings suggestions
+// (see core/services/token_optimization.py + docs/adr/007). A separate,
+// unrelated vocabulary from the AI Suggestions above — this feature never
+// calls an LLM, so every number is a real, reproducible computation.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type TokenOptCategory =
+  | 'high_consumption'
+  | 'model_optimization'
+  | 'cache_opportunity'
+  | 'retry_analysis'
+  | 'cost_anomaly'
+export type TokenOptSeverity = 'critical' | 'high' | 'medium' | 'low'
+export type TokenOptStatus = 'ok' | 'no_data'
+
+export interface TokenOptimizationSuggestion {
+  id: string
+  title: string
+  category: TokenOptCategory
+  severity: TokenOptSeverity
+  estimated_monthly_savings_usd: number
+  estimated_token_reduction_pct: number
+  confidence_score: number
+  summary: string
+  why: string
+  recommended_action: string
+  current_state: Record<string, unknown>
+  recommended_state: Record<string, unknown>
+  affected: { agent?: string | null; workflow?: string | null; model?: string | null; user?: string | null }
+  related_report_link: string | null
+  sample_size: number
+}
+
+export interface TokenOptimizationAggregates {
+  total_potential_monthly_savings_usd: number
+  potential_token_reduction_pct: number
+  cost_reduction_pct: number
+  optimization_score: number
+  suggestion_count: number
+  critical_count: number
+}
+
+export interface TokenOptimizationResult {
+  agent: string
+  status: TokenOptStatus
+  period: { from: string; to: string; granularity?: TokenUsageGranularity }
+  generated_at: string
+  suggestions: TokenOptimizationSuggestion[]
+  aggregates: TokenOptimizationAggregates
+  unpriced_models: string[]
+  meta: Record<string, unknown>
+}
+
+export async function getAgentTokenOptimization(
+  token: string,
+  agentId: string,
+  params: { from: string; to: string; granularity?: TokenUsageGranularity },
+): Promise<TokenOptimizationResult> {
+  const qs = new URLSearchParams({ from: params.from, to: params.to })
+  if (params.granularity) qs.set('granularity', params.granularity)
+  return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/token-optimization?${qs.toString()}`, token)
 }
 
 export async function getApiKeys(token: string) {

@@ -100,6 +100,7 @@ dashboard/
 │   │   ├── activity/page.tsx     # Events | Sessions | Time Travel segments
 │   │   ├── behavior/page.tsx     # Baseline / drift analysis
 │   │   ├── reports/page.tsx      # Agent report — GET /v1/agents/{id}/report
+│   │   ├── reports/token-usage/page.tsx # Token/cost report — GET /v1/agents/{id}/token-usage
 │   │   ├── suggestions/page.tsx  # AI suggestions — GET /v1/agents/{id}/suggestions
 │   │   ├── fleet/page.tsx        # Managed only; OSS redirects to activity
 │   │   ├── agents/[id]/page.tsx  # redirect → /dashboard/activity?agent={id}
@@ -557,6 +558,8 @@ Router prefixes are mounted in `core/main.py:66-79`.
 | `getAgentSessions` | GET `/v1/agents/{id}/sessions` | `agents.py:280` |
 | `getAgentBaseline` | GET `/v1/agents/{id}/baseline` | `agents.py:453` |
 | `getAgentReport` | GET `/v1/agents/{id}/report?from=&to=&granularity=` | `agents.py` → `services/reports.py` |
+| `getAgentTokenUsage` | GET `/v1/agents/{id}/token-usage?from=&to=&granularity=` | `agents.py` → `services/token_usage.py` + `services/pricing.py` |
+| `getAgentTokenOptimization` | GET `/v1/agents/{id}/token-optimization?from=&to=&granularity=` | `agents.py` → `services/token_optimization.py` |
 | `getAgentSuggestions` | GET `/v1/agents/{id}/suggestions?from=&to=&refresh=` | `agents.py` → `services/suggestions/` + `services/ai/` |
 
 The **report** endpoint composes one date-ranged payload for an agent: summary KPIs
@@ -565,6 +568,48 @@ series, event breakdown + transitions, sessions, behavior drift (null when <50 p
 events), and deterministic rule-based recommendations. Auth: `get_tenant` +
 `assert_agent_allowed`. Range validated (`from<to`, ≤366 days); granularity auto
 (day ≤92d else week). All aggregation is real events — no fabricated cost/token/SLA.
+
+The **token-usage** endpoint composes a date-ranged token/cost payload for an agent,
+aggregated from `events.data->'token_usage'` (a documented JSONB convention — no
+schema migration, no new table; see `docs/adr/006-token-usage-jsonb-convention.md`).
+Only events carrying the `token_usage` key are read (`data ? 'token_usage'`); older
+events without it are excluded, not zero-filled. Response: totals (tokens by
+type, request count, success/failed split, avg tokens/request, total cost), a
+gap-filled trend series (input vs output tokens per bucket), breakdowns by
+model/agent/workflow/tool/user (rows missing a dimension are grouped under a
+literal `"Unknown"` bucket rather than dropped, so breakdown sums reconcile
+against the top-level totals), and top-10 consumers per dimension. Cost is
+computed server-side from a hardcoded pricing map (`services/pricing.py`, mirrors
+`entitlements.py`'s structure) — never trusted from client input; an unknown
+model contributes `$0` cost and its name is added to `unpriced_models` (tokens
+are still counted) so the UI can show "cost not available" instead of a silently
+wrong total. Auth: `get_tenant` + `assert_agent_allowed`. Range validated the same
+way as `/report`; granularity additionally accepts `hour` (for the dashboard's 24h
+preset) — `/report`'s own accepted granularity values are unchanged. All
+aggregation is real events — no fabricated cost/token/SLA, consistent with the
+`/report` endpoint's guarantee.
+
+The **token-optimization** endpoint returns deterministic, non-AI cost/token-savings
+recommendations for an agent — **zero LLM calls**, unlike `/suggestions` below (see
+`docs/adr/007-deterministic-token-optimization.md` for the full rationale). Five
+pure detector functions (`services/token_optimization.py`) — model optimization, high
+token consumption, cache opportunities, retry/tool-loop waste, cost anomalies — run
+over the same `token_usage.row_metrics()`/`_breakdown_from()`/`_trend()` aggregates
+`/token-usage` itself uses (fetched once, no duplicate full-table scans), each gated
+by a threshold in `services/token_optimization_config.py::THRESHOLDS` so a suggestion
+only appears once it crosses a defensible noise floor — a suggestion that fires is *by
+construction* relevant. Every `estimated_monthly_savings_usd`/
+`estimated_token_reduction_pct`/`confidence_score` is a reproducible computation over
+real historical token counts and `services/pricing.py`'s real price table — never
+AI-estimated. `total_potential_monthly_savings_usd` in the response's `aggregates` is
+always computed from the capped, *returned* suggestion list (max 12), never a larger
+pre-cap set. Response `status` is `ok` or `no_data` (no `token_usage` events in
+range — empty state, not an error); `meta.skipped_categories` explicitly lists Prompt
+Optimization / Context Optimization as out-of-v1-scope (no prompt/context text is
+captured by the `token_usage` convention — a data-availability gap, not an omission).
+Defaults to a 30-day window when `from`/`to` are omitted (matches `/suggestions`).
+Auth: `get_tenant` + `assert_agent_allowed`. No AI rate limiting (no external API
+call), no response caching in v1.
 
 The **suggestions** endpoint returns AI recommendations grounded in an agent's real
 recorded behavior. A deterministic extractor (`services/suggestions/evidence.py`,
@@ -741,7 +786,72 @@ Replaces the old agents home + agent-detail Events/Sessions/Time Travel tabs.
 
 ### 19.3 Reports & Suggestions — `app/dashboard/{reports,suggestions}/page.tsx`
 
-Empty states only. **No backend, no API calls** — deliberately placeholders so the tab bar matches the product shape.
+Agent-scoped, date-ranged reports backed by real endpoints (see §17.3 for the full
+endpoint map and payload description) — not placeholders.
+
+Reports has two sub-tabs sharing one `ReportsSubTabs` strip (`components/dashboard/report/ReportsSubTabs.tsx`,
+built on `Tabs.tsx`) and one `ReportToolbar` (period `Select` + Regenerate + optional
+Print/Download PDF via `showExport`):
+- **Overview** (`reports/page.tsx`) — `GET /v1/agents/{id}/report`, rendered by
+  `components/dashboard/report/ReportView.tsx` (ExecutiveSummary/KPIs, TrendChart,
+  DistributionBars, SessionsTable, ReliabilitySection, Recommendations).
+- **Token Usage** (`reports/token-usage/page.tsx`) — `GET /v1/agents/{id}/token-usage`,
+  fetched via `useAgentTokenUsage` (mirrors `useAgentReport`'s loading/refreshing/error
+  shape and `cancelled`-guarded effect keyed on `[agentId, range.from, range.to,
+  range.granularity]`) and rendered by `components/dashboard/token-usage/TokenUsageView.tsx`:
+  KPI row (`TokenUsageSummary`: total/input/output tokens, cached/reasoning tokens shown
+  only when non-zero, total cost with an `unpriced_models` callout, request count, avg
+  tokens/request, success rate), a stacked input-vs-output trend chart
+  (`TokenUsageTrendChart`, inline SVG + `sr-only` data table, same idiom as `TrendChart`),
+  and a top-10 consumers card with a Model/Agent/Workflow/Tool/User segmented control
+  (`TokenUsageTopConsumers` — the single per-dimension ranking view; only dimensions with
+  at least one row appear in the switcher). Each row is one colour-coded bar (sized
+  relative to its dimension's top row) with its label and tokens/cost/requests on the
+  same line — a single-column list, not a table or a side-by-side layout, so nothing
+  needs to line up across columns. Empty state when `hasAnyData()` (from
+  `lib/token-usage.ts`) is false. The toolbar hides both Regenerate (data already
+  refetches on every filter change — a manual regenerate button was redundant) and
+  Print/Download PDF (`showExport={false}`), unlike Reports Overview's toolbar. Period
+  presets extend `lib/report.ts` additively (`'daily'`/`'semiannual'` added to
+  `PeriodType`; `resolveTokenUsageRange` / `tokenUsageGranularityForSpan` are separate
+  functions so `/report` callers are unaffected) to support a 24h preset at `hour`
+  granularity.
+- Every number traces to a real `token_usage` field on an event or a pure derivation
+  of one — no fabricated cost/token/SLA metrics, per the same guarantee as Reports
+  Overview. See `docs/adr/006-token-usage-jsonb-convention.md` for the ingestion
+  convention SDKs must adopt (`events.data.token_usage`) for this tab to show data.
+
+Suggestions now has two sub-tabs sharing one `SuggestionsSubTabs` strip
+(`components/dashboard/suggestions/SuggestionsSubTabs.tsx`, a structural clone of
+`ReportsSubTabs.tsx`):
+- **AI Suggestions** (`suggestions/page.tsx`) — unchanged by this work; see §17.3 for
+  its endpoint and evidence-grounding description.
+- **Token Optimization** (`suggestions/token-optimization/page.tsx`) —
+  `GET /v1/agents/{id}/token-optimization`, fetched via `useAgentTokenOptimization`
+  (structural copy of `useAgentTokenUsage`: `cancelled`-guarded effect keyed on
+  `[agentId, range.from, range.to, range.granularity]`, `loading`/`refreshing`
+  states). Zero LLM calls — see `docs/adr/007-deterministic-token-optimization.md`.
+  Renders `TokenOptimizationSummary` (KPI row: total potential monthly savings, cost
+  reduction %, optimization score 0-100, recommendation count, critical count) above
+  `TokenOptimizationList` (sorted severity → savings via `sortTokenOptSuggestions`,
+  client-side category + severity filter chips — the list is capped at 12 items
+  server-side, so no server round-trip for filtering), each suggestion a
+  `TokenOptimizationCard`: category icon + generalized `SeverityBadge` (now accepts
+  an explicit `meta` prop so both AI Suggestions' and Token Optimization's separate
+  severity vocabularies share one implementation) + `ConfidenceMeter` (reused
+  unchanged) in the header; savings/reduction stat pair, current→recommended state
+  rendered as defensive key/value lines (unknown keys fall back to a generic label,
+  future-detector-proof), populated-only "affected" chips, a native `<details>` for
+  the deterministic `why` reasoning (no custom JS, keyboard-accessible by
+  construction), and an optional `related_report_link` deep-linking into the Token
+  Usage tab (agent id + dates URL-encoded via `encodeURIComponent`). Period presets
+  reuse `lib/report.ts` exactly like Token Usage. Toolbar reuses `ReportToolbar` with
+  `showExport={false}`, `showRegenerate={true}` (regenerate is meaningful here since
+  it recomputes fresh, unlike Token Usage which auto-refetches on filter change
+  alone). Empty state (`status !== "ok"` or zero suggestions) explains the agent may
+  simply be running efficiently rather than implying an error. Every `$`/`%` figure
+  traces to a real computation over `token_usage` data — see the ADR for the
+  ground-truth verification methodology behind that guarantee.
 
 ### 19.3b Agent Fleets — `app/dashboard/fleet/page.tsx`
 
