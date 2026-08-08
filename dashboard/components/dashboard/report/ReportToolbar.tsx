@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, Printer, RefreshCw } from 'lucide-react'
+import { Printer, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { Select } from '@/components/ui/Select'
 import { colors, radii } from '@/lib/design-tokens'
@@ -8,8 +8,9 @@ import { PERIOD_OPTIONS, type PeriodType, validateCustomRange } from '@/lib/repo
 
 /**
  * Report controls: period picker, custom date range (only for Custom), and the
- * Regenerate / Print / Download-PDF actions. Print & Download are disabled
- * until a report is available so a skeleton is never printed.
+ * Regenerate / Print actions. Print opens the browser print dialog, where
+ * "Save as PDF" is a destination option — disabled until a report is
+ * available so a skeleton is never printed.
  */
 export function ReportToolbar({
   period,
@@ -37,7 +38,7 @@ export function ReportToolbar({
   refreshing: boolean
   /** Override the period dropdown's options (default: the full shared list). */
   periodOptions?: typeof PERIOD_OPTIONS
-  /** Hide Print/Download PDF for tabs where export doesn't make sense (default: shown). */
+  /** Hide the Print action for tabs where export doesn't make sense (default: shown). */
   showExport?: boolean
   /** Hide Regenerate for tabs that already refetch automatically on every filter change (default: shown). */
   showRegenerate?: boolean
@@ -92,16 +93,10 @@ export function ReportToolbar({
           </Button>
         )}
         {showExport && (
-          <>
-            <Button onClick={onPrint} disabled={!canExport}>
-              <Printer size={14} />
-              Print
-            </Button>
-            <Button onClick={onPrint} tone="primary" disabled={!canExport}>
-              <Download size={14} />
-              Download PDF
-            </Button>
-          </>
+          <Button onClick={onPrint} tone="primary" disabled={!canExport}>
+            <Printer size={14} />
+            Print / Save as PDF
+          </Button>
         )}
       </div>
     </div>

@@ -41,7 +41,10 @@ export function useAgentTokenUsage(
       return
     }
     const token = getToken()
-    if (!token) return
+    if (!token) {
+      setLoading(false)
+      return
+    }
 
     let cancelled = false
     const isRegen = nonce > 0

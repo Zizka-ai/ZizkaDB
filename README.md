@@ -2,7 +2,7 @@
 
 # ZizkaDB
 
-**Know why your agent did what it did.**
+**Dont Observe - Audit your AI Agent.**
 
 Operational database for AI agents — replay sessions, trace decisions, detect drift.
 
