@@ -121,9 +121,7 @@ Never use SQLAlchemy, never open a direct `asyncpg.connect()` — always use the
 
 | Issue | Location | Impact |
 |---|---|---|
-| CORS `allow_origins=["*"]` + `allow_credentials=True` | `main.py:97–102` | Browsers reject credentialed cross-origin requests — dashboard cookie auth silently fails cross-origin |
-| `GET /health` always returns HTTP 200 | `main.py:120–122` | Deploy script polls this; a deploy "succeeds" even when Postgres is unreachable. Use `/health/deep` for real checks |
-| Redis embedding cache broken across workers | `services/embeddings.py:37` | Cache key uses `hash(text)` — non-stable across processes. Effective cache hit rate is near zero with 4 workers |
+| `GET /health` is liveness-only, not dependency status | `main.py:109-111` | Always returns HTTP 200 once the process is up; by design it's a fast readiness probe, not a Postgres/Redis/Qdrant check. Use `/health/deep` for real dependency status. `scripts/setup-local.sh` and `scripts/quickstart-remote.sh` poll `/health` only to know the container is up; `scripts/smoke-test.sh` and `scripts/validate-selfhost-config.sh` correctly check both |
 | Rate limiting 4× effective limit | `api/utils.py` in-process helpers | Non-OTP in-process limiters (if wired) still multiply by workers. OTP uses Redis when `ENV=production` or `OTP_RATE_LIMIT_STORAGE=redis` |
 | 80 Postgres connections at full load | `db/connection.py:22–25` | `max_size=20` × 4 workers = 80 connections. Postgres default `max_connections=100`. Add PgBouncer before horizontal scaling |
 

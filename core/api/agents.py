@@ -179,6 +179,7 @@ async def test_agent_event(
 ):
     """Log a test event to this agent (dashboard JWT). Verifies the pipeline for this agent."""
     agent_id = _validate_agent_id(agent_id)
+    assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
     tenant_id = tenant["tenant_id"]
 
