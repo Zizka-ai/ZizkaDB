@@ -699,6 +699,16 @@ export async function getBillingStatus(token: string): Promise<BillingStatus> {
   return apiFetch('/v1/billing/status', token)
 }
 
+export async function createCheckoutSession(
+  token: string,
+  plan: 'pro' | 'team',
+): Promise<{ url: string }> {
+  return apiFetch('/v1/billing/checkout-session', token, {
+    method: 'POST',
+    body: JSON.stringify({ plan }),
+  })
+}
+
 export interface AccountOptions {
   managed_cloud: boolean
   retention_trial_available?: boolean
