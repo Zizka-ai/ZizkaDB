@@ -121,6 +121,34 @@ async def init_db():
 
     """)
 
+    # Upgrade legacy community board schema (pre-marketing-restore installs used
+    # image_url/author_ip columns; the restored API expects image_urls JSONB).
+    await _pg_pool.execute("""
+        ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS author_email VARCHAR(255);
+        ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS image_urls JSONB NOT NULL DEFAULT '[]'::jsonb;
+        ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+        ALTER TABLE community_replies ADD COLUMN IF NOT EXISTS author_email VARCHAR(255);
+    """)
+    await _pg_pool.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'community_posts'
+                  AND column_name = 'image_url'
+            ) THEN
+                UPDATE community_posts
+                SET image_urls = CASE
+                    WHEN image_url IS NOT NULL AND image_url <> ''
+                    THEN jsonb_build_array(image_url)
+                    ELSE '[]'::jsonb
+                END
+                WHERE image_urls IS NULL OR image_urls = '[]'::jsonb;
+            END IF;
+        END $$;
+    """)
+
     await _pg_pool.execute("""
         ALTER TABLE tenants
         ADD COLUMN IF NOT EXISTS embedding_provider VARCHAR(32)
