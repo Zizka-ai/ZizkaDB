@@ -61,7 +61,7 @@ async def get_context(
         ]
     """
     # A scoped agent key may only read its own agent's context.
-    assert_agent_allowed(tenant, body.agent)
+    await assert_agent_allowed(tenant, body.agent)
     tenant_id = tenant["tenant_id"]
     pool = get_pool()
 
@@ -240,7 +240,7 @@ async def session_diff(
 
     agent_id = rows[0]["agent_id"]
     # A scoped agent key may only diff sessions belonging to its own agent.
-    assert_agent_allowed(tenant, agent_id)
+    await assert_agent_allowed(tenant, agent_id)
     events = []
     event_types: dict[str, int] = {}
     has_error = False

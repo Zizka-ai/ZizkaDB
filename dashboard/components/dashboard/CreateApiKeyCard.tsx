@@ -8,10 +8,10 @@ import { getToken } from '@/lib/auth'
 import { colors, radii } from '@/lib/design-tokens'
 
 /**
- * First-run / OSS key creation. Creates a tenant-wide named key (works for ANY
- * agent name — no agent needs to exist first), reveals it once, and shows how to
- * wire it into an app. This is the entry point that breaks the chicken-and-egg
- * where a key used to require a pre-existing agent.
+ * First-run / OSS key creation. Creates an unassigned named key (binds to the
+ * first agent that uses it), reveals it once, and shows how to wire it into an
+ * app. This is the entry point that breaks the chicken-and-egg where a key used
+ * to require a pre-existing agent.
  */
 export function CreateApiKeyCard({ onCreated }: { onCreated?: () => void }) {
   const [name, setName] = useState('')
@@ -54,8 +54,9 @@ export function CreateApiKeyCard({ onCreated }: { onCreated?: () => void }) {
         </h2>
       </div>
       <p className="text-xs mb-4" style={{ color: colors.textMuted }}>
-        Name a key, drop it into your app, and start logging. One key works for any
-        agent — the agent is created automatically the first time it logs an event.
+        Name a key, drop it into your app, and start logging. The key is
+        unassigned until the first agent uses it, then it stays bound to that
+        agent only.
       </p>
 
       {newKey ? (

@@ -179,7 +179,7 @@ async def create_api_key(
     body: CreateAPIKeyBody,
     session: dict = Depends(require_dashboard_session),
 ):
-    """Tenant-wide key (no agent scope). Use for multi-agent apps. Per-agent keys: POST /v1/agents/{id}/api-keys."""
+    """Unassigned key: binds to the first agent that uses it. Per-agent keys: POST /v1/agents/{id}/api-keys."""
     pool = get_pool()
     tenant_id = session["tenant_id"]
     async with pool.acquire() as conn:

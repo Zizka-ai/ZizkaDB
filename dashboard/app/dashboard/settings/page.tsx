@@ -498,7 +498,7 @@ export default function SettingsPage() {
                         </span>
                       ) : (
                         <span className="ml-2" style={{ color: "#e8edf5" }}>
-                          · tenant-wide (legacy)
+                          · Unassigned
                         </span>
                       )}
                     </div>

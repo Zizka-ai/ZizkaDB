@@ -21,7 +21,7 @@ alwaysApply: false
 - **Auth split:** middleware reads the access-token cookie; client code reads `localStorage`. The refresh token is an HttpOnly cookie (backend). Keep both cookie + localStorage in sync via `setToken`/`clearToken`.
 - **Funnel state** lives in `sessionStorage` (`signup_plan`, `signup_consent_gdpr`, `signup_consent_marketing`); cleared after OTP verify.
 - Self-host `NEXT_PUBLIC_DEV_MODE=true` enables dev-token login and changes onboarding copy.
-- **API key limits (§7):** active keys per tenant are capped by plan (Self-Hosted 1 / Pro 3 / Team 10 / Enterprise 50; else unlimited) when `API_KEY_LIMITS_ENFORCED=true`. UI reads `useApiKeyQuota` — never hardcode limits.
+- **API key limits (§7):** active keys per tenant are capped by plan (Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50; else unlimited) when `API_KEY_LIMITS_ENFORCED=true`. UI reads `useApiKeyQuota` — never hardcode limits.
 
 ## Testing / safety
 - There are **no frontend tests** and `apiFetch` is untyped. Prefer adding tests for pure helpers (funnel guards) when touching them.

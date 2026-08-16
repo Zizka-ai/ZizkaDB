@@ -154,3 +154,63 @@ async def revoke_api_key_record(pool, tenant_id: str, key_id: str, agent_id: str
             tenant_id,
         )
     return result != "UPDATE 0"
+
+
+async def claim_unassigned_api_key(
+    *,
+    key_id: str,
+    tenant_id: str,
+    agent_id: str,
+    pool=None,
+) -> str | None:
+    """Atomically bind an unassigned API key to ``agent_id``.
+
+    Returns the agent the key is bound to after this call (the requested
+    agent if this request won, or the winner of a concurrent claim).
+    Returns ``None`` if the key is missing, revoked, or belongs to another
+    tenant — callers must not treat that as a successful bind.
+
+    The UPDATE is conditional (``agent_id IS NULL``) so two concurrent
+    requests cannot both bind the same key. The ``agents`` row is inserted
+    first so the ``api_keys.agent_id`` foreign key succeeds.
+    """
+    if pool is None:
+        from db.connection import get_pool
+
+        pool = get_pool()
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO agents (agent_id, tenant_id)
+            VALUES ($1, $2)
+            ON CONFLICT (agent_id, tenant_id) DO NOTHING
+            """,
+            agent_id,
+            tenant_id,
+        )
+        result = await conn.execute(
+            """
+            UPDATE api_keys
+            SET agent_id = $1
+            WHERE key_id = $2::uuid
+              AND tenant_id = $3::uuid
+              AND agent_id IS NULL
+              AND revoked = FALSE
+            """,
+            agent_id,
+            key_id,
+            tenant_id,
+        )
+        if result == "UPDATE 1":
+            return agent_id
+        row = await conn.fetchrow(
+            """
+            SELECT agent_id FROM api_keys
+            WHERE key_id = $1::uuid AND tenant_id = $2::uuid AND revoked = FALSE
+            """,
+            key_id,
+            tenant_id,
+        )
+    if not row or row["agent_id"] is None:
+        return None
+    return row["agent_id"]

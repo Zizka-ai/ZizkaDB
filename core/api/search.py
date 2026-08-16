@@ -27,7 +27,7 @@ async def semantic_search(
     tenant_id = tenant["tenant_id"]
     agent = body.agent or tenant.get("agent_id")
     if agent:
-        assert_agent_allowed(tenant, agent)
+        await assert_agent_allowed(tenant, agent)
 
     if not embeddings_enabled():
         if is_self_hosted_deployment():
