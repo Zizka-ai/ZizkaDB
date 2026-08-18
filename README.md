@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/zizka-ai-zizkadb-badge.png)](https://mseep.ai/app/zizka-ai-zizkadb)
+
 <div align="center">
 
 # ZizkaDB
