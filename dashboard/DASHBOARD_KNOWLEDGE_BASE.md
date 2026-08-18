@@ -314,7 +314,9 @@ There is a **separate** lead-capture path (`lib/demo.ts` → `submitDemoRequest`
 
 **Feature gating:** Self-host (`DEV_MODE`) enables dev-token login and changes onboarding copy; billing is not enforced anywhere.
 
-**API key plan limits:** the number of **active** (`revoked = FALSE`) API keys per tenant is capped by plan — Self-Hosted 1, Pro 3, Team 10, Enterprise 50; every other case (no/unknown plan) is **unlimited** when enforcement is off. The limit counts **all** keys (tenant-wide + agent-scoped), and because creating an agent auto-creates a key (`create_agent`), each agent consumes one slot on capped plans.
+**API key plan limits:** the number of **active** (`revoked = FALSE`) API keys per tenant is capped by plan — Self-Hosted 1, Pro 2, Team 5, Enterprise 50; every other case (no/unknown plan) is **unlimited** when enforcement is off. The limit counts **all** keys (unassigned + agent-scoped), and because creating an agent auto-creates a key (`create_agent`), each agent consumes one slot on capped plans.
+
+**One API key = one agent:** `POST /v1/auth/api-keys` creates an **unassigned** key (`agent_id` NULL). The first SDK/API request that includes an agent id atomically binds the key (`claim_unassigned_api_key`). Later requests from a different agent get 403. Per-agent keys (`POST /v1/agents/{id}/api-keys`) are bound at creation. JWT sessions and the local dev key are not bound. Enforcement is `await assert_agent_allowed` in `core/api/deps.py`.
 - **Single source of truth:** `core/services/entitlements.py` (`PLAN_ENTITLEMENTS`, `entitlements_for_plan(plan)`/`api_key_limit_for_plan(plan)`). Generalized beyond just API keys — adding a new capped resource (e.g. max agents) is a one-field change to `PlanEntitlements` plus a value per plan; adding a plan is a one-line dict entry.
 - **No-deploy override:** set `API_KEY_LIMIT_<PLAN>` (e.g. `API_KEY_LIMIT_PRO=5`) and restart to change one plan's limit without touching code. Falls back to the `PLAN_ENTITLEMENTS` default when unset/blank/non-integer. `billing.py`'s `PLAN_CATALOG` copy ("N active API keys") is computed from this same source, so it can't drift from what's enforced.
 - **Enforcement (backend, real guard):** `assert_and_reserve_api_key_slot` in `core/services/api_keys.py` runs inside a per-tenant advisory-locked transaction (race-safe) before every insert; wired into `create_api_key`, `create_agent_api_key`, and `create_agent`. Resolves the plan via `services.billing.fetch_effective_plan` (not `fetch_tenant_plan` directly — see below). Fail-open on plan-lookup error. Behind kill switch `API_KEY_LIMITS_ENFORCED` (defaults OFF; ships dormant for staged rollout).
@@ -992,7 +994,7 @@ Schema sources: `core/db/schema.sql` (base DDL, Docker init) + `core/db/migratio
 |-------|-------------|---------|
 | `tenants` | `tenant_id` (PK), `name`, `embedding_provider`, `embedding_model`, `embedding_use_platform_key`, `embedding_api_key_encrypted` | Root of multi-tenant isolation; per-tenant embedding config (Fernet-encrypted BYOK key) |
 | `agents` | `(agent_id, tenant_id)` (PK), `first_seen`, `last_seen`, `event_count`, `metadata` | Registered agent identities; upserted on every event write |
-| `api_keys` | `key_id` (PK), `tenant_id`, `agent_id` (NULL = tenant-wide, set = agent-scoped), `key_hash` (SHA-256, unique), `key_prefix`, `revoked`, `last_used` | API-key auth; hashed only, prefix for display |
+| `api_keys` | `key_id` (PK), `tenant_id`, `agent_id` (NULL = unassigned until first use, set = bound to one agent), `key_hash` (SHA-256, unique), `key_prefix`, `revoked`, `last_used` | API-key auth; hashed only, prefix for display |
 | `users` | `user_id` (PK), `email` (unique), `tenant_id`, **billing cols** (see §21.2), `gdpr_consent_at`, `marketing_consent`, `last_login` | Dashboard users (passwordless OTP). **All billing state lives here.** |
 | `auth_otps` | `otp_id` (PK), `email`, `otp_hash`, `expires_at`, `used` | Passwordless login OTPs (15-min expiry) |
 | `events` | `event_id` (PK), `tenant_id`, `agent_id`, `timestamp`, `event_type`, `data` (JSONB), `embedding vector(1536)`, `parent_event_id` (causal link), `session_id`, `sequence_no` (BIGSERIAL), `checksum` (SHA-256) | Append-only event log — source of truth. HNSW index on `embedding` (cosine) |
@@ -1046,10 +1048,10 @@ erDiagram
 | **Time-travel** | Reconstructing agent state at a past timestamp by replaying events (`GET /v1/events/at`, `STATE_SET`/`STATE_DELETE` reduction). |
 | **Memory diff** | Per-session summary of new event types / behavior vs prior (`GET /v1/memory/diff/{session_id}`). |
 | **Baseline / drift** | Behavioral comparison of recent vs older sessions; `drift_score` + verdicts `stable/minor/noticeable/significant` (`GET /v1/agents/{id}/baseline`). |
-| **API key** | Credential used by SDKs/MCP to write events (`zizkadb_live_*`, stored hashed). Tenant-wide or **agent-scoped** (bound to one agent). |
+| **API key** | Credential used by SDKs/MCP to write events (`zizkadb_live_*`, stored hashed). Unassigned until first agent use, then **bound to one agent**. |
 | **JWT (session)** | Dashboard user's access token from OTP login; distinct from API keys. Resolved by `get_tenant`. |
 | **OTP** | One-time 6-digit code for passwordless email login/signup (`auth_otps`, 15-min expiry). |
-| **API key limit** | Self-Hosted = 1, Pro = 3, Team = 10, Enterprise = 50 active keys (tenant-wide + agent-scoped). Enforced when `API_KEY_LIMITS_ENFORCED=true`. |
+| **API key limit** | Self-Hosted = 1, Pro = 2, Team = 5, Enterprise = 50 active keys (unassigned + agent-scoped). Enforced when `API_KEY_LIMITS_ENFORCED=true`. |
 | **Entitlements** | `core/services/entitlements.py` — per-plan capability config (`PlanEntitlements`); currently `max_api_keys`, designed to grow (max agents, storage, etc.) without touching call sites. |
 | **Deployment mode** | `DEPLOYMENT_MODE=self_hosted` env var — marks a backend instance as self-hosted so entitlement checks resolve plan `"self_hosted"` instead of trusting `users.plan`. |
 | **Retention trial** | One-time extra free month offered in the delete-account modal (`retention_trial_used`). |

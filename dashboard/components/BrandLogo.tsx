@@ -10,6 +10,8 @@ type BrandLogoProps = {
   variant?: 'nav' | 'full' | 'mark'
   /** Show "ZizkaDB" text beside the mark (nav only) */
   showWordmark?: boolean
+  /** light = dark text on white panels · dark = white text on black/navy marketing */
+  theme?: 'light' | 'dark'
   href?: string
   suffix?: string
 }
@@ -47,13 +49,21 @@ function LogoMark({ variant }: { variant: 'nav' | 'full' | 'mark' }) {
 export function BrandLogo({
   variant = 'nav',
   showWordmark = true,
+  theme = 'dark',
   href = '/',
   suffix,
 }: BrandLogoProps) {
+  const isDark = theme === 'dark'
   const wordmarkStyle: CSSProperties = {
     fontWeight: 700,
     fontSize: variant === 'full' ? 22 : 15,
-    color: variant === 'full' ? '#111' : '#111',
+    color: isDark ? '#ffffff' : '#111111',
+  }
+  const suffixStyle: CSSProperties = {
+    fontSize: variant === 'full' ? 13 : 12,
+    color: isDark ? 'rgba(255,255,255,0.55)' : '#888888',
+    marginTop: variant === 'full' ? 4 : undefined,
+    marginLeft: variant === 'nav' ? (suffix ? 2 : 4) : undefined,
   }
 
   const inner = variant === 'full' ? (
@@ -63,7 +73,7 @@ export function BrandLogo({
         <div style={{ ...wordmarkStyle, marginTop: 10 }}>ZizkaDB</div>
       )}
       {suffix && (
-        <div style={{ fontSize: 13, color: '#888', marginTop: 4 }}>{suffix}</div>
+        <div style={suffixStyle}>{suffix}</div>
       )}
     </div>
   ) : (
@@ -73,9 +83,9 @@ export function BrandLogo({
         <>
           <span style={wordmarkStyle}>ZizkaDB</span>
           {suffix ? (
-            <span style={{ fontSize: 12, color: '#aaa', marginLeft: 2 }}>/ {suffix}</span>
+            <span style={suffixStyle}>/ {suffix}</span>
           ) : (
-            <span style={{ fontSize: 12, color: '#aaa', marginLeft: 4 }}>by Zizka AI</span>
+            <span className="brand-logo-tagline" style={suffixStyle}>by Zizka AI</span>
           )}
         </>
       )}

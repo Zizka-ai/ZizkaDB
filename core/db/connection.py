@@ -121,6 +121,34 @@ async def init_db():
 
     """)
 
+    # Upgrade legacy community board schema (pre-marketing-restore installs used
+    # image_url/author_ip columns; the restored API expects image_urls JSONB).
+    await _pg_pool.execute("""
+        ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS author_email VARCHAR(255);
+        ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS image_urls JSONB NOT NULL DEFAULT '[]'::jsonb;
+        ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+        ALTER TABLE community_replies ADD COLUMN IF NOT EXISTS author_email VARCHAR(255);
+    """)
+    await _pg_pool.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'community_posts'
+                  AND column_name = 'image_url'
+            ) THEN
+                UPDATE community_posts
+                SET image_urls = CASE
+                    WHEN image_url IS NOT NULL AND image_url <> ''
+                    THEN jsonb_build_array(image_url)
+                    ELSE '[]'::jsonb
+                END
+                WHERE image_urls IS NULL OR image_urls = '[]'::jsonb;
+            END IF;
+        END $$;
+    """)
+
     await _pg_pool.execute("""
         ALTER TABLE tenants
         ADD COLUMN IF NOT EXISTS embedding_provider VARCHAR(32)
@@ -208,7 +236,37 @@ async def init_db():
         ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS email VARCHAR(255) NOT NULL DEFAULT '';
     """)
 
+    await _pg_pool.execute("""
+        ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS position VARCHAR(120);
+        ALTER TABLE demo_requests ADD COLUMN IF NOT EXISTS source VARCHAR(64);
+    """)
 
+    await _pg_pool.execute("""
+        CREATE TABLE IF NOT EXISTS marketing_subscriptions (
+            subscription_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+            email           VARCHAR(255) NOT NULL,
+            source          VARCHAR(64)  NOT NULL DEFAULT 'popup',
+            ip_address      VARCHAR(64),
+            user_agent      TEXT,
+            created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_marketing_subscriptions_created
+            ON marketing_subscriptions (created_at DESC);
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_marketing_subscriptions_email
+            ON marketing_subscriptions (LOWER(email));
+    """)
+
+    await _pg_pool.execute("""
+        CREATE TABLE IF NOT EXISTS email_suppressions (
+            suppression_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+            email          VARCHAR(255) NOT NULL,
+            reason         VARCHAR(200) NOT NULL DEFAULT 'unsubscribed',
+            source         VARCHAR(64)  NOT NULL DEFAULT 'unsubscribe_link',
+            created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_email_suppressions_email
+            ON email_suppressions (LOWER(email));
+    """)
 
     _redis = redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
     logger.info("Redis connected")

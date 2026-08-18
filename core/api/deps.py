@@ -50,17 +50,46 @@ async def resolve_api_key_tenant(token: str) -> dict | None:
     return await verify_api_key(token)
 
 
-def assert_agent_allowed(tenant: dict, agent_id: str) -> None:
-    """Agent-scoped API keys may only access their bound agent."""
+_AGENT_KEY_MISMATCH = (
+    "This API key is already associated with another agent and cannot be used "
+    "by this agent. Use the API key that belongs to this agent, or create "
+    "another API key if your plan allows it."
+)
+
+
+def _raise_agent_mismatch() -> None:
+    raise forbidden(detail=_AGENT_KEY_MISMATCH)
+
+
+async def assert_agent_allowed(tenant: dict, agent_id: str) -> None:
+    """Enforce one API key = one agent.
+
+    JWT dashboard sessions and the local dev key have no ``key_id`` and are
+    not bound. Keys already bound to an agent are compared in memory.
+    Unassigned keys (``agent_id`` NULL) are claimed atomically on first use.
+    """
     scoped = tenant.get("agent_id")
-    if scoped and scoped != agent_id:
-        raise forbidden(
-            detail=(
-                f"This API key is scoped to agent '{scoped}' only, but the request used "
-                f"'{agent_id}'. Use agent='{scoped}' in db.log() / POST /v1/events, or create "
-                f"a separate agent + key for '{agent_id}'."
-            ),
-        )
+    if scoped:
+        if scoped != agent_id:
+            _raise_agent_mismatch()
+        return
+
+    key_id = tenant.get("key_id")
+    if not key_id:
+        return
+
+    from services.api_keys import claim_unassigned_api_key
+
+    bound = await claim_unassigned_api_key(
+        key_id=key_id,
+        tenant_id=tenant["tenant_id"],
+        agent_id=agent_id,
+    )
+    if bound is None:
+        raise unauthorized(detail=_INVALID_API_KEY_MESSAGE)
+    tenant["agent_id"] = bound
+    if bound != agent_id:
+        _raise_agent_mismatch()
 
 
 def _dev_key_accepted(token: str) -> bool:

@@ -180,7 +180,7 @@ async def test_agent_event(
 ):
     """Log a test event to this agent (dashboard JWT). Verifies the pipeline for this agent."""
     agent_id = _validate_agent_id(agent_id)
-    assert_agent_allowed(tenant, agent_id)
+    await assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
     tenant_id = tenant["tenant_id"]
 
@@ -273,7 +273,7 @@ async def revoke_agent_api_key(
 @router.get("/{agent_id}/stats")
 async def agent_stats(agent_id: str, tenant: dict = Depends(get_tenant)):
     agent_id = _validate_agent_id(agent_id)
-    assert_agent_allowed(tenant, agent_id)
+    await assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
 
     stats = await pool.fetchrow(
@@ -328,7 +328,7 @@ async def agent_report(
     recommendations from real events. See services/reports.py.
     """
     agent_id = _validate_agent_id(agent_id)
-    assert_agent_allowed(tenant, agent_id)
+    await assert_agent_allowed(tenant, agent_id)
 
     try:
         from_dt = reports.parse_utc_naive(from_, "from")
@@ -365,7 +365,7 @@ async def agent_token_usage(
     is left unchanged.
     """
     agent_id = _validate_agent_id(agent_id)
-    assert_agent_allowed(tenant, agent_id)
+    await assert_agent_allowed(tenant, agent_id)
 
     try:
         from_dt = reports.parse_utc_naive(from_, "from")
@@ -411,7 +411,7 @@ async def agent_token_optimization(
     already documented for /token-usage). No caching in v1.
     """
     agent_id = _validate_agent_id(agent_id)
-    assert_agent_allowed(tenant, agent_id)
+    await assert_agent_allowed(tenant, agent_id)
 
     try:
         if from_ is None or to is None:
@@ -447,7 +447,7 @@ async def agent_suggestions(
     ``no_evidence`` / ``ai_not_configured``. Never invents recommendations.
     """
     agent_id = _validate_agent_id(agent_id)
-    assert_agent_allowed(tenant, agent_id)
+    await assert_agent_allowed(tenant, agent_id)
 
     # Throttle per tenant to bound AI spend. `refresh` bypasses the cache/lock
     # and forces a live Claude call, so it gets a much tighter cap.
@@ -499,7 +499,7 @@ async def list_sessions(
     tenant: dict = Depends(get_tenant),
 ):
     agent_id = _validate_agent_id(agent_id)
-    assert_agent_allowed(tenant, agent_id)
+    await assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
     rows = await pool.fetch(
         """
@@ -682,7 +682,7 @@ async def agent_baseline(
     Otherwise falls back to the most recent N sessions vs everything prior.
     """
     agent_id = _validate_agent_id(agent_id)
-    assert_agent_allowed(tenant, agent_id)
+    await assert_agent_allowed(tenant, agent_id)
     pool = get_pool()
 
     sessions = await pool.fetch(
@@ -874,7 +874,7 @@ async def agent_behavior_change(
     Requires >= 50 events before the window to establish a meaningful baseline.
     """
     agent_id  = _validate_agent_id(agent_id)
-    assert_agent_allowed(tenant, agent_id)
+    await assert_agent_allowed(tenant, agent_id)
     pool      = get_pool()
     tenant_id = tenant["tenant_id"]
 

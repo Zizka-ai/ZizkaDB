@@ -13,10 +13,9 @@ import { CreateApiKeyCard } from './CreateApiKeyCard'
 beforeEach(() => createApiKey.mockReset())
 
 describe('CreateApiKeyCard', () => {
-  it('renders the name input and create button', () => {
+  it('explains that a new key is unassigned until first agent use', () => {
     render(<CreateApiKeyCard />)
-    expect(screen.getByLabelText('API key name')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /create key/i })).toBeInTheDocument()
+    expect(screen.getByText(/unassigned until the first agent uses it/i)).toBeInTheDocument()
   })
 
   it('creates a key and reveals it once, with the host in the usage snippet', async () => {

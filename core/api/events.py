@@ -35,7 +35,7 @@ async def log_event(
     body: LogEventRequest,
     tenant: dict = Depends(get_tenant),
 ):
-    assert_agent_allowed(tenant, body.agent)
+    await assert_agent_allowed(tenant, body.agent)
     return await write_event(
         tenant_id=tenant["tenant_id"],
         agent=body.agent,
@@ -62,7 +62,7 @@ async def query_events(
     session_id: str | None = None,
     tenant: dict = Depends(get_tenant),
 ):
-    assert_agent_allowed(tenant, agent)
+    await assert_agent_allowed(tenant, agent)
     pool = get_pool()
     tenant_id = tenant["tenant_id"]
 
@@ -157,6 +157,8 @@ async def why(
     if not rows:
         raise not_found("Event not found")
 
+    await assert_agent_allowed(tenant, rows[0]["agent_id"])
+
     return {
         "event_id": event_id,
         "chain_length": len(rows),
@@ -175,7 +177,7 @@ async def time_travel(
     timestamp: datetime,
     tenant: dict = Depends(get_tenant),
 ):
-    assert_agent_allowed(tenant, agent)
+    await assert_agent_allowed(tenant, agent)
     pool = get_pool()
     tenant_id = tenant["tenant_id"]
 
