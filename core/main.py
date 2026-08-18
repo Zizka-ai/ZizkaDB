@@ -11,6 +11,7 @@ from api.auth import _ensure_dev_tenant
 from api.events import router as events_router
 from api.agents import router as agents_router
 from api.auth import router as auth_router
+from api.a2a import router as a2a_router
 from api.search import router as search_router
 from api.memory import router as memory_router
 from api.telemetry import router as telemetry_router
@@ -104,6 +105,7 @@ app.add_middleware(
 app.include_router(auth_router,      prefix="/v1/auth",      tags=["auth"])
 app.include_router(events_router,    prefix="/v1/events",    tags=["events"])
 app.include_router(agents_router,    prefix="/v1/agents",    tags=["agents"])
+app.include_router(a2a_router,       prefix="/v1/a2a",       tags=["a2a"])
 app.include_router(search_router,    prefix="/v1/search",    tags=["search"])
 app.include_router(memory_router,    prefix="/v1/memory",    tags=["memory"])
 app.include_router(telemetry_router, prefix="/v1/telemetry", tags=["telemetry"])
