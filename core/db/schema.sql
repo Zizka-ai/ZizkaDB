@@ -154,7 +154,22 @@ CREATE TABLE IF NOT EXISTS sdk_telemetry (
     runtime      VARCHAR(50),
     os           VARCHAR(50),
     mode         VARCHAR(30),
+    country_code CHAR(2),
     first_seen   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_seen    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     ping_count   INT NOT NULL DEFAULT 1
 );
+
+CREATE TABLE IF NOT EXISTS sdk_update_subscriptions (
+    subscription_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email           VARCHAR(255) NOT NULL,
+    install_id      TEXT,
+    sdk             VARCHAR(32) NOT NULL DEFAULT 'unknown',
+    country_code    CHAR(2),
+    source          VARCHAR(64) NOT NULL DEFAULT 'dashboard',
+    user_agent      TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_sdk_update_subscriptions_email
+    ON sdk_update_subscriptions (LOWER(email));

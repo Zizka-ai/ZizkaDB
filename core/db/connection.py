@@ -202,10 +202,33 @@ async def init_db():
             runtime TEXT NOT NULL DEFAULT 'unknown',
             os TEXT NOT NULL DEFAULT 'unknown',
             mode TEXT NOT NULL DEFAULT 'cloud',
+            country_code CHAR(2),
             first_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             ping_count INTEGER NOT NULL DEFAULT 1
         )
+    """)
+
+    await _pg_pool.execute("""
+        ALTER TABLE sdk_telemetry ADD COLUMN IF NOT EXISTS country_code CHAR(2);
+    """)
+
+    await _pg_pool.execute("""
+        CREATE TABLE IF NOT EXISTS sdk_update_subscriptions (
+            subscription_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+            email           VARCHAR(255) NOT NULL,
+            install_id      TEXT,
+            sdk             VARCHAR(32) NOT NULL DEFAULT 'unknown',
+            country_code    CHAR(2),
+            source          VARCHAR(64) NOT NULL DEFAULT 'dashboard',
+            user_agent      TEXT,
+            created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_sdk_update_subscriptions_email
+            ON sdk_update_subscriptions (LOWER(email));
+        CREATE INDEX IF NOT EXISTS idx_sdk_update_subscriptions_created
+            ON sdk_update_subscriptions (created_at DESC);
     """)
 
 

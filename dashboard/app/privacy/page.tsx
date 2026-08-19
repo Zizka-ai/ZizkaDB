@@ -52,7 +52,8 @@ export default function PrivacyPolicyPage() {
         <li style={S.li}><strong>Technical data</strong> — IP address, browser type, device information, API request logs, error reports</li>
         <li style={S.li}><strong>Communications</strong> — messages you send via contact or enterprise forms</li>
         <li style={S.li}><strong>Cookie / local storage data</strong> — consent preferences and session identifiers (see Section 9)</li>
-        <li style={S.li}><strong>Optional telemetry</strong> — anonymous SDK install metrics if not disabled (<code style={{ fontFamily: 'monospace', fontSize: 13 }}>ZIZKADB_TELEMETRY=false</code>)</li>
+        <li style={S.li}><strong>Optional telemetry</strong> — anonymous SDK install metrics (SDK type, version, OS, and coarse country derived from IP at ping time; we do not store raw IP in telemetry tables) if not disabled (<code style={{ fontFamily: 'monospace', fontSize: 13 }}>ZIZKADB_TELEMETRY=false</code>)</li>
+        <li style={S.li}><strong>Optional product updates</strong> — if you choose to subscribe on the dashboard or via a future SDK prompt, we store your email solely to send release and security notices; you may unsubscribe at any time</li>
       </ul>
 
       <h2 style={S.h2}>4. Purposes and legal bases (GDPR Art. 6)</h2>
