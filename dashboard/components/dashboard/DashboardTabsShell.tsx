@@ -10,6 +10,7 @@ import { useEdition } from '@/hooks/useEdition'
 import { useAgents } from '@/hooks/useAgents'
 import { useSelectedAgent } from '@/hooks/useSelectedAgent'
 import { colors } from '@/lib/design-tokens'
+import { TelemetryUpdatesPrompt } from '@/components/dashboard/TelemetryUpdatesPrompt'
 
 /** Tabs available in every edition, in display order. */
 const BASE_TABS = [
@@ -85,6 +86,7 @@ function ShellInner({ children }: { children: ReactNode }) {
       </header>
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">{children}</main>
+      <TelemetryUpdatesPrompt />
     </div>
   )
 }
