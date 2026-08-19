@@ -1,5 +1,3 @@
-[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/zizka-ai-zizkadb-badge.png)](https://mseep.ai/app/zizka-ai-zizkadb)
-
 <div align="center">
 
 # ZizkaDB
@@ -222,6 +220,15 @@ zizkadb init my-agent --template basic
 | Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
 | Security | [SECURITY.md](SECURITY.md) |
 | License | API & dashboard [AGPL-3.0](LICENSE) · MCP [MIT](mcp/LICENSE) |
-[![Verified on MseeP](https://mseep.ai/badge.svg)](https://mseep.ai/app/c3411d91-26eb-49df-a8e3-7ef5914a48dd)
+
+<p align="center">
+  <a href="https://mseep.ai/app/zizka-ai-zizkadb">
+    <img src="https://mseep.net/pr/zizka-ai-zizkadb-badge.png" alt="MseeP.ai Security Assessment Badge" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://mseep.ai/app/c3411d91-26eb-49df-a8e3-7ef5914a48dd">
+    <img src="https://mseep.ai/badge.svg" alt="Verified on MseeP" />
+  </a>
+</p>
 
 Disable telemetry: `export ZIZKADB_TELEMETRY=false`
