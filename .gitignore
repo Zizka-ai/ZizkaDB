@@ -59,3 +59,5 @@ core/.venv/
 # Profiling artifacts
 *.profraw
 default.profraw
+*.zip
+pgvector-src/
