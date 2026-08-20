@@ -195,6 +195,12 @@ async def init_db():
     """)
 
     await _pg_pool.execute("""
+        CREATE INDEX IF NOT EXISTS idx_api_keys_tenant_active
+        ON api_keys (tenant_id)
+        WHERE revoked = FALSE;
+    """)
+
+    await _pg_pool.execute("""
         CREATE TABLE IF NOT EXISTS sdk_telemetry (
             install_id TEXT PRIMARY KEY,
             sdk TEXT NOT NULL DEFAULT 'unknown',

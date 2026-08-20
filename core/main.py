@@ -42,6 +42,13 @@ async def lifespan(app: FastAPI):
                 "Refusing to start with ENV=production and default JWT_SECRET. "
                 "Set a strong JWT_SECRET in infra/.env."
             )
+        from services.entitlements import limits_enforced
+
+        if not limits_enforced():
+            logger.warning(
+                "API_KEY_LIMITS_ENFORCED is false in production — per-plan API key "
+                "caps are not enforced until you enable the kill switch."
+            )
     await init_db()
     # Seed dev tenant for local self-host (ENV=development) or when DEV_API_KEY is set.
     if os.getenv("ENV", "development") == "development" or os.getenv("DEV_API_KEY"):

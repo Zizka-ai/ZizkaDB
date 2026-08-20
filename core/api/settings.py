@@ -34,7 +34,7 @@ async def embeddings_catalog():
 
 
 @router.get("/embeddings")
-async def get_embeddings(tenant: dict = Depends(get_tenant)):
+async def get_embeddings(tenant: dict = Depends(require_dashboard_session)):
     config = await get_tenant_embedding_config(tenant["tenant_id"])
     return embedding_config_for_response(config)
 
