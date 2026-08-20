@@ -1,0 +1,54 @@
+---
+description: ZizkaDB cross-cutting coding standards — always apply on every task
+alwaysApply: true
+---
+
+# ZizkaDB — Coding Standards (always apply)
+
+These rules apply to **every** change without needing to be named in the prompt. Area-specific guides load automatically via `.cursor/rules/*.mdc` globs and module `CLAUDE.md` files.
+
+## Read automatically by area
+
+| Working in… | Consult first |
+|---|---|
+| `core/` | `core/CLAUDE.md` · `.cursor/rules/core-backend.mdc` · `.cursor/rules/backend-dashboard-contract.mdc` |
+| `dashboard/` | `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` · `dashboard/CLAUDE.md` · `.cursor/rules/dashboard.mdc` |
+| `sdk/`, `integrations/`, `mcp/`, `examples/` | Module `CLAUDE.md` · `.cursor/rules/sdk-integrations-mcp.mdc` |
+| `infra/`, `scripts/`, `.github/` | `.cursor/rules/infra-deploy.mdc` |
+| Tests | `.cursor/rules/testing.mdc` |
+| Architecture / why | `docs/adr/` · root `CLAUDE.md` |
+
+## Critical invariants — never break
+
+1. **Auth deps** (`core/api/deps.py`): SDK routes → `get_tenant`; dashboard management → `require_dashboard_session` (JWT only). Per-agent analytics + scoped SDK reads → `get_tenant` + `assert_agent_allowed(tenant, agent_id)` first line. There is **no** `require_admin` in this OSS repo.
+2. **Route paths**: never rename `/v1/...` without updating `dashboard/lib/api.ts` and KB §17.3.
+3. **Entitlements**: plan caps live **only** in `core/services/entitlements.py::PLAN_ENTITLEMENTS` (Pro 2 keys, Team 5). Override via `API_KEY_LIMIT_<PLAN>=N` env — never hardcode elsewhere.
+4. **Schema DDL**: idempotent only (`IF NOT EXISTS` / `IF EXISTS`) in `schema.sql` + `connection.py::init_db()`.
+5. **Production compose**: `infra/docker-compose.yml` is prod — no `--reload` or source volume mounts (use `docker-compose.dev.yml`).
+6. **Self-host security**: `ENV=production` + `NEXT_PUBLIC_DEV_MODE=false` on any public deployment.
+
+## Cross-cutting update rules
+
+| If you change… | Also update… |
+|---|---|
+| `/v1/` route or response shape | `dashboard/lib/api.ts` + `DASHBOARD_KNOWLEDGE_BASE.md` §17.3 |
+| Auth / billing / signup | KB §7, §8, §18 |
+| DB schema | `schema.sql` + `init_db()` + KB §21 |
+| SDK release | `sdk/python/pyproject.toml`, `sdk/typescript/package.json`, `mcp/pyproject.toml`, `core/main.py version=` together |
+| LangChain/CrewAI callbacks | Both `integrations/` and `sdk/python/zizkadb/integrations/` copies |
+
+## Style (match surrounding code)
+
+- **Python**: async + asyncpg pool; ruff; reuse `core/api/utils.py` for IP/rate-limit.
+- **Dashboard**: Next.js 14 App Router, `'use client'`, `apiFetch` only, no React Query/Zustand/Context, 2-space/single-quotes/no-semicolons, `cancelled` guards in effects.
+- **TS SDK**: sync constructor, camelCase fields.
+
+## Tests before push
+
+```bash
+ruff check core/ sdk/python/ mcp/ integrations/
+pytest core/tests/ -m "not integration" -v
+cd dashboard && npm run lint && npm test && npm run build
+```
+
+See `.cursor/skills/zizkadb-test/SKILL.md` for the full matrix.

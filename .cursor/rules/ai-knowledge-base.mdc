@@ -1,0 +1,31 @@
+---
+description: AI knowledge-base index — what to trust and keep in sync
+alwaysApply: true
+---
+
+# AI Knowledge Base Index
+
+Use this map to pick the **right** source of truth. Prefer these over guessing from memory.
+
+## Canonical sources (trust these)
+
+| Document | Role |
+|---|---|
+| Root `CLAUDE.md` | Project-wide stack, invariants, test commands |
+| `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` | Dashboard flows, API contract, business rules, per-screen behavior |
+| `core/CLAUDE.md` | Router map, auth tree, asyncpg patterns |
+| `docs/adr/` | Architectural decisions and trade-offs |
+| `.cursor/rules/*.mdc` | Focused agent guides per area (auto-loaded by glob) |
+| `.cursor/skills/zizkadb-*/SKILL.md` | Setup, test, release workflows |
+
+## OSS repo scope (important)
+
+This open-source tree ships the **tenant dashboard**, API, SDKs, MCP, and marketing/community surfaces. It does **not** include the managed-cloud **operator admin console** (`/admin`, `/v1/admin/*`) — those sections in the KB are historical; do not implement admin routes here.
+
+## Keep docs accurate
+
+When your change affects behavior listed in a KB section, update that doc **in the same PR**. Stale docs mislead future AI sessions more than missing docs.
+
+## Billing reality
+
+No Stripe/checkout gate. Signup uses `selectBillingPlan` (POST `/v1/billing/select-plan`) after OTP. `billing_status_payload()` always returns `has_access: true`.
