@@ -147,6 +147,7 @@ async def why(
             FROM events e
             INNER JOIN causal_chain cc ON e.event_id = cc.parent_event_id
             WHERE e.tenant_id = $2 AND cc.depth < $3
+              AND ($4::text IS NULL OR e.agent_id = $4)
         )
         SELECT * FROM causal_chain
         ORDER BY depth DESC, timestamp ASC
@@ -157,7 +158,7 @@ async def why(
     if not rows:
         raise not_found("Event not found")
 
-    await assert_agent_allowed(tenant, rows[0]["agent_id"])
+    await assert_agent_allowed(tenant, anchor["agent_id"])
 
     return {
         "event_id": event_id,
