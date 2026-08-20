@@ -1,4 +1,4 @@
-"""Tests for POST /v1/marketing/subscribe."""
+"""Tests for POST /v1/marketing-subscriptions."""
 
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -25,7 +25,7 @@ class TestMarketingSubscribe:
         mock_get_pool.return_value = pool
 
         res = client.post(
-            "/v1/marketing/subscribe",
+            "/v1/marketing-subscriptions",
             json={"email": "lead@example.com", "source": "popup", "botcheck": ""},
         )
         assert res.status_code == 201
@@ -34,7 +34,7 @@ class TestMarketingSubscribe:
 
     def test_subscribe_honeypot(self):
         res = client.post(
-            "/v1/marketing/subscribe",
+            "/v1/marketing-subscriptions",
             json={"email": "lead@example.com", "botcheck": "spam"},
         )
         assert res.status_code == 400

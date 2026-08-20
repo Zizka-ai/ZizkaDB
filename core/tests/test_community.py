@@ -43,7 +43,7 @@ class TestCommunityPosts:
         mock_get_pool.return_value = _mock_pool(fetch_return=[])
         res = client.get("/v1/community/posts")
         assert res.status_code == 200
-        assert res.json()["posts"] == []
+        assert res.json() == []
 
     @patch("api.community.get_pool")
     def test_create_post_happy_path(self, mock_get_pool):
@@ -53,19 +53,13 @@ class TestCommunityPosts:
             fetchrow_return={
                 "post_id": UUID(post_id),
                 "created_at": now,
-                "category": "question",
-                "title": POST_BODY["title"],
-                "body": POST_BODY["body"],
-                "author_name": POST_BODY["author_name"],
-                "reply_count": 0,
-                "image_urls": [],
             }
         )
         res = client.post("/v1/community/posts", json=POST_BODY)
         assert res.status_code == 201
         data = res.json()
-        assert data["post_id"] == post_id
-        assert data["title"] == POST_BODY["title"]
+        assert data["id"] == post_id
+        assert data["created_at"] == now.isoformat()
 
     @patch("api.community.get_pool")
     def test_create_post_honeypot_rejects_bot(self, mock_get_pool):
@@ -83,12 +77,6 @@ class TestCommunityPosts:
             fetchrow_return={
                 "post_id": UUID("11111111-1111-1111-1111-111111111111"),
                 "created_at": datetime(2026, 7, 1, tzinfo=timezone.utc),
-                "category": "question",
-                "title": POST_BODY["title"],
-                "body": POST_BODY["body"],
-                "author_name": POST_BODY["author_name"],
-                "reply_count": 0,
-                "image_urls": [],
             }
         )
         for _ in range(10):
