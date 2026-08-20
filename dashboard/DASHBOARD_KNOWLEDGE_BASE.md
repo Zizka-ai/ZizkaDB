@@ -445,7 +445,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 1. **Copy inconsistency on credit card:** landing pricing may still say "card required" while funnel says "No credit card required" — align copy when payment is reintroduced.
 2. **Access token is XSS-exposed:** the **access** JWT lives in `localStorage` + a non-`HttpOnly` (JS-readable) cookie. (The **refresh** token is a proper `HttpOnly` cookie set by the backend — `core/api/auth.py:104-112` — so it is not JS-readable.) A structural fix would move the access token to an `HttpOnly` server-set cookie too. Middleware trusts the access cookie only.
 3. **Auth source mismatch:** middleware reads the access cookie, app code reads localStorage. If one is cleared (cookie expiry vs localStorage), a user can pass the edge guard but fail client calls, or vice-versa.
-4. **`selectBillingPlan` best-effort swallow** (`signup/page.tsx` `catch {}`) — a failure here silently leaves default plan; acceptable but undocumented.
+4. ~~**`selectBillingPlan` best-effort swallow**~~ — **fixed:** signup now awaits `selectBillingPlan` and surfaces errors instead of silent `catch {}`.
 5. **Retention-trial / delete** are destructive and rely on client `accountOpts.managed_cloud`; ensure backend re-validates.
 6. **Calendly `postMessage`**: origin is validated (good), but booked-state cannot be forged into app state beyond a UI success screen (low risk).
 7. **No client-side rate-limit/backoff on OTP request** (relies on backend).
