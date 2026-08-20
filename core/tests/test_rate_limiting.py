@@ -266,7 +266,7 @@ class TestVerifyOTPRateLimiting:
         verify_otp_limiter.storage = InMemoryStorage()
         asyncio.run(verify_otp_limiter.storage.clear())
 
-    @patch("api.auth.fetch_user_billing", new_callable=AsyncMock)
+    @patch("services.billing.fetch_user_billing", new_callable=AsyncMock)
     @patch("api.auth.verify_otp", new_callable=AsyncMock)
     def test_verify_otp_exceed_limit(self, mock_verify, mock_billing):
         mock_verify.return_value = {

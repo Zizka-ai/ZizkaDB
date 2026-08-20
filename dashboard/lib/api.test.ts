@@ -32,8 +32,9 @@ describe('apiFetch behavior', () => {
 
     const { getAgents } = await import('./api')
     const pending = getAgents('tok')
+    const expectRejection = expect(pending).rejects.toThrow(/timed out/i)
     await vi.advanceTimersByTimeAsync(API_FETCH_TIMEOUT_MS + 1)
-    await expect(pending).rejects.toThrow(/timed out/i)
+    await expectRejection
   })
 
   it('clears auth and redirects on 401', async () => {
