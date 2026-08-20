@@ -2,11 +2,13 @@
 
 > Single source of truth for the Dashboard module. Reverse-engineered directly from the codebase.
 >
-> **Last verified:** 2026-07-26 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
+> **Last verified:** 2026-08-21 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
+>
+> **OSS scope:** This repo ships the tenant dashboard and public marketing/community surfaces. The managed-cloud **operator admin console** (`/admin`, `/v1/admin/*`) is **not** in this tree — §16 / §20.5 admin sections are historical reference only.
 >
 > **Important finding:** There is **no "Pricing Modal"** in this codebase. Pricing is a static section on the landing page (`app/page.tsx`, `#pricing`). The only actual modal is the **Calendly "Book demo" modal** (`components/marketing/CalendlyBookModal.tsx`).
 >
-> **Scope:** covers the entire `dashboard/` Next.js app — tenant product (`/dashboard/*`), signup funnel, login, marketing/community/docs/trust, and the operator admin console — plus the backend touch points it depends on (`core/`). SDKs (`sdk/*`), MCP (`mcp/`), and integrations (`integrations/*`) are the event *producers*; they are pointers only here (see §17.4), not fully documented.
+> **Scope:** covers the entire `dashboard/` Next.js app — tenant product (`/dashboard/*`), signup funnel, login, marketing/community/docs/trust — plus the backend touch points it depends on (`core/`). SDKs (`sdk/*`), MCP (`mcp/`), and integrations (`integrations/*`) are the event *producers*; they are pointers only here (see §17.4), not fully documented.
 
 ## Table of Contents
 
@@ -46,14 +48,13 @@
 
 **Rendering model:** Almost every page is a Client Component (`'use client'`). Server layer is limited to `middleware.ts` (edge auth) and static `metadata`.
 
-**Three surfaces, gated separately:**
+**Two surfaces, gated at the edge:**
 
 | Surface | Routes | Auth cookie |
 |--------|--------|-------------|
 | Marketing | `/`, `/docs`, `/community`, `/trust` | none |
 | Signup funnel | `/signup/*`, `/login` | none (sets token on success) |
 | Tenant dashboard | `/dashboard/*` | `zizkadb_token` |
-| Operator admin | `/admin/*` | `zizkadb_admin_token` |
 
 **Initialization/render flow for `/dashboard`:**
 
@@ -67,7 +68,7 @@ app/dashboard/layout.tsx
        → children (page)
 ```
 
-**API integration:** single module `lib/api.ts`. All calls go through `apiFetch(path, token, options)` which injects `Authorization: Bearer <token>`, `Content-Type: application/json`, and throws normalized `Error(detail)` on non-2xx. Base URL from `NEXT_PUBLIC_API_URL` (empty string → same-origin, routed by nginx to FastAPI).
+**API integration:** single module `lib/api.ts`. All calls go through `apiFetch(path, token, options)` which injects `Authorization: Bearer <token>`, `Content-Type: application/json`, enforces a **30s timeout** (`API_FETCH_TIMEOUT_MS`), clears auth + redirects on **401**, and throws normalized `Error(detail)` on other non-2xx. Base URL from `NEXT_PUBLIC_API_URL` (empty string → same-origin, routed by nginx to FastAPI). Plan metadata for signup/marketing: `lib/plans.ts` (Pro/Team caps must match `PLAN_ENTITLEMENTS`).
 
 **Feature flags (env):**
 - `NEXT_PUBLIC_DEV_MODE === 'true'` → self-host mode: enables dev-token login, changes onboarding copy.
@@ -204,8 +205,8 @@ back with a visible notice when it names an agent that no longer exists.
 OSS**. `/dashboard/fleet` redirects to Activity on OSS.
 
 **Route guards / redirects:**
-- **Edge (`middleware.ts`):** `/dashboard*` without `zizkadb_token` → `/login?next=<path>` (all responses `X-Robots-Tag: noindex`). `/admin*` subpaths without `zizkadb_admin_token` → `/admin`.
-- **Note:** middleware reads a **cookie**, but `lib/auth.ts` reads the token from **localStorage**. Both are written on `setToken()`, so they normally agree (see Risks §14).
+- **Edge (`middleware.ts`):** `/dashboard*` without `zizkadb_token` cookie → `/login?next=<path>` (all responses `X-Robots-Tag: noindex`). Matcher is `/dashboard` only — no `/admin` routes in OSS.
+- **Client fallback:** `getToken()` reads localStorage, then falls back to the `zizkadb_token` cookie when localStorage is empty.
 
 ---
 
@@ -449,7 +450,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 5. **Retention-trial / delete** are destructive and rely on client `accountOpts.managed_cloud`; ensure backend re-validates.
 6. **Calendly `postMessage`**: origin is validated (good), but booked-state cannot be forged into app state beyond a UI success screen (low risk).
 7. **No client-side rate-limit/backoff on OTP request** (relies on backend).
-8. **No request timeouts:** only `adminRequestOtp` passes an `AbortSignal` (`api.ts:157`); other fetches (incl. 10s agents poll, 30s `/health` poll) can hang/stack. Consider an `AbortController` + timeout in `apiFetch`.
+8. ~~**No request timeouts**~~ — **fixed:** `apiFetch` uses a 30s `AbortController` timeout (`API_FETCH_TIMEOUT_MS`); 401 clears token and redirects to `/login`.
 9. **API does not enforce subscription:** `get_tenant` validates the token but not `subscription_status`; there is no billing gate on API routes (by design after Stripe removal).
 10. **API key limits dormant by default:** `API_KEY_LIMITS_ENFORCED` defaults OFF — enable deliberately in production after measuring tenant key counts. Self-hosted plan resolution additionally requires `DEPLOYMENT_MODE=self_hosted` to be set — it does not depend on the enforcement flag.
 
@@ -652,7 +653,7 @@ range validated like `/report`. Provider failure → 503 (never 500). Never inve
 | `grantRetentionTrial` | POST `/v1/account/retention-trial` | `account.py:43` |
 | `deleteManagedAccount` | DELETE `/v1/account` | `account.py:54` |
 
-**Admin (`core/api/admin.py`, prefix `/v1/admin`, `include_in_schema=False`):** `adminRequestOtp` `:90` · `adminVerifyOtp` `:103` · `adminOverview` `:120` · `adminTelemetrySummary` `:157` · `adminTelemetryRecent` `:200` · `adminManagedOverview` `:235` · `adminManagedSubscribers` `:262` · `adminManagedUsers` `:329` · `adminManagedUsage` `:447` · `adminDemoRequests` `:497`.
+**Admin (`core/api/admin.py`, prefix `/v1/admin`):** *Not shipped in OSS repo* — historical endpoint list retained for managed-cloud parity reference only.
 
 **Community (`lib/community.ts` → `core/api/community.py`, prefix `/v1/community`):** `listCommunityPosts`/`getCommunityPost` (GET `/posts`, `/posts/{id}` — `:78`,`:119`) · `createCommunityPost` (POST `/posts` `:169`) · `createCommunityReply` (POST `/posts/{id}/replies` `:198`) · `uploadCommunityImage` (POST `/upload` `:238`) · `mediaUrl` (GET `/media/{file}` `:261`). Unauthenticated; uses a honeypot field (`website`) for spam control.
 
@@ -1066,6 +1067,7 @@ erDiagram
 |---------|------|
 | Edge auth guard | `middleware.ts` |
 | API + redirect helpers | `lib/api.ts` |
+| Managed plan metadata (Pro/Team) | `lib/plans.ts` |
 | Token storage | `lib/auth.ts`, `lib/session-cookies.ts` |
 | Landing + pricing section | `app/page.tsx`, `components/marketing/{PricingCard,pricing-plans}.ts` |
 | Signup funnel | `app/signup/{plan,start,page,checkout,success}` |
@@ -1074,7 +1076,6 @@ erDiagram
 | Agents home | `app/dashboard/page.tsx` |
 | Settings (keys/embeddings/account) | `app/dashboard/settings/page.tsx` |
 | Book-demo modal | `components/marketing/CalendlyBookModal.tsx` |
-| Operator admin | `app/admin/{layout,page}.tsx` |
 | Build config / rewrites / env | `next.config.mjs` |
 
 ### Backend & infra (touch points)
@@ -1091,6 +1092,5 @@ erDiagram
 | Memory (context/diff/forget) | `core/api/memory.py` |
 | Agents + baseline/drift | `core/api/agents.py` |
 | Embeddings config (BYOK) | `core/services/embedding_config.py`, `core/api/settings.py` |
-| Admin analytics/telemetry | `core/api/admin.py` |
 | Reverse proxy / routing | `infra/nginx.conf` |
 | Event producers | `sdk/python`, `sdk/typescript`, `integrations/*`, `mcp/` |
