@@ -72,7 +72,7 @@ function ActivityContent() {
 
   // Hooks must run unconditionally; they no-op on a null agent.
   const events = useAgentEvents(agentId)
-  const { stats } = useAgentStats(agentId)
+  const { stats, pollError } = useAgentStats(agentId)
 
   if (agentsLoading) return <Skeleton rows={6} />
 
@@ -122,6 +122,11 @@ function ActivityContent() {
           <h1 className="text-lg font-semibold leading-tight" style={{ color: colors.textStrong }}>
             Activity
           </h1>
+          {pollError && (
+            <p className="text-xs mt-1" style={{ color: colors.warning }}>
+              Live stats temporarily unavailable — showing last known counts.
+            </p>
+          )}
           {stats && (
             <p className="text-xs mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5" style={{ color: colors.textMuted }}>
               <span><span style={{ color: colors.text }}>{stats.total_events.toLocaleString()}</span> events</span>

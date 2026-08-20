@@ -13,6 +13,7 @@ import { POLL_INTERVAL_MS } from '@/lib/constants'
 export function useAgentStats(agentId: string | null) {
   const [stats, setStats] = useState<AgentStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [pollError, setPollError] = useState(false)
 
   const load = useCallback(async (): Promise<AgentStats | null> => {
     if (!agentId) return null
@@ -20,8 +21,10 @@ export function useAgentStats(agentId: string | null) {
     if (!token) return null
     try {
       const res = await getAgentStats(token, agentId)
+      setPollError(false)
       return res
     } catch {
+      setPollError(true)
       return null
     }
   }, [agentId])
@@ -53,5 +56,5 @@ export function useAgentStats(agentId: string | null) {
     }
   }, [agentId, load])
 
-  return { stats, loading }
+  return { stats, loading, pollError }
 }
