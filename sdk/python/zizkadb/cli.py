@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import os
 import shutil
 import sys
 from pathlib import Path
+
+from zizkadb.client import ZizkaDB
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
@@ -65,6 +68,68 @@ def cmd_demo(args: argparse.Namespace) -> None:
         raise SystemExit(1) from e
 
 
+def _client_from_env() -> ZizkaDB:
+    api_key = os.getenv("ZIZKADB_API_KEY") or os.getenv("AGENTDB_API_KEY") or ""
+    host = os.getenv("ZIZKADB_HOST", DEFAULT_HOST)
+    return ZizkaDB(api_key=api_key, host=host)
+
+
+def _print_json(data: object) -> None:
+    print(json.dumps(data, indent=2, default=str))
+
+
+def cmd_why(args: argparse.Namespace) -> None:
+    async def run() -> None:
+        async with _client_from_env() as db:
+            _print_json(await db.why(args.event_id, depth=args.depth))
+
+    asyncio.run(run())
+
+
+def cmd_baseline(args: argparse.Namespace) -> None:
+    async def run() -> None:
+        async with _client_from_env() as db:
+            _print_json(
+                await db.baseline(
+                    args.agent,
+                    recent_window=args.recent_window,
+                    window=args.window or None,
+                )
+            )
+
+    asyncio.run(run())
+
+
+def cmd_token_usage(args: argparse.Namespace) -> None:
+    async def run() -> None:
+        async with _client_from_env() as db:
+            _print_json(
+                await db.token_usage(
+                    args.agent,
+                    args.from_,
+                    args.to,
+                    granularity=args.granularity or None,
+                )
+            )
+
+    asyncio.run(run())
+
+
+def cmd_token_opt(args: argparse.Namespace) -> None:
+    async def run() -> None:
+        async with _client_from_env() as db:
+            _print_json(
+                await db.token_optimization(
+                    args.agent,
+                    from_=args.from_ or None,
+                    to=args.to or None,
+                    granularity=args.granularity or None,
+                )
+            )
+
+    asyncio.run(run())
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="zizkadb",
@@ -93,6 +158,31 @@ def main(argv: list[str] | None = None) -> None:
         help="Starter template (default: basic)",
     )
     init_p.set_defaults(func=cmd_init)
+
+    why_p = sub.add_parser("why", help="Print causal chain for an event")
+    why_p.add_argument("event_id", help="Event UUID")
+    why_p.add_argument("--depth", type=int, default=10, help="Max chain depth")
+    why_p.set_defaults(func=cmd_why)
+
+    baseline_p = sub.add_parser("baseline", help="Behavioral baseline for an agent")
+    baseline_p.add_argument("agent", help="Agent id")
+    baseline_p.add_argument("--recent-window", type=int, default=50)
+    baseline_p.add_argument("--window", choices=("24h", "7d", "30d"), default="")
+    baseline_p.set_defaults(func=cmd_baseline)
+
+    tu_p = sub.add_parser("token-usage", help="Token usage report for an agent")
+    tu_p.add_argument("agent")
+    tu_p.add_argument("--from", dest="from_", required=True)
+    tu_p.add_argument("--to", required=True)
+    tu_p.add_argument("--granularity", choices=("hour", "day", "week"), default="")
+    tu_p.set_defaults(func=cmd_token_usage)
+
+    to_p = sub.add_parser("token-opt", help="Token optimization suggestions")
+    to_p.add_argument("agent")
+    to_p.add_argument("--from", dest="from_", default="")
+    to_p.add_argument("--to", default="")
+    to_p.add_argument("--granularity", choices=("day", "week"), default="")
+    to_p.set_defaults(func=cmd_token_opt)
 
     args = parser.parse_args(argv)
     args.func(args)
