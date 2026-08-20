@@ -8,19 +8,23 @@ See root [`CLAUDE.md`](../CLAUDE.md) for full project context. This file covers 
 
 All routers are mounted in `main.py` at `/v1/<prefix>`:
 
-The nine routers mounted in `main.py` (`app.include_router`):
+The thirteen routers mounted in `main.py` (`app.include_router`):
 
 | File | Prefix | Auth type |
 |---|---|---|
 | `api/auth.py` | `/v1/auth` | mixed (public OTP + JWT-only key mgmt) |
 | `api/events.py` | `/v1/events` | `get_tenant` (+ `assert_agent_allowed` on `/why`, `/at`) |
 | `api/agents.py` | `/v1/agents` | mixed (see below) |
+| `api/a2a.py` | `/v1/a2a` | `get_tenant` |
 | `api/search.py` | `/v1/search` | `get_tenant` + `assert_agent_allowed` |
 | `api/memory.py` | `/v1/memory` | `get_tenant` + `assert_agent_allowed` (agent-scoped) |
 | `api/telemetry.py` | `/v1/telemetry` | `get_tenant` |
 | `api/billing_checkout.py` | `/v1/billing` | `require_dashboard_session` |
 | `api/settings.py` | `/v1/settings` | `require_dashboard_session` |
 | `api/account.py` | `/v1/account` | `require_dashboard_session` |
+| `api/demo_requests.py` | `/v1/demo-requests` | public (honeypot + rate limit) |
+| `api/community.py` | `/v1/community` | public (honeypot on writes) |
+| `api/marketing_subscriptions.py` | `/v1/marketing-subscriptions` | public (honeypot on writes) |
 
 Under `/v1/agents`: per-agent analytics (`/stats`, `/sessions`, `/baseline`, `/behavior-change`,
 `/report`, `/token-usage`, `/token-optimization`, `/suggestions`, `/at`) use `get_tenant` +

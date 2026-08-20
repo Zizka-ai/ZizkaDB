@@ -18,6 +18,7 @@ async with ZizkaDB(api_key="zizkadb_live_...") as db:
 
 - Error types: `AuthError`, `AgentScopeError`, `NotFoundError` (`zizkadb/exceptions.py`)
 - CLI: `zizkadb init my-agent --template <name>` — templates in `zizkadb/templates/`
+- Analytics CLI: `zizkadb why`, `baseline`, `token-usage`, `token-opt` (see `zizkadb/cli.py`)
 - Tests: `pytest sdk/python/tests/ -v`
 
 ## TypeScript SDK (`sdk/typescript/`)
@@ -27,7 +28,10 @@ async with ZizkaDB(api_key="zizkadb_live_...") as db:
 ```typescript
 const db = new ZizkaDB({ apiKey: 'zizkadb_live_...' })
 const event = await db.log({ agent: 'my-bot', event: 'step', data: {} })
+const baseline = await db.baseline({ agent: 'my-bot' })
 ```
+
+- Analytics: `baseline()`, `tokenUsage()`, `tokenOptimization()` mirror Python SDK
 
 - **camelCase** everywhere: `parentId`, `eventId`, `sessionId` (Python SDK uses snake_case)
 - No LangChain or CrewAI adapters — TypeScript is HTTP-only
@@ -61,7 +65,7 @@ uvx zizkadb-mcp
 # On localhost: dev key auto-injected — no API key needed
 ```
 
-8 MCP tools in `zizkadb_mcp/server.py`: `log_event`, `query_why`, `query_at`, `search_events`, `context_for`, `query_events`, `list_agents`, `memory_diff`.
+11 MCP tools in `zizkadb_mcp/server.py`: `log_event`, `search_memory`, `get_context`, `why`, `query_events`, `time_travel`, `get_baseline`, `get_token_usage`, `get_token_optimization`, `memory_diff`, `forget`.
 
 Tests: `pytest mcp/tests/ -v` (also runs in CI).
 

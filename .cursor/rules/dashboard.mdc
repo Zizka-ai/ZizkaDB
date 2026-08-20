@@ -10,7 +10,8 @@ alwaysApply: false
 
 ## Conventions (match these)
 - Next.js 14 App Router. Interactive pages are Client Components (`'use client'`). TS `strict`, `@/*` alias. No Prettier — match surrounding style (2-space, single quotes, no semicolons).
-- **All API calls go through `lib/api.ts`** (`apiFetch` injects auth + normalizes errors). No React Query/SWR/Redux/Zustand/Context — local `useState`/`useEffect` only.
+- **All API calls go through `lib/api.ts`** (`apiFetch`: 30s timeout, auth injection, 401 redirect, normalized errors). No React Query/SWR/Redux/Zustand/Context — local `useState`/`useEffect` only.
+- **Plan metadata:** `lib/plans.ts` is the single source for Pro/Team signup/pricing copy (key caps must match `PLAN_ENTITLEMENTS`).
 - Guard every async effect with a `let cancelled = false` flag; check it before `setState` (see `signup/page.tsx`, `TenantPlanBanner`).
 - Redirect guards: render the page's `*Fallback` loader while a redirect is pending; never render real UI before guard checks resolve (see the `checked` gate in `signup/page.tsx`).
 - Wrap `useSearchParams` pages in `<Suspense>` (Next CSR bailout).

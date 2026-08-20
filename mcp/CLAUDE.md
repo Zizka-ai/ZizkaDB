@@ -37,18 +37,21 @@ Set via environment variables (or MCP server `env` block):
 
 ## MCP tools (defined in `zizkadb_mcp/server.py`)
 
-The server exposes 8 tools over stdio transport:
+The server exposes 11 tools over stdio transport:
 
 | Tool | SDK equivalent |
 |---|---|
 | `log_event` | `db.log()` |
-| `query_why` | `db.why()` |
-| `query_at` | `db.at()` |
-| `search_events` | `db.search()` |
-| `context_for` | `db.context_for()` |
+| `search_memory` | `db.search()` |
+| `get_context` | `db.context_for()` |
+| `why` | `db.why()` |
 | `query_events` | `db.query()` |
-| `list_agents` | `db.agents()` |
+| `time_travel` | `db.at()` |
+| `get_baseline` | `db.baseline()` |
+| `get_token_usage` | `db.token_usage()` |
+| `get_token_optimization` | `db.token_optimization()` |
 | `memory_diff` | `db.memory_diff()` |
+| `forget` | `db.forget()` |
 
 ---
 
