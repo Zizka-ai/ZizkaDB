@@ -167,8 +167,9 @@ function FleetContent() {
     [refresh],
   )
 
-  if (editionLoading || loading) return <Skeleton rows={5} />
-  if (edition === 'oss') return <Skeleton rows={5} />
+  if (editionLoading) return <Skeleton rows={5} />
+  if (edition === 'oss') return null
+  if (loading) return <Skeleton rows={5} />
 
   return (
     <>
