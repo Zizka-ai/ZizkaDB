@@ -17,7 +17,7 @@ const PLANS = [
     highlight: true,
     features: [
       "50k events / month",
-      "3 active API keys",
+      "2 active API keys",
       "Email support",
     ],
   },
@@ -29,7 +29,7 @@ const PLANS = [
     highlight: false,
     features: [
       "100k events / month",
-      "10 active API keys",
+      "5 active API keys",
       "Priority support",
     ],
   },
@@ -74,7 +74,7 @@ export default function SignupPlanPage() {
               color: M.brandLight,
             }}
           >
-            1 month free trial · No charge today · Card required · Cancel anytime
+            1 month free trial · No credit card required · Cancel anytime
           </p>
 
           <div
