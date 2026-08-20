@@ -9,7 +9,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_DEV_MODE=true
+ARG NEXT_PUBLIC_DEV_MODE=false
 ENV NEXT_PUBLIC_DEV_MODE=$NEXT_PUBLIC_DEV_MODE
 # Edition signal: self_hosted (4 tabs) or managed (adds Agent Fleets).
 ARG NEXT_PUBLIC_DEPLOYMENT_MODE=self_hosted
