@@ -160,3 +160,18 @@ class TestSearchRoundTrip:
         ]
         assert len(tenant_conditions) == 1
         assert tenant_conditions[0].match.value == _TENANT["tenant_id"]
+
+
+class TestSearchAgentScope:
+    def teardown_method(self):
+        app.dependency_overrides.pop(get_tenant, None)
+
+    def test_unassigned_api_key_requires_agent(self):
+        """Unassigned keys must not search the whole tenant without an agent."""
+        app.dependency_overrides[get_tenant] = lambda: {
+            "tenant_id": _TENANT["tenant_id"],
+            "key_id": "key-1",
+        }
+        response = client.post("/v1/search", json={"query": "hello"})
+        assert response.status_code == 400
+        assert "agent is required" in response.json()["detail"]
