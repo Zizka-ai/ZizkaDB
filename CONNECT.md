@@ -46,7 +46,7 @@ async def main():
             data={"tool": "search"},
             parent_id=user.event_id,
         )
-        print("Logged — refresh dashboard → Agents → my-bot")
+        print("Logged — refresh dashboard → Activity → my-bot")
 
 asyncio.run(main())
 ```
@@ -179,9 +179,9 @@ Swagger: http://localhost:8000/swagger
 
 ## Verify
 
-1. Dashboard → **Agents** — `my-bot` appears within ~30s  
-2. Settings → **Send test event** (separate test agent)  
-3. Agent page → **Test agent**
+1. Dashboard → **Activity** — `my-bot` appears within ~30s  
+2. Settings → **Send test event** (logs to `dashboard-connection-test`, not your agent)  
+3. Settings with `?agent=my-bot` → **Test agent**
 
 ---
 
