@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 import pytest
 from fastapi.testclient import TestClient
 from main import app
-from api.auth import otp_limiter, _otp_storage, _OTP_RATE_MAX, _OTP_RATE_WINDOW_SEC
+from api.auth import otp_limiter, verify_otp_limiter, _otp_storage, _OTP_RATE_MAX, _OTP_RATE_WINDOW_SEC, _VERIFY_OTP_RATE_MAX
 from services.rate_limiter import (
     InMemoryStorage,
     RedisStorage,
@@ -255,4 +255,38 @@ class TestOtpRateLimitFailClosed:
         assert response.status_code == 503
         assert "temporarily unavailable" in response.json()["detail"]
         mock_request_otp.assert_not_called()
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# OTP Verify Rate Limiting Tests
+# ──────────────────────────────────────────────────────────────────────────────
+
+class TestVerifyOTPRateLimiting:
+    def setup_method(self):
+        verify_otp_limiter.storage = InMemoryStorage()
+        asyncio.run(verify_otp_limiter.storage.clear())
+
+    @patch("api.auth.fetch_user_billing", new_callable=AsyncMock)
+    @patch("api.auth.verify_otp", new_callable=AsyncMock)
+    def test_verify_otp_exceed_limit(self, mock_verify, mock_billing):
+        mock_verify.return_value = {
+            "access_token": "tok",
+            "refresh_token": "ref",
+        }
+        mock_billing.return_value = None
+        start_time = 1000000.0
+        with patch("time.time", return_value=start_time):
+            for _ in range(_VERIFY_OTP_RATE_MAX):
+                response = client.post(
+                    "/v1/auth/verify-otp",
+                    json={"email": "user@example.com", "otp": "123456"},
+                )
+                assert response.status_code == 200
+
+            response = client.post(
+                "/v1/auth/verify-otp",
+                json={"email": "user@example.com", "otp": "123456"},
+            )
+            assert response.status_code == 429
+            assert "Too many verification attempts" in response.json()["detail"]
 
