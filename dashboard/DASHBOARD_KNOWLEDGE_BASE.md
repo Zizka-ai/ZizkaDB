@@ -687,7 +687,7 @@ The logic that drives every dashboard gate and funnel branch. Routers are thin; 
 
 **No payment provider.** Billing endpoints exist for plan persistence and informational status only.
 
-**Plans** (`PLAN_CATALOG`, `billing.py`): `pro` = €29/mo (50k events/mo, 2 projects), `team` = €69/mo (100k events/mo, 5 projects). Trial length = `TRIAL_DAYS` env (default **30**).
+**Plans** (`PLAN_CATALOG`, `billing.py`): `pro` = €29/mo (50k events/mo target†, 2 active API keys), `team` = €69/mo (100k events/mo target†, 5 active API keys). Trial length = `TRIAL_DAYS` env (default **30**). †Event caps are marketing copy — not enforced in API yet.
 
 **Access:** `billing_status_payload` always returns `has_access: true`, `enforced: false`, `requires_plan_selection: false`, `requires_checkout: false`. Used by `TenantPlanBanner` and verify-otp response for compatibility.
 
@@ -947,7 +947,7 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 - **Client Component**, static marketing. Sections: `SiteNav` → Hero (+ `CalendlyBookModal`, `IntegrationStrip`) → `ThreeWaysConnectSection` → `ConversationCompare` → engineering cards → `TrustBar` → **Pricing grid** (Self-Hosted / Pro / Team / Enterprise via `PricingCard` + `LANDING_PRICING_PLANS`) → `CompetitorCompare` → final CTA → footer.
 - **State:** `copied` (which copy button, 2s reset) and `demoOpen` (Calendly modal). **No `useEffect`, no API calls.**
 - **CTAs / nav:** `/signup` (hero, cards, final, footer), `/signup?plan=pro`, `/signup?plan=team`, `/enterprise#contact` (Enterprise pricing card), `/docs`, `/trust`, `/login`, `#pricing`, GitHub. "Book demo" opens `CalendlyBookModal` (`demoOpen`); "Copy MCP config" copies `MCP_CONFIG` JSON.
-- **Rules:** `plan.highlight` → "POPULAR" badge; `ctaPrimary` → filled orange CTA (Pro, Enterprise). **Pro** €29/mo (50k events, 2 projects); **Team** €69/mo (100k events, 5 projects); both include 30-day free trial. Enterprise card: **Annual License / 1 Year**, four VPC features (Install + integration workshop; no audit/commercial bullets on landing). Pricing grid: 4-col desktop, 2-col tablet (≤1024px), 1-col mobile (≤768px); cards use flex column so CTAs align at bottom. `SiteNav` Enterprise link uses premium outlined style (`enterpriseNavLinkStyle` in `brand.ts`).
+- **Rules:** `plan.highlight` → "POPULAR" badge; `ctaPrimary` → filled orange CTA (Pro, Enterprise). **Pro** €29/mo (50k events†, 2 active API keys); **Team** €69/mo (100k events†, 5 active API keys); both include 30-day free trial. †Event caps not enforced in API. Enterprise card: **Annual License / 1 Year**, four VPC features (Install + integration workshop; no audit/commercial bullets on landing). Pricing grid: 4-col desktop, 2-col tablet (≤1024px), 1-col mobile (≤768px); cards use flex column so CTAs align at bottom. `SiteNav` Enterprise link uses premium outlined style (`enterpriseNavLinkStyle` in `brand.ts`).
 
 ### 20.2 Community — `app/community/page.tsx` + `app/community/[id]/page.tsx`
 
