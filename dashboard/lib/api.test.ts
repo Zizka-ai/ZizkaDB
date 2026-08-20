@@ -70,3 +70,31 @@ describe('getToken cookie fallback', () => {
     expect(getToken()).toBe('cookie-token')
   })
 })
+
+describe('selectBillingPlan', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    vi.unstubAllGlobals()
+  })
+
+  it('POSTs plan to /v1/billing/select-plan', async () => {
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ plan: 'pro', has_access: true }),
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { selectBillingPlan } = await import('./api')
+    const result = await selectBillingPlan('tok', 'pro')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/billing/select-plan'),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ plan: 'pro' }),
+      }),
+    )
+    expect(result.plan).toBe('pro')
+  })
+})
