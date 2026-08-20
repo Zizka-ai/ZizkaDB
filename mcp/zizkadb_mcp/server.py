@@ -295,6 +295,55 @@ async def time_travel(agent: str, timestamp: str) -> dict:
 
 
 @mcp.tool()
+async def get_baseline(
+    agent: str,
+    recent_window: int = 50,
+    window: str = "",
+) -> dict:
+    """Behavioral baseline and drift score for an agent."""
+    params: dict[str, str | int] = {"recent_window": recent_window}
+    if window:
+        params["window"] = window
+    return await _api("GET", f"/agents/{quote(agent, safe='')}/baseline?{urlencode(params)}")
+
+
+@mcp.tool()
+async def get_token_usage(
+    agent: str,
+    from_: str,
+    to: str,
+    granularity: str = "",
+) -> dict:
+    """Token usage and cost report for an agent over a date range."""
+    params: dict[str, str] = {"from": from_, "to": to}
+    if granularity:
+        params["granularity"] = granularity
+    return await _api(
+        "GET",
+        f"/agents/{quote(agent, safe='')}/token-usage?{urlencode(params)}",
+    )
+
+
+@mcp.tool()
+async def get_token_optimization(
+    agent: str,
+    from_: str = "",
+    to: str = "",
+    granularity: str = "",
+) -> dict:
+    """Deterministic token optimization suggestions from real usage events."""
+    params: dict[str, str] = {}
+    if from_:
+        params["from"] = from_
+    if to:
+        params["to"] = to
+    if granularity:
+        params["granularity"] = granularity
+    qs = f"?{urlencode(params)}" if params else ""
+    return await _api("GET", f"/agents/{quote(agent, safe='')}/token-optimization{qs}")
+
+
+@mcp.tool()
 async def memory_diff(session_id: str) -> dict:
     """
     Summarise what happened in a session.
