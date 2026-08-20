@@ -56,8 +56,15 @@ class CreateAgentKeyBody(BaseModel):
 @router.get("")
 async def list_agents(tenant: dict = Depends(get_tenant)):
     pool = get_pool()
+    scoped_agent = tenant.get("agent_id")
+    agent_filter = ""
+    params: list = [tenant["tenant_id"]]
+    if scoped_agent:
+        agent_filter = "AND a.agent_id = $2"
+        params.append(scoped_agent)
+
     rows = await pool.fetch(
-        """
+        f"""
         SELECT
             a.agent_id,
             a.first_seen,
@@ -69,10 +76,11 @@ async def list_agents(tenant: dict = Depends(get_tenant)):
         LEFT JOIN api_keys ak
             ON ak.tenant_id = a.tenant_id AND ak.agent_id = a.agent_id
         WHERE a.tenant_id = $1
+        {agent_filter}
         GROUP BY a.agent_id, a.first_seen, a.last_seen, a.event_count, a.metadata
         ORDER BY a.last_seen DESC
         """,
-        tenant["tenant_id"],
+        *params,
     )
     return [
         {

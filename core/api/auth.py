@@ -3,7 +3,7 @@ import time
 import logging
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Response, Depends
+from fastapi import APIRouter, HTTPException, Response, Depends, Request
 from services.exceptions import (
     conflict,
     not_found,
@@ -21,6 +21,7 @@ from services.api_keys import (
     revoke_api_key_record,
 )
 from api.deps import get_tenant, require_dashboard_session
+from api.utils import client_ip
 from db.connection import get_pool
 from services.rate_limiter import (
     RateLimiter,
@@ -37,6 +38,7 @@ log = logging.getLogger(__name__)
 # Per-email OTP request limits (shared via Redis in production — see _otp_storage)
 _OTP_RATE_WINDOW_SEC = 15 * 60   # 15 minutes
 _OTP_RATE_MAX = 10               # max requests per email per window
+_VERIFY_OTP_RATE_MAX = 20        # max verify attempts per email/IP per window
 
 
 def _otp_storage() -> RateLimitStorage:
@@ -69,6 +71,14 @@ otp_limiter = RateLimiter(
     storage=_otp_storage(),
     strategy=SlidingWindowStrategy(),
     detail="Too many code requests. Wait 15 minutes and try again."
+)
+
+verify_otp_limiter = RateLimiter(
+    limit=_VERIFY_OTP_RATE_MAX,
+    window_sec=_OTP_RATE_WINDOW_SEC,
+    storage=_otp_storage(),
+    strategy=SlidingWindowStrategy(),
+    detail="Too many verification attempts. Wait 15 minutes and try again.",
 )
 
 
@@ -127,8 +137,20 @@ async def request_otp_route(body: RequestOTPBody):
 
 
 @router.post("/verify-otp")
-async def verify_otp_route(body: VerifyOTPBody, response: Response):
+async def verify_otp_route(body: VerifyOTPBody, response: Response, request: Request):
     email = body.email.lower().strip()
+    ip = client_ip(request)
+    try:
+        await verify_otp_limiter.check(f"verify:{email}")
+        await verify_otp_limiter.check(f"verify-ip:{ip}")
+    except HTTPException:
+        raise
+    except Exception:
+        log.exception("verify-otp rate limit backend unavailable")
+        raise service_unavailable(
+            "Login temporarily unavailable. Please try again shortly."
+        )
+
     try:
         tokens = await verify_otp(
             email,
@@ -158,7 +180,7 @@ async def verify_otp_route(body: VerifyOTPBody, response: Response):
         key="refresh_token",
         value=tokens["refresh_token"],
         httponly=True,
-        secure=True,
+        secure=os.getenv("ENV", "development") == "production",
         samesite="lax",
         max_age=30 * 24 * 60 * 60,
         path="/",

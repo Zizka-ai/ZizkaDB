@@ -28,6 +28,20 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    env = os.getenv("ENV", "development")
+    if env == "production":
+        dev_key = os.getenv("DEV_API_KEY", "")
+        if not dev_key or dev_key in ("zizkadb_dev_local", "agdb_dev_local"):
+            raise RuntimeError(
+                "Refusing to start with ENV=production and a dev/default DEV_API_KEY. "
+                "Unset DEV_API_KEY or set a unique secret in infra/.env."
+            )
+        jwt_secret = os.getenv("JWT_SECRET", "")
+        if jwt_secret in ("", "dev-secret-change-in-production"):
+            raise RuntimeError(
+                "Refusing to start with ENV=production and default JWT_SECRET. "
+                "Set a strong JWT_SECRET in infra/.env."
+            )
     await init_db()
     # Seed dev tenant for local self-host (ENV=development) or when DEV_API_KEY is set.
     if os.getenv("ENV", "development") == "development" or os.getenv("DEV_API_KEY"):
