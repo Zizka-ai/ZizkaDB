@@ -50,6 +50,7 @@ export default function SettingsPage() {
   const { copied, copy } = useCopyToClipboard();
   const router = useRouter();
   const [accountOpts, setAccountOpts] = useState<AccountOptions | null>(null);
+  const [accountOptsErr, setAccountOptsErr] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [accountBusy, setAccountBusy] = useState(false);
@@ -75,7 +76,7 @@ export default function SettingsPage() {
       .finally(() => setLoading(false));
     getEmbeddingCatalog()
       .then((c) => setCatalog(c.providers ?? []))
-      .catch(() => {});
+      .catch(() => setEmbErr("Could not load embedding provider catalog"));
     getEmbeddingSettings(token)
       .then((s) => {
         if (s.provider) setEmbProvider(s.provider);
@@ -88,7 +89,7 @@ export default function SettingsPage() {
       .finally(() => setEmbLoading(false));
     getAccountOptions(token)
       .then(setAccountOpts)
-      .catch(() => {});
+      .catch(() => setAccountOptsErr("Could not load account options"));
   }, []);
 
   async function handleRevoke(key: ApiKey) {
@@ -526,6 +527,12 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      )}
+
+      {accountOptsErr && (
+        <p className="text-xs mt-4" style={{ color: '#f87171' }}>
+          {accountOptsErr}
+        </p>
       )}
 
       {accountOpts?.managed_cloud && (
