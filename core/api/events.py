@@ -158,6 +158,10 @@ async def why(
     if not rows:
         raise not_found("Event not found")
 
+    anchor = next((r for r in rows if str(r["event_id"]) == event_id), None)
+    if anchor is None:
+        raise not_found("Event not found")
+
     await assert_agent_allowed(tenant, anchor["agent_id"])
 
     return {
