@@ -73,9 +73,14 @@ class ZizkaDBCallbackHandler(AsyncCallbackHandler):
         for gen_list in response.generations:
             for gen in gen_list:
                 texts.append(gen.text[:4000] if gen.text else "")
+        data: dict[str, Any] = {"text": "\n".join(texts), "generation_count": len(texts)}
+        llm_output = response.llm_output or {}
+        token_usage = llm_output.get("token_usage") or llm_output.get("usage")
+        if isinstance(token_usage, dict) and token_usage:
+            data["token_usage"] = token_usage
         result = await self._log(
             event="llm_end",
-            data={"text": "\n".join(texts), "generation_count": len(texts)},
+            data=data,
             run_id=run_id,
             parent_run_id=parent_run_id,
         )
