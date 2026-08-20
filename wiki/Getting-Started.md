@@ -48,7 +48,7 @@ bash scripts/setup-local.sh
 1. **Taste lineage** — `bash scripts/quickstart.sh` or `zizkadb demo`
 2. **Connect your code** — [CONNECT.md](../CONNECT.md) or `zizkadb init my-agent --template basic`
 3. **Go deeper** — [examples/](../examples/), [integrations/](../integrations/)
-4. **Production** — [[Self-Hosting]], [[Production Deployment]]
+4. **Production** — [[Self-Hosting]], [[Production-Deployment]]
 
 ---
 
@@ -72,10 +72,11 @@ Go to [db.zizka.ai/signup](https://db.zizka.ai/signup) → enter email → verif
 
 ### 2. Create an agent + API key
 
-1. Open [Dashboard → Agents](https://db.zizka.ai/dashboard)
-2. Enter an agent id (e.g. `support-bot`)
-3. Click **Create**
-4. **Copy the full API key** — shown once only (`zizkadb_live_...`)
+1. Open [Dashboard → Fleet](https://db.zizka.ai/dashboard/fleet) (managed cloud)
+2. Click **Create agent**, enter an id (e.g. `support-bot`)
+3. **Copy the full API key** — shown once only (`zizkadb_live_...`)
+
+Alternative: **Settings → Tenant-wide API key** if your app uses dynamic agent names per session (see [[Multi-Agent Apps]]).
 
 ### 3. Configure your environment
 
@@ -108,7 +109,7 @@ asyncio.run(main())
 
 ### 5. Verify in dashboard
 
-Open your agent on the dashboard → **Events** tab.
+Dashboard → **Activity** — select `support-bot` to see events.
 
 ---
 

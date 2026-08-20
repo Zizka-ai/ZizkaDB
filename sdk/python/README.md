@@ -36,7 +36,7 @@ Templates: `basic`, `openai`, `langchain`, `crewai`, `mcp-cursor`.
 ```python
 from zizkadb import ZizkaDB
 
-# Key from Dashboard → Agents → create "my-bot" → copy key
+# Key from Dashboard → Settings → API keys → create "my-bot" → copy key
 db = ZizkaDB("zizkadb_live_xxxx")
 
 async with db:

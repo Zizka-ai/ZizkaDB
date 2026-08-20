@@ -40,7 +40,7 @@ async def main() -> None:
     print("  tool_call (lookup_order, ORD-8842)")
     print("    └── llm_response")
     print("          └── user_message")
-    print("\nDashboard: http://localhost:3001/login → Agents → support-bot")
+    print("\nDashboard: http://localhost:3001/login → Activity → support-bot")
 
 
 if __name__ == "__main__":
