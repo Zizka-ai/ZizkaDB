@@ -1,4 +1,6 @@
 import json
+import logging
+import os
 import re
 from datetime import datetime, timedelta, timezone
 
@@ -8,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from api.deps import assert_agent_allowed, get_tenant, require_dashboard_session
 from api.utils import check_rate
-from db.connection import get_pool, get_redis
+from db.connection import get_pool, get_redis, get_qdrant, QDRANT_COLLECTION
 from services import reports, token_optimization, token_usage
 from services import token_optimization_config
 from services.ai import config as ai_config
@@ -23,6 +25,7 @@ from services.api_keys import (
 from services.event_write import write_event
 
 router = APIRouter()
+log = logging.getLogger(__name__)
 
 _AGENT_ID_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,254}$")
 
@@ -56,8 +59,15 @@ class CreateAgentKeyBody(BaseModel):
 @router.get("")
 async def list_agents(tenant: dict = Depends(get_tenant)):
     pool = get_pool()
+    scoped_agent = tenant.get("agent_id")
+    agent_filter = ""
+    params: list = [tenant["tenant_id"]]
+    if scoped_agent:
+        agent_filter = "AND a.agent_id = $2"
+        params.append(scoped_agent)
+
     rows = await pool.fetch(
-        """
+        f"""
         SELECT
             a.agent_id,
             a.first_seen,
@@ -69,10 +79,11 @@ async def list_agents(tenant: dict = Depends(get_tenant)):
         LEFT JOIN api_keys ak
             ON ak.tenant_id = a.tenant_id AND ak.agent_id = a.agent_id
         WHERE a.tenant_id = $1
+        {agent_filter}
         GROUP BY a.agent_id, a.first_seen, a.last_seen, a.event_count, a.metadata
         ORDER BY a.last_seen DESC
         """,
-        tenant["tenant_id"],
+        *params,
     )
     return [
         {
@@ -135,6 +146,31 @@ async def create_agent(
     }
 
 
+async def _purge_agent_vectors(tenant_id: str, agent_id: str) -> None:
+    try:
+        from qdrant_client.models import FieldCondition, Filter, FilterSelector, MatchValue
+
+        qdrant = get_qdrant()
+        await qdrant.delete(
+            collection_name=QDRANT_COLLECTION,
+            points_selector=FilterSelector(
+                filter=Filter(
+                    must=[
+                        FieldCondition(key="tenant_id", match=MatchValue(value=tenant_id)),
+                        FieldCondition(key="agent_id", match=MatchValue(value=agent_id)),
+                    ]
+                )
+            ),
+        )
+    except Exception as e:
+        log.warning(
+            "Qdrant purge for agent %s (tenant %s) failed: %s",
+            agent_id,
+            tenant_id,
+            e,
+        )
+
+
 @router.delete("/{agent_id}")
 async def delete_agent(
     agent_id: str,
@@ -166,6 +202,9 @@ async def delete_agent(
                 "DELETE FROM agents WHERE tenant_id = $1 AND agent_id = $2",
                 tenant_id, agent_id,
             )
+
+    await _purge_agent_vectors(tenant_id, agent_id)
+
     return {
         "deleted": True,
         "agent": agent_id,

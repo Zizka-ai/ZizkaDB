@@ -7,37 +7,20 @@ import { BRAND, BRAND_DARK } from "@/components/brand";
 import { SIGNUP_PLAN_KEY } from "@/lib/signup-funnel";
 import { M } from "@/components/marketing/marketing-theme";
 import { authPage, authSubtitle, authTitle, authMutedLink, authSubmitBtn, authCard } from "@/components/marketing/auth-styles";
+import { MANAGED_PLANS, type ManagedPlanId } from "@/lib/plans";
 
-const PLANS = [
-  {
-    id: "pro" as const,
-    name: "Pro",
-    price: "€29",
-    price_sub: "/ month",
-    highlight: true,
-    features: [
-      "50k events / month",
-      "3 active API keys",
-      "Email support",
-    ],
-  },
-  {
-    id: "team" as const,
-    name: "Team",
-    price: "€69",
-    price_sub: "/ month",
-    highlight: false,
-    features: [
-      "100k events / month",
-      "10 active API keys",
-      "Priority support",
-    ],
-  },
-];
+const PLANS = MANAGED_PLANS.map((p) => ({
+  id: p.id,
+  name: p.name,
+  price: p.price,
+  price_sub: p.priceSub,
+  highlight: p.highlight,
+  features: [...p.features],
+}));
 
 export default function SignupPlanPage() {
   const router = useRouter();
-  const [selected, setSelected] = useState<"pro" | "team">("pro");
+  const [selected, setSelected] = useState<ManagedPlanId>("pro");
 
   function handleContinue() {
     if (typeof window !== "undefined") {
@@ -74,7 +57,7 @@ export default function SignupPlanPage() {
               color: M.brandLight,
             }}
           >
-            1 month free trial · No charge today · Card required · Cancel anytime
+            1 month free trial · No credit card required · Cancel anytime
           </p>
 
           <div

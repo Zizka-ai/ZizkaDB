@@ -8,9 +8,9 @@ ZizkaDB is a causal event database for AI agents. It lets you log every agent ac
 
 | Layer | Technology | Entry point |
 |---|---|---|
-| API | FastAPI 0.111 + asyncpg (no ORM) | `core/main.py` — 9 routers at `/v1/` |
+| API | FastAPI 0.111 + asyncpg (no ORM) | `core/main.py` — 13 routers at `/v1/` |
 | Database | PostgreSQL 16 + pgvector | `core/db/schema.sql` + `core/db/connection.py` |
-| Vector search | Qdrant 1.13 | Collection `agent_events`, 1536-dim cosine |
+| Vector search | Qdrant 1.15 | Collection `agent_events`, 1536-dim cosine |
 | Cache | Redis 7 | Embedding cache (24 h TTL) — cache key uses `hashlib.sha256`, not `hash()` |
 | Dashboard | Next.js 14 App Router | `dashboard/app/` |
 | Python SDK | `zizkadb-sdk` (PyPI) | `sdk/python/zizkadb/client.py` |
@@ -18,7 +18,7 @@ ZizkaDB is a causal event database for AI agents. It lets you log every agent ac
 | Integrations | `zizkadb-langchain`, `zizkadb-crewai` | `integrations/` (standalone) + `sdk/python/zizkadb/integrations/` (bundled) |
 | MCP server | `zizkadb-mcp` (PyPI, **MIT**) | `mcp/zizkadb_mcp/server.py` |
 | Infra | Docker Compose | `infra/docker-compose.yml` (prod) + `infra/docker-compose.dev.yml` (dev overlay) |
-| CI | GitHub Actions | `.github/workflows/ci.yml` (lint+tests) · `publish-images.yml` (GHCR on `v*` tag) |
+| CI | GitHub Actions | `.github/workflows/ci.yml` (lint+tests+vitest) · `integration.yml` (weekly stack) · `publish-images.yml` (GHCR on `v*` tag) |
 
 ---
 
@@ -85,8 +85,8 @@ pytest mcp/tests/ -v
 # TypeScript SDK tests
 cd sdk/typescript && npm test
 
-# Dashboard (no unit tests — build is the gate)
-cd dashboard && npm run lint && npm run build
+# Dashboard (vitest + build gate)
+cd dashboard && npm run lint && npm test && npm run build
 ```
 
 ---
@@ -141,7 +141,7 @@ cd dashboard && npm run lint && npm run build
 
 1. **Auth deps**: never put `require_dashboard_session` routes on `get_tenant` — API-key holders must not be able to manage keys or access user data.
 2. **Route paths**: never rename `/v1/...` paths without updating `dashboard/lib/api.ts` — there is no runtime contract enforcement between backend and dashboard.
-3. **`assert_agent_allowed()`**: every per-agent analytics route (`agent_stats`, `list_sessions`, `agent_baseline`, `agent_behavior_change`, `time_travel`) must call this.
+3. **`assert_agent_allowed()`**: every per-agent analytics route and scoped SDK read (`agent_stats`, `list_sessions`, `agent_baseline`, `agent_behavior_change`, `time_travel`, `report`, `token-usage`, `token-optimization`, `suggestions`, `memory/context`, `memory/diff`, `events/why`) must call this.
 4. **Entitlements single source**: plan caps live only in `core/services/entitlements.py::PLAN_ENTITLEMENTS`.
 5. **Idempotent DDL**: all schema changes must use `IF NOT EXISTS` / `IF EXISTS` — the same migration runs on fresh installs and live databases.
 6. **`docker-compose.yml` is production**: never add `--reload` or `../core:/app` volume mounts to the base compose file. Those belong in `docker-compose.dev.yml`.
@@ -169,7 +169,7 @@ cd dashboard && npm run lint && npm run build
 |---|---|
 | Dashboard source of truth (897 lines) | `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` |
 | Architecture decisions (why) | `docs/adr/` |
-| Cursor rules (per-area conventions) | `.cursor/rules/` |
+| Cursor rules (per-area conventions) | `.cursor/rules/` — **`coding-standards.mdc` and `ai-knowledge-base.mdc` always apply** |
 | Release workflow | `.cursor/skills/zizkadb-release/SKILL.md` |
 | Wiki (14 pages) | `wiki/` or https://github.com/Zizka-ai/ZizkaDB/wiki |
 | REST API explorer | http://localhost:8000/swagger |

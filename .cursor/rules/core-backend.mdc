@@ -14,10 +14,7 @@ alwaysApply: false
 |---|---|---|
 | SDK-callable (log events, search, memory, stats) | `Depends(get_tenant)` | Accepts API keys + JWTs |
 | Dashboard-only (billing, API key management, settings, account, agent delete) | `Depends(require_dashboard_session)` | JWT only — API keys must not manage keys or access user_id |
-| Per-agent analytics (stats, sessions, baseline, behavior-change, time-travel) | `Depends(get_tenant)` + `assert_agent_allowed(tenant, agent_id)` first line | Scoped-key isolation |
-| Admin panel | `require_admin` | Checks `FOUNDER_EMAIL` env var |
-
-All three dependency functions are in `core/api/deps.py`. Never swap `require_dashboard_session` → `get_tenant` on a management route — that is a security regression.
+| Per-agent analytics (stats, sessions, baseline, behavior-change, time-travel, report, token-usage, token-optimization, suggestions) | `Depends(get_tenant)` + `assert_agent_allowed(tenant, agent_id)` first line | Scoped-key isolation |
 
 ## Database — asyncpg pattern
 

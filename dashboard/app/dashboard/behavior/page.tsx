@@ -97,7 +97,12 @@ function BehaviorContent() {
           window={window}
           onRecompute={recompute}
         />
-      ) : null}
+      ) : (
+        <EmptyState
+          title="Not enough sessions yet"
+          description="Behavior baselines need recorded sessions. Log events with this agent, then check back."
+        />
+      )}
     </>
   )
 }

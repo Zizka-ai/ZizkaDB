@@ -23,6 +23,8 @@ function formatApiError(detail: unknown, fallback: string): string {
 
 // Default `T = any` preserves the exact pre-existing untyped behavior for any
 // call site that doesn't opt into an explicit type — this is additive only.
+export const API_FETCH_TIMEOUT_MS = 30_000
+
 async function apiFetch<T = any>(path: string, token: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -31,10 +33,35 @@ async function apiFetch<T = any>(path: string, token: string, options: RequestIn
   if (token) {
     headers.Authorization = `Bearer ${token}`
   }
-  const res = await fetch(`${API}${path}`, {
-    ...options,
-    headers,
-  })
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), API_FETCH_TIMEOUT_MS)
+
+  let res: Response
+  try {
+    res = await fetch(`${API}${path}`, {
+      ...options,
+      headers,
+      signal: options.signal ?? controller.signal,
+    })
+  } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      throw new Error('Request timed out. Check your connection and try again.')
+    }
+    throw e
+  } finally {
+    clearTimeout(timeout)
+  }
+
+  if (res.status === 401) {
+    if (typeof window !== 'undefined') {
+      const { clearToken } = await import('./auth')
+      clearToken()
+      window.location.href = '/login'
+    }
+    throw new Error('Session expired. Please sign in again.')
+  }
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }))
     throw new Error(formatApiError(err.detail, res.statusText || 'API error'))
@@ -699,11 +726,11 @@ export async function getBillingStatus(token: string): Promise<BillingStatus> {
   return apiFetch('/v1/billing/status', token)
 }
 
-export async function createCheckoutSession(
+export async function selectBillingPlan(
   token: string,
   plan: 'pro' | 'team',
-): Promise<{ url: string }> {
-  return apiFetch('/v1/billing/checkout-session', token, {
+): Promise<BillingStatus> {
+  return apiFetch('/v1/billing/select-plan', token, {
     method: 'POST',
     body: JSON.stringify({ plan }),
   })

@@ -32,7 +32,8 @@ const chain = await db.why(tool.eventId)
 | Field names | `snake_case` (`parent_id`, `event_id`) | `camelCase` (`parentId`, `eventId`) |
 | LangChain adapter | Yes (`ZizkaDBCallbackHandler`) | No |
 | CrewAI adapter | Yes (`ZizkaDBCrewLogger`) | No |
-| CLI | `zizkadb init` | No |
+| CLI | `zizkadb init` + analytics subcommands | No |
+| Analytics | `baseline()`, `tokenUsage()`, `tokenOptimization()` | Yes (Python + TS) |
 
 ---
 

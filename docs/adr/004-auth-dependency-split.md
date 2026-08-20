@@ -68,8 +68,9 @@ Call at the top of any per-agent analytics route (stats, sessions, baseline, beh
 SDK-callable?          → get_tenant
 Dashboard-only?        → require_dashboard_session
 Per-agent analytics?   → get_tenant + assert_agent_allowed
-Admin panel?           → require_admin
 ```
+
+There is no admin router in this open-source repository.
 
 ---
 

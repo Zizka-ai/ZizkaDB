@@ -50,11 +50,12 @@ Full list in `.env.example`. Most important:
 | `API_KEY_LIMITS_ENFORCED` | Kill switch for plan caps — defaults `false` |
 | `JWT_SECRET` | Must be changed from default — generate with `openssl rand -hex 32` |
 
-## CI/CD — two workflows only
+## CI/CD — three workflows
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| `.github/workflows/ci.yml` | PR + push to `main` | ruff lint, pytest (core + SDK + MCP), TypeScript SDK tests, dashboard lint + build |
+| `.github/workflows/ci.yml` | PR + push to `main` | ruff, pytest (core + SDK + MCP), TS SDK tests, dashboard lint + **vitest** + build |
+| `.github/workflows/integration.yml` | Weekly cron + manual | Full Docker stack integration tests (`continue-on-error: true`) |
 | `.github/workflows/publish-images.yml` | Push `v*` tag or manual dispatch | Builds Docker images, pushes to GHCR, makes packages public |
 
 There is no AWS pipeline, no CodeDeploy, no ECS task definition.

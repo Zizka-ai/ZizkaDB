@@ -10,6 +10,21 @@ export interface PricingPlan {
   note?: string
 }
 
+import { MANAGED_PLANS } from "@/lib/plans";
+
+const managedPricing = MANAGED_PLANS.map(
+  (p): PricingPlan => ({
+    name: p.name,
+    price: p.price,
+    sub: p.priceSub,
+    features: p.features,
+    cta: "Get started",
+    href: `/signup?plan=${p.id}`,
+    highlight: p.highlight,
+    ctaPrimary: p.id === "pro",
+  }),
+);
+
 export const LANDING_PRICING_PLANS: readonly PricingPlan[] = [
   {
     name: 'Self-Hosted',
@@ -21,26 +36,7 @@ export const LANDING_PRICING_PLANS: readonly PricingPlan[] = [
     highlight: false,
     ctaPrimary: false,
   },
-  {
-    name: 'Pro',
-    price: '\u20ac29',
-    sub: '/ month',
-    features: ['50k events / month', '3 active API keys', 'Email support'],
-    cta: 'Get started',
-    href: '/signup?plan=pro',
-    highlight: true,
-    ctaPrimary: true,
-  },
-  {
-    name: 'Team',
-    price: '\u20ac69',
-    sub: '/ month',
-    features: ['100k events / month', '10 active API keys', 'Priority support'],
-    cta: 'Get started',
-    href: '/signup?plan=team',
-    highlight: false,
-    ctaPrimary: false,
-  },
+  ...managedPricing,
   {
     name: 'Enterprise',
     price: 'Annual License',

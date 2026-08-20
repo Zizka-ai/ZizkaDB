@@ -1,16 +1,23 @@
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
-from services.exceptions import not_found
+from services.exceptions import not_found, bad_request
 from typing import Any
 from uuid import UUID
 from datetime import datetime
 import json
+import os
 
 from api.deps import get_tenant, assert_agent_allowed
 from db.connection import get_pool
 from services.event_write import write_event
 
 router = APIRouter()
+
+_EVENTS_AT_MAX_ROWS = int(os.getenv("EVENTS_AT_MAX_ROWS", "10000"))
+
+
+def _events_at_max_rows() -> int:
+    return max(1, min(_EVENTS_AT_MAX_ROWS, 100_000))
 
 
 # ─────────────────────────────────────────
@@ -132,7 +139,7 @@ async def why(
         WITH RECURSIVE causal_chain AS (
             SELECT
                 event_id, agent_id, timestamp, event_type,
-                data, parent_event_id, session_id, sequence_no,
+                data, parent_event_id, session_id, sequence_no, metadata,
                 0 AS depth
             FROM events
             WHERE event_id = $1 AND tenant_id = $2
@@ -142,11 +149,12 @@ async def why(
 
             SELECT
                 e.event_id, e.agent_id, e.timestamp, e.event_type,
-                e.data, e.parent_event_id, e.session_id, e.sequence_no,
+                e.data, e.parent_event_id, e.session_id, e.sequence_no, e.metadata,
                 cc.depth + 1
             FROM events e
             INNER JOIN causal_chain cc ON e.event_id = cc.parent_event_id
             WHERE e.tenant_id = $2 AND cc.depth < $3
+              AND ($4::text IS NULL OR e.agent_id = $4)
         )
         SELECT * FROM causal_chain
         ORDER BY depth DESC, timestamp ASC
@@ -157,7 +165,11 @@ async def why(
     if not rows:
         raise not_found("Event not found")
 
-    await assert_agent_allowed(tenant, rows[0]["agent_id"])
+    anchor = next((r for r in rows if str(r["event_id"]) == event_id), None)
+    if anchor is None:
+        raise not_found("Event not found")
+
+    await assert_agent_allowed(tenant, anchor["agent_id"])
 
     return {
         "event_id": event_id,
@@ -180,19 +192,25 @@ async def time_travel(
     await assert_agent_allowed(tenant, agent)
     pool = get_pool()
     tenant_id = tenant["tenant_id"]
+    max_rows = _events_at_max_rows()
 
     rows = await pool.fetch(
         """
         SELECT event_id, agent_id, timestamp, event_type,
-               data, parent_event_id, session_id, sequence_no
+               data, parent_event_id, session_id, sequence_no, metadata
         FROM events
         WHERE tenant_id = $1
           AND agent_id = $2
           AND timestamp <= $3
         ORDER BY timestamp ASC
+        LIMIT $4
         """,
-        tenant_id, agent, timestamp,
+        tenant_id, agent, timestamp, max_rows + 1,
     )
+
+    truncated = len(rows) > max_rows
+    if truncated:
+        rows = rows[:max_rows]
 
     # Reduce events to state (event sourcing pattern)
     state: dict[str, Any] = {}
@@ -214,6 +232,8 @@ async def time_travel(
         "agent": agent,
         "at": timestamp.isoformat(),
         "event_count": len(rows),
+        "truncated": truncated,
+        "max_rows": max_rows,
         "state": state,
     }
 
@@ -236,4 +256,16 @@ def _format_event(row) -> dict:
         "parent_id": str(row["parent_event_id"]) if row["parent_event_id"] else None,
         "session_id": row["session_id"],
         "sequence_no": row["sequence_no"],
+        **_format_metadata(row),
     }
+
+
+def _format_metadata(row) -> dict:
+    if "metadata" not in row.keys():
+        return {}
+    meta = row["metadata"]
+    if meta is None:
+        return {"metadata": None}
+    if isinstance(meta, str):
+        meta = json.loads(meta)
+    return {"metadata": dict(meta) if meta else None}

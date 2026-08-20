@@ -358,7 +358,11 @@ def _send_otp_email_sync(email: str, otp: str) -> None:
     password = os.getenv("EMAIL_PASS")
 
     if not host or not user or not password:
-        log.warning("DEV OTP for %s: %s (set EMAIL_HOST / EMAIL_USER / EMAIL_PASS to send real emails)", email, otp)
+        log.warning(
+            "Email not configured — OTP for %s was generated but not sent "
+            "(set EMAIL_HOST / EMAIL_USER / EMAIL_PASS to send real emails)",
+            email,
+        )
         return
 
     port = int(os.getenv("EMAIL_PORT", 587))

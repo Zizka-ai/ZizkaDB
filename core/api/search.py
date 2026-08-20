@@ -2,7 +2,7 @@ import json
 
 from fastapi import APIRouter, Depends
 from services.exceptions import bad_request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from api.deps import assert_agent_allowed, get_tenant
@@ -16,7 +16,7 @@ router = APIRouter()
 class SearchRequest(BaseModel):
     query: str
     agent: str | None = None
-    limit: int = 10
+    limit: int = Field(default=10, ge=1, le=100)
 
 
 @router.post("")
@@ -26,6 +26,11 @@ async def semantic_search(
 ):
     tenant_id = tenant["tenant_id"]
     agent = body.agent or tenant.get("agent_id")
+    if tenant.get("key_id") and not tenant.get("agent_id") and not agent:
+        raise bad_request(
+            "agent is required when using an unassigned API key. "
+            "Pass agent in the request body or log an event first to bind the key."
+        )
     if agent:
         await assert_agent_allowed(tenant, agent)
 

@@ -37,7 +37,9 @@ asyncio.run(main())
 | `db.search(query, agent?)` | Semantic search over event history | Yes |
 | `db.context_for(agent, task)` | Relevant past events as a prompt block | Yes |
 | `db.memory_diff(agent)` | Compare this session to previous sessions | Yes |
-| `db.baseline(agent)` | Consistency check over time | No |
+| `db.baseline(agent)` | Behavioral baseline + drift signal | No |
+| `db.token_usage(agent, ...)` | Token usage report for date range | No |
+| `db.token_optimization(agent, ...)` | Token optimization recommendations | No |
 | `db.forget(key, value)` | GDPR delete — remove events matching a value | No |
 | `db.agents()` | List all agents in the project | No |
 
@@ -56,6 +58,11 @@ asyncio.run(main())
 ```bash
 zizkadb init my-agent --template basic
 # Templates: basic | openai | langchain | crewai | mcp-cursor
+
+zizkadb why <event_id> [--depth N]
+zizkadb baseline <agent> [--window 24h|7d|30d]
+zizkadb token-usage <agent> --from YYYY-MM-DD --to YYYY-MM-DD
+zizkadb token-opt <agent> --from YYYY-MM-DD --to YYYY-MM-DD
 ```
 
 Templates live in `zizkadb/templates/`. Each is a self-contained directory with `.env.example`, `agent.py`, `requirements.txt`, and `README.md`.
