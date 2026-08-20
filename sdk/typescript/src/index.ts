@@ -451,10 +451,78 @@ export class ZizkaDB {
   async baseline(options: {
     agent: string
     recentWindow?: number
+    window?: '24h' | '7d' | '30d'
   }): Promise<Record<string, unknown>> {
-    const res = await this.get(`/v1/agents/${options.agent}/baseline`, {
+    const params: Record<string, string> = {
       recent_window: String(options.recentWindow ?? 50),
-    })
+    }
+    if (options.window) params.window = options.window
+    const res = await this.get(`/v1/agents/${options.agent}/baseline`, params)
+    return res as Record<string, unknown>
+  }
+
+  async tokenUsage(options: {
+    agent: string
+    from: string
+    to: string
+    granularity?: 'hour' | 'day' | 'week'
+  }): Promise<Record<string, unknown>> {
+    const params: Record<string, string> = { from: options.from, to: options.to }
+    if (options.granularity) params.granularity = options.granularity
+    const res = await this.get(`/v1/agents/${options.agent}/token-usage`, params)
+    return res as Record<string, unknown>
+  }
+
+  async tokenOptimization(options: {
+    agent: string
+    from?: string
+    to?: string
+    granularity?: 'day' | 'week'
+  }): Promise<Record<string, unknown>> {
+    const params: Record<string, string> = {}
+    if (options.from) params.from = options.from
+    if (options.to) params.to = options.to
+    if (options.granularity) params.granularity = options.granularity
+    const res = await this.get(`/v1/agents/${options.agent}/token-optimization`, params)
+    return res as Record<string, unknown>
+  }
+
+  async suggestions(options: {
+    agent: string
+    from?: string
+    to?: string
+    refresh?: boolean
+  }): Promise<Record<string, unknown>> {
+    const params: Record<string, string> = {}
+    if (options.from) params.from = options.from
+    if (options.to) params.to = options.to
+    if (options.refresh) params.refresh = 'true'
+    const res = await this.get(`/v1/agents/${options.agent}/suggestions`, params)
+    return res as Record<string, unknown>
+  }
+
+  async report(options: {
+    agent: string
+    from: string
+    to: string
+    granularity?: 'day' | 'week'
+  }): Promise<Record<string, unknown>> {
+    const params: Record<string, string> = { from: options.from, to: options.to }
+    if (options.granularity) params.granularity = options.granularity
+    const res = await this.get(`/v1/agents/${options.agent}/report`, params)
+    return res as Record<string, unknown>
+  }
+
+  async behaviorChange(options: {
+    agent: string
+    window?: '24h' | '7d' | '30d' | 'custom'
+    fromTs?: string
+    toTs?: string
+  }): Promise<Record<string, unknown>> {
+    const params: Record<string, string> = { window: options.window ?? '7d' }
+    if (options.fromTs) params.from_ts = options.fromTs
+    if (options.toTs) params.to_ts = options.toTs
+    const res = await this.get(`/v1/agents/${options.agent}/behavior-change`, params)
     return res as Record<string, unknown>
   }
 

@@ -123,6 +123,7 @@ class ZizkaDB:
         parent_id: str | None = None,
         session_id: str | None = None,
         metadata: dict[str, Any] | None = None,
+        token_usage: dict[str, Any] | None = None,
     ) -> LogResult:
         """
         Log an event.
@@ -138,12 +139,15 @@ class ZizkaDB:
         Returns:
             LogResult with event_id, timestamp, sequence_no, checksum
         """
+        payload_data = dict(data)
+        if token_usage is not None:
+            payload_data["token_usage"] = token_usage
         response = await self._post(
             "/v1/events",
             {
                 "agent": agent,
                 "event": event,
-                "data": data,
+                "data": payload_data,
                 "parent_id": parent_id,
                 "session_id": session_id,
                 "metadata": metadata,
@@ -409,7 +413,12 @@ class ZizkaDB:
     # BASELINE — behavioral baseline + drift signal
     # ─────────────────────────────────────────
 
-    async def baseline(self, agent: str, recent_window: int = 50) -> dict:
+    async def baseline(
+        self,
+        agent: str,
+        recent_window: int = 50,
+        window: str | None = None,
+    ) -> dict:
         """
         Get the behavioral baseline for an agent.
 
@@ -437,10 +446,88 @@ class ZizkaDB:
             if b["drift"]["score"] > 0.15:
                 print("Drift detected:", b["drift"]["biggest_changes"])
         """
+        params: dict[str, Any] = {"recent_window": recent_window}
+        if window:
+            params["window"] = window
         return await self._get(
             f"/v1/agents/{agent}/baseline",
-            {"recent_window": recent_window},
+            params,
         )
+
+    async def token_usage(
+        self,
+        agent: str,
+        from_: str,
+        to: str,
+        granularity: str | None = None,
+    ) -> dict:
+        """Token usage and cost report for an agent over a date range."""
+        params: dict[str, Any] = {"from": from_, "to": to}
+        if granularity:
+            params["granularity"] = granularity
+        return await self._get(f"/v1/agents/{agent}/token-usage", params)
+
+    async def token_optimization(
+        self,
+        agent: str,
+        from_: str | None = None,
+        to: str | None = None,
+        granularity: str | None = None,
+    ) -> dict:
+        """Deterministic token optimization suggestions from real usage events."""
+        params: dict[str, Any] = {}
+        if from_:
+            params["from"] = from_
+        if to:
+            params["to"] = to
+        if granularity:
+            params["granularity"] = granularity
+        return await self._get(f"/v1/agents/{agent}/token-optimization", params)
+
+    async def suggestions(
+        self,
+        agent: str,
+        from_: str | None = None,
+        to: str | None = None,
+        refresh: bool = False,
+    ) -> dict:
+        """AI-generated improvement suggestions for an agent."""
+        params: dict[str, Any] = {}
+        if from_:
+            params["from"] = from_
+        if to:
+            params["to"] = to
+        if refresh:
+            params["refresh"] = "true"
+        return await self._get(f"/v1/agents/{agent}/suggestions", params)
+
+    async def report(
+        self,
+        agent: str,
+        from_: str,
+        to: str,
+        granularity: str | None = None,
+    ) -> dict:
+        """Consolidated date-ranged report for an agent."""
+        params: dict[str, Any] = {"from": from_, "to": to}
+        if granularity:
+            params["granularity"] = granularity
+        return await self._get(f"/v1/agents/{agent}/report", params)
+
+    async def behavior_change(
+        self,
+        agent: str,
+        window: str = "7d",
+        from_ts: str | None = None,
+        to_ts: str | None = None,
+    ) -> dict:
+        """Time-windowed behavior change vs the pre-window baseline epoch."""
+        params: dict[str, Any] = {"window": window}
+        if from_ts:
+            params["from_ts"] = from_ts
+        if to_ts:
+            params["to_ts"] = to_ts
+        return await self._get(f"/v1/agents/{agent}/behavior-change", params)
 
     # ─────────────────────────────────────────
     # HTTP HELPERS
