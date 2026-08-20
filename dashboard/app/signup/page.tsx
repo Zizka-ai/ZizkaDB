@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { requestOtp, verifyOtp, createCheckoutSession } from "@/lib/api";
+import { requestOtp, verifyOtp, selectBillingPlan } from "@/lib/api";
 import {
   authErrorMessage,
   isAlreadyRegisteredError,
@@ -178,20 +178,12 @@ function SignupForm() {
       clearSignupSession();
       setNavigating(true);
       if (plan === "pro" || plan === "team") {
-        try {
-          const session = await createCheckoutSession(data.access_token, plan);
-          window.location.assign(session.url);
-          return;
-        } catch {
-          // Checkout couldn't be started right now -- don't strand the user
-          // on a broken screen. Land on the dashboard instead; its
-          // requires_checkout-driven resume-onboarding screen offers to
-          // retry checkout.
-        }
+        await selectBillingPlan(data.access_token, plan);
       }
       window.location.assign("/dashboard");
     } catch (e) {
       verifyLock.current = false;
+      setNavigating(false);
       if (isGdprConsentError(e)) {
         setLoading(false);
         const plan = getStoredSignupPlan() ?? "pro";
@@ -217,7 +209,7 @@ function SignupForm() {
           color: M.muted,
         }}
       >
-        <p style={{ fontSize: 15 }}>Creating your account… taking you to secure checkout next.</p>
+        <p style={{ fontSize: 15 }}>Creating your account… opening your dashboard.</p>
       </div>
     );
   }
