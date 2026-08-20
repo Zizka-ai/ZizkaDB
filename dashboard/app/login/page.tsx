@@ -213,7 +213,7 @@ function LoginForm() {
           >
             Your account was deleted.{" "}
             <Link
-              href="https://db.zizka.ai/signup"
+              href="/signup"
               style={{ color: "#111", fontWeight: 600 }}
             >
               Create a new account →
@@ -366,7 +366,7 @@ function LoginForm() {
                     <p style={{ margin: 0 }}>{error}</p>
                     {noAccount && (
                       <Link
-                        href="https://db.zizka.ai/signup"
+                        href="/signup"
                         style={{
                           display: "inline-block",
                           marginTop: 10,
@@ -475,7 +475,7 @@ function LoginForm() {
                     <p style={{ margin: 0 }}>{error}</p>
                     {noAccount && (
                       <Link
-                        href="https://db.zizka.ai/signup"
+                        href="/signup"
                         style={{
                           display: "inline-block",
                           marginTop: 10,
@@ -559,7 +559,7 @@ function LoginForm() {
           >
             No account yet?{" "}
             <Link
-              href="https://db.zizka.ai/signup"
+              href="/signup"
               style={{ color: "#555", textDecoration: "none", fontWeight: 500 }}
             >
               Create one free →

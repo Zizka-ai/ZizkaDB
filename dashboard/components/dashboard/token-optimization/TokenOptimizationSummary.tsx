@@ -15,6 +15,9 @@ import { KpiCard } from '@/components/dashboard/report/KpiCard'
 export function TokenOptimizationSummary({ result }: { result: TokenOptimizationResult }) {
   const a = result.aggregates
   const hasUnpriced = result.unpriced_models.length > 0
+  const skipped = Array.isArray(result.meta?.skipped_categories)
+    ? (result.meta.skipped_categories as string[])
+    : []
 
   // "Optimization score" is easy to misread without context — higher means
   // already well-optimized (less room to improve), lower means more savings
@@ -45,6 +48,18 @@ export function TokenOptimizationSummary({ result }: { result: TokenOptimization
 
   return (
     <section>
+      {skipped.length > 0 && (
+        <div
+          className="flex items-start gap-2 mb-3 px-3 py-2 text-xs"
+          role="status"
+          style={{ background: colors.surfaceHover, border: `1px solid ${colors.border}`, borderRadius: 8 }}
+        >
+          <Info size={14} className="mt-0.5 shrink-0" style={{ color: colors.textMuted }} />
+          <span style={{ color: colors.textMuted }}>
+            Categories not evaluated in v1: {skipped.map((c) => c.replace(/_/g, ' ')).join(', ')}.
+          </span>
+        </div>
+      )}
       {hasUnpriced && (
         <div
           className="flex items-start gap-2 mb-3 px-3 py-2 text-xs"

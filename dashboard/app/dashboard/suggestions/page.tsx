@@ -128,9 +128,19 @@ function SuggestionsContent() {
         <Skeleton rows={8} />
       ) : error ? (
         <ErrorState message={error} />
+      ) : !range && period === 'custom' ? (
+        <EmptyState
+          title="Choose a custom date range"
+          description="Pick a start and end date, then click Analyze to generate suggestions."
+        />
       ) : result ? (
         <ResultBody result={result} refreshing={refreshing} />
-      ) : null}
+      ) : (
+        <EmptyState
+          title="No suggestions yet"
+          description="Try a different period or check back after this agent records more activity."
+        />
+      )}
     </>
   )
 }

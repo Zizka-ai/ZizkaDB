@@ -137,9 +137,19 @@ function ReportsContent() {
         <Skeleton rows={8} />
       ) : error ? (
         <ErrorState message={error} />
+      ) : !range && period === 'custom' ? (
+        <EmptyState
+          title="Choose a custom date range"
+          description="Pick a start and end date, then click Generate to build the report."
+        />
       ) : report ? (
         <ReportView report={report} periodLabel={periodLabel} />
-      ) : null}
+      ) : (
+        <EmptyState
+          title="No report data"
+          description="Try a different period or wait for this agent to record more events."
+        />
+      )}
     </>
   )
 }
