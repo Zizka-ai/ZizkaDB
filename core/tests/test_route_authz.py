@@ -90,6 +90,76 @@ async def test_why_anchors_on_scoped_agent(monkeypatch):
     assert pool.fetch.await_args.args[-1] == "mine"
 
 
+@pytest.mark.asyncio
+async def test_why_recursive_branch_filters_scoped_agent(monkeypatch):
+    """Parent walk in why() must apply the same agent_id bind as the anchor."""
+    pool = AsyncMock()
+    pool.fetch.return_value = []
+    monkeypatch.setattr("api.events.get_pool", lambda: pool)
+    with pytest.raises(HTTPException):
+        await why("00000000-0000-0000-0000-000000000001", depth=10, tenant=SCOPED_TENANT)
+
+    sql = pool.fetch.await_args.args[0]
+    assert sql.count("agent_id = $4") >= 2
+
+
+@pytest.mark.asyncio
+async def test_why_asserts_on_anchor_not_deepest_parent(monkeypatch):
+    """Scoped key must authorize against the anchor event, not the chain root."""
+    import datetime
+
+    pool = AsyncMock()
+    anchor_id = "00000000-0000-0000-0000-000000000001"
+    root_id = "00000000-0000-0000-0000-000000000002"
+    ts = datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc)
+    row = {
+        "event_id": None,
+        "agent_id": "mine",
+        "timestamp": ts,
+        "event_type": "test",
+        "data": {},
+        "parent_event_id": None,
+        "session_id": None,
+        "sequence_no": 1,
+        "depth": 0,
+    }
+    root = {**row, "event_id": root_id, "agent_id": "other", "depth": 2}
+    anchor = {**row, "event_id": anchor_id, "agent_id": "mine", "depth": 0}
+    pool.fetch.return_value = [root, anchor]
+    monkeypatch.setattr("api.events.get_pool", lambda: pool)
+
+    result = await why(anchor_id, depth=10, tenant=SCOPED_TENANT)
+    assert result["event_id"] == anchor_id
+    assert result["chain_length"] == 2
+
+
+# ── /v1/agents (list) ─────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_list_agents_scoped_key_filters_to_bound_agent(monkeypatch):
+    """Agent-scoped keys must not enumerate other agents on the tenant."""
+    pool = AsyncMock()
+    pool.fetch.return_value = [
+        {
+            "agent_id": "mine",
+            "first_seen": datetime.datetime(2024, 1, 1, tzinfo=datetime.timezone.utc),
+            "last_seen": datetime.datetime(2024, 1, 2, tzinfo=datetime.timezone.utc),
+            "event_count": 3,
+            "metadata": None,
+            "api_key_count": 1,
+        }
+    ]
+    monkeypatch.setattr("api.agents.get_pool", lambda: pool)
+
+    result = await agents_api.list_agents(tenant=SCOPED_TENANT)
+    assert len(result) == 1
+    assert result[0]["agent"] == "mine"
+
+    sql = pool.fetch.await_args.args[0]
+    assert "a.agent_id = $2" in sql
+    assert pool.fetch.await_args.args[-1] == "mine"
+
+
 # ── key management is dashboard-only ──────────────────────────────────────────
 
 def _auth_dependency(func):
