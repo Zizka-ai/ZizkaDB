@@ -24,7 +24,7 @@ alwaysApply: false
 - **API key limits (§7):** active keys per tenant are capped by plan (Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50; else unlimited) when `API_KEY_LIMITS_ENFORCED=true`. UI reads `useApiKeyQuota` — never hardcode limits.
 
 ## Testing / safety
-- There are **no frontend tests** and `apiFetch` is untyped. Prefer adding tests for pure helpers (funnel guards) when touching them.
+- Frontend tests: `cd dashboard && npm test` (vitest). CI runs `lint`, `test`, and `build`. Prefer adding tests for pure helpers (funnel guards, `lib/plans.ts`) when touching them.
 
 ## Keep the KB in sync
 If you change billing/auth/the signup funnel, `lib/api.ts`, routes, a backend endpoint the dashboard calls, or the DB schema, **update `dashboard/DASHBOARD_KNOWLEDGE_BASE.md`** (esp. §7, §8, §17.3, §18, §19-21) in the same change.
