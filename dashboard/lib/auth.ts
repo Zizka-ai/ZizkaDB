@@ -19,9 +19,15 @@ function eraseCookie(name: string) {
   document.cookie = `${name}=; path=/; max-age=0`
 }
 
+function readCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=([^;]*)`))
+  return match ? decodeURIComponent(match[1]) : null
+}
+
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null
-  return localStorage.getItem(USER_TOKEN_COOKIE)
+  return localStorage.getItem(USER_TOKEN_COOKIE) ?? readCookie(USER_TOKEN_COOKIE)
 }
 
 export function setToken(token: string) {
