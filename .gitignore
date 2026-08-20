@@ -27,6 +27,9 @@ node_modules/
 
 # macOS
 .DS_Store
+# iCloud duplicate filenames (e.g. "file 2.py")
+* 2.*
+* 2/
 
 # Docker volumes
 postgres_data/
