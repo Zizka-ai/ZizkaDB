@@ -26,6 +26,11 @@ async def semantic_search(
 ):
     tenant_id = tenant["tenant_id"]
     agent = body.agent or tenant.get("agent_id")
+    if tenant.get("key_id") and not tenant.get("agent_id") and not agent:
+        raise bad_request(
+            "agent is required when using an unassigned API key. "
+            "Pass agent in the request body or log an event first to bind the key."
+        )
     if agent:
         await assert_agent_allowed(tenant, agent)
 
