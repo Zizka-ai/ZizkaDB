@@ -32,8 +32,8 @@ You do **not** need a large PR to help.
 | **Improve docs** | README, wiki, `dashboard/app/docs`, integration guides |
 | **Fix issues** | Pick an open issue or ask on the [community board](https://db.zizka.ai/community) |
 | **SDKs & MCP** | Python / TypeScript SDK, `zizkadb-mcp` tools |
-| **Integrations** | LangChain, CrewAI, OpenAI Agents, new framework adapters |
-| **Dashboard** | Agent views, drift UI, admin tools |
+| **Integrations** | LangChain, CrewAI (PyPI adapters); example patterns for other frameworks (`examples/`) |
+| **Dashboard** | Agent views, drift UI, settings |
 | **Core API** | Event pipeline, search, baselines, auth |
 | **Examples** | Minimal demos under `examples/` |
 | **Discuss design** | Open an issue or community post before large architectural changes |

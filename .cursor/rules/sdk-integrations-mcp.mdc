@@ -39,7 +39,7 @@ const baseline = await db.baseline({ agent: 'my-bot' })
 
 ## Integrations (`integrations/`)
 
-Two standalone packages: `zizkadb-langchain` and `zizkadb-crewai`. **Not yet on PyPI** — install via git URL.
+Two standalone packages: `zizkadb-langchain` and `zizkadb-crewai`. **Published on PyPI** — `pip install zizkadb-langchain zizkadb-crewai`.
 
 ### Critical: code lives in two places — keep both in sync
 
