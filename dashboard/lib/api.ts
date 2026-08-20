@@ -699,11 +699,11 @@ export async function getBillingStatus(token: string): Promise<BillingStatus> {
   return apiFetch('/v1/billing/status', token)
 }
 
-export async function createCheckoutSession(
+export async function selectBillingPlan(
   token: string,
   plan: 'pro' | 'team',
-): Promise<{ url: string }> {
-  return apiFetch('/v1/billing/checkout-session', token, {
+): Promise<BillingStatus> {
+  return apiFetch('/v1/billing/select-plan', token, {
     method: 'POST',
     body: JSON.stringify({ plan }),
   })
