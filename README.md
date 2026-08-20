@@ -2,9 +2,11 @@
 
 # ZizkaDB
 
-**Dont Observe - Audit your AI Agent.**
+**Don't observe — audit your AI agent.**
 
 Operational database for AI agents — replay sessions, trace decisions, detect drift.
+
+**Have an agent already? → [CONNECT.md](CONNECT.md) · [Integration guides](docs/integrate/)**
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/Zizka-ai/ZizkaDB?label=release&color=f97316)](https://github.com/Zizka-ai/ZizkaDB/releases)
@@ -35,13 +37,15 @@ Operational database for AI agents — replay sessions, trace decisions, detect 
 | **Best for** | Self-hosters & contributors | Solo devs & early prod | Teams with multiple agents |
 | **Price** | Free forever (AGPL) | €29 / month | €69 / month |
 | **Hosting** | Your machine / VPC | [db.zizka.ai](https://db.zizka.ai) | [db.zizka.ai](https://db.zizka.ai) |
-| **Events / month** | Unlimited (your infra) | 50k | 100k |
-| **Projects** | Unlimited | 2 | 5 |
+| **Events / month** | Unlimited (your infra) | 50k† | 100k† |
+| **Active API keys** | Unlimited | 2 | 5 |
 | **Dashboard** | Activity · Behavior · Reports · Suggestions | Same + **Fleet** (managed) | Same + **Fleet** + priority support |
 | **Support** | Community | Email | Priority |
 | **Jump to** | [4 steps ↓](#open-source-self-host) | [4 steps ↓](#pro-managed-cloud) | [4 steps ↓](#team-managed-cloud) |
 
 > **Enterprise VPC?** Single-tenant deploy, commercial license → [db.zizka.ai/enterprise](https://db.zizka.ai/enterprise)
+
+> † Event caps are **plan targets** on managed cloud; **not enforced** in the API yet. **Active API key** caps apply when `API_KEY_LIMITS_ENFORCED=true`. Details: [docs/README.md](docs/README.md#plan-limits-honest).
 
 > This repo is the **open-source product runtime** (API, dashboard, SDKs, MCP). Managed operator tools live in a private repo; all product links point here.
 
@@ -55,7 +59,7 @@ Operational database for AI agents — replay sessions, trace decisions, detect 
 | :---: | :--- |
 | **① What it is** | ZizkaDB stores every agent step as a **linked event** — not scattered logs. Trace decisions with **`why()`**, rewind with **`at()`**, search history in plain English, and catch **behavioral drift** before users notice. You run the full stack: API + dashboard + SDKs. |
 | **② How to integrate** | Run locally in ~2 min: `curl -fsSL …/quickstart-remote.sh \| bash` then `pip install zizkadb-sdk` (or TS / MCP / REST). Link events with `parent_id` so `why()` can walk the chain. → **[Full connect guide](CONNECT.md)** |
-| **③ Documentation** | [CONNECT.md](CONNECT.md) · [Docs](https://db.zizka.ai/docs) · [Self-hosting](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) · [Examples](examples/) · [Architecture](https://github.com/Zizka-ai/ZizkaDB/wiki/Architecture) |
+| **③ Documentation** | [CONNECT.md](CONNECT.md) · [docs/](docs/) · [Self-hosting](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) · [Examples](examples/) · [Architecture](https://github.com/Zizka-ai/ZizkaDB/wiki/Architecture) |
 | **④ Live dashboard** | **[localhost:3001/login](http://localhost:3001/login)** → **Open my dashboard** (no signup). Log from SDK → refresh → see sessions live. |
 
 **Quickstart**
@@ -87,7 +91,7 @@ async with ZizkaDB(host="http://localhost:8000") as db:
 | :---: | :--- |
 | **① What it is** | Same engine, **hosted on [db.zizka.ai](https://db.zizka.ai)**. Replay sessions and trace causal chains without running your own databases. **vs OSS:** zero infra · instant API keys · **Fleet** tab on managed cloud. |
 | **② How to integrate** | [Sign up →](https://db.zizka.ai/signup?plan=pro) · create agent · copy API key · `pip install zizkadb-sdk` · log with `api_key="zizkadb_live_..."`. Also: npm, MCP, REST. → **[CONNECT.md](CONNECT.md)** |
-| **③ Documentation** | [db.zizka.ai/docs](https://db.zizka.ai/docs) · [Swagger](https://db.zizka.ai/swagger) · [Community](https://db.zizka.ai/community) · **50k events/mo · 2 projects · email support** |
+| **③ Documentation** | [db.zizka.ai/docs](https://db.zizka.ai/docs) · [Swagger](https://db.zizka.ai/swagger) · [Community](https://db.zizka.ai/community) · **50k events/mo† · 2 API keys · email support** |
 | **④ Live dashboard** | **[db.zizka.ai/dashboard](https://db.zizka.ai/dashboard)** — sign up, log from SDK, sessions appear in seconds. Same UI as self-host, always online. |
 
 ```python
@@ -107,13 +111,13 @@ async with ZizkaDB(api_key="zizkadb_live_...") as db:
 
 ## Team (managed cloud)
 
-**Multiple agents & projects in production**
+**Multiple agents in production**
 
 | Step | What you get |
 | :---: | :--- |
-| **① What it is** | Everything in **Pro**, with room to grow. **vs Pro:** 100k events (vs 50k) · 5 projects (vs 2) · **priority support** · built for multi-agent ops with **Fleet** ranking. |
+| **① What it is** | Everything in **Pro**, with room to grow. **vs Pro:** 100k events† (vs 50k) · 5 active API keys (vs 2) · **priority support** · built for multi-agent ops with **Fleet** ranking. |
 | **② How to integrate** | [Sign up for Team →](https://db.zizka.ai/signup?plan=team) · one agent per service · consistent `session_id` per conversation. → **[Multi-agent wiki](https://github.com/Zizka-ai/ZizkaDB/wiki/Multi-Agent-Apps)** |
-| **③ Documentation** | [Plan picker](https://db.zizka.ai/signup/plan) · [Docs](https://db.zizka.ai/docs) · [Production wiki](https://github.com/Zizka-ai/ZizkaDB/wiki/Production-Deployment) · **100k events/mo · 5 projects · priority support** |
+| **③ Documentation** | [Plan picker](https://db.zizka.ai/signup/plan) · [Docs](https://db.zizka.ai/docs) · [Production wiki](https://github.com/Zizka-ai/ZizkaDB/wiki/Production-Deployment) · **100k events/mo† · 5 API keys · priority support** |
 | **④ Live dashboard** | **[db.zizka.ai/dashboard](https://db.zizka.ai/dashboard)** — switch agents, compare baselines, Fleet ranking across your workspace. |
 
 ```typescript
@@ -159,10 +163,10 @@ Core unit tests plus the SDK and MCP package tests do not require a running Zizk
 | **Fleet** tab (managed cloud) | — | ✓ | ✓ |
 | Self-host / AGPL | ✓ | — | — |
 | Managed hosting | — | ✓ | ✓ |
-| 50k events / month | — | ✓ | — |
-| 100k events / month | — | — | ✓ |
-| 2 projects | — | ✓ | — |
-| 5 projects | — | — | ✓ |
+| 50k events / month† | — | ✓ | — |
+| 100k events / month† | — | — | ✓ |
+| 2 active API keys | — | ✓ | — |
+| 5 active API keys | — | — | ✓ |
 | Priority support | — | — | ✓ |
 | Enterprise VPC | [Contact →](https://db.zizka.ai/enterprise) | | |
 
@@ -173,6 +177,8 @@ Core unit tests plus the SDK and MCP package tests do not require a running Zizk
 | Python | TypeScript | LangChain | CrewAI | MCP (Cursor) | REST |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | [`pip install zizkadb-sdk`](https://pypi.org/project/zizkadb-sdk/) | [`npm i zizkadb-sdk`](https://www.npmjs.com/package/zizkadb-sdk) | [Guide →](CONNECT.md#langchain) | [Guide →](CONNECT.md#crewai) | `uvx zizkadb-mcp` | [Swagger →](https://db.zizka.ai/swagger) |
+
+**Any framework:** [docs/integrate/any-agent.md](docs/integrate/any-agent.md) · **LangGraph / others:** [docs/integrate/frameworks.md](docs/integrate/frameworks.md)
 
 <p align="center">
   <img src="docs/assets/gallery-mcp.png" alt="ZizkaDB MCP in Cursor" width="45%"/>
@@ -214,6 +220,8 @@ zizkadb init my-agent --template basic
 
 | Resource | Link |
 | --- | --- |
+| Documentation index | [docs/README.md](docs/README.md) |
+| Integrate any agent | [docs/integrate/](docs/integrate/) |
 | Issues | [GitHub Issues](https://github.com/Zizka-ai/ZizkaDB/issues) |
 | Discussions | [GitHub Discussions](https://github.com/Zizka-ai/ZizkaDB/discussions) |
 | Forum | [db.zizka.ai/community](https://db.zizka.ai/community) |

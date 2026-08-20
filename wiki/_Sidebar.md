@@ -16,7 +16,12 @@
 
 ### Operations
 - [Self-Hosting](Self-Hosting)
+- [Production deployment](Production-Deployment)
 - [Architecture](Architecture)
+
+### Docs (repo)
+- [Documentation index](https://github.com/Zizka-ai/ZizkaDB/tree/main/docs)
+- [Integration guides](https://github.com/Zizka-ai/ZizkaDB/tree/main/docs/integrate)
 
 ### External
 - [Managed cloud](https://db.zizka.ai)

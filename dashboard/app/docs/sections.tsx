@@ -673,7 +673,7 @@ asyncio.run(run_turn("Hello", "sess_001"))`}</Code>
           },
           {
             q: "401 Invalid API key",
-            a: "Copy the full key from Dashboard → Agents (no spaces). Use ZIZKADB_API_KEY or AGENTDB_API_KEY in your env.",
+            a: "Copy the full key from Dashboard → Settings → API keys (no spaces). Use ZIZKADB_API_KEY or AGENTDB_API_KEY in your env.",
           },
           {
             q: "403 Agent mismatch",
@@ -681,7 +681,7 @@ asyncio.run(run_turn("Hello", "sess_001"))`}</Code>
           },
           {
             q: "Dashboard empty but SDK works",
-            a: "Check you are viewing the same agent name your code logs to. Click Test agent on the agent page. Settings test event goes to dashboard-connection-test, not your app agent.",
+            a: "Check you are viewing the same agent name your code logs to. Use Test agent in Settings with ?agent= set. Settings → Send test event logs to dashboard-connection-test, not your app agent.",
           },
           {
             q: "Search returns nothing",
