@@ -2,6 +2,14 @@
 
 **Current releases:** PyPI/npm `zizkadb-sdk` **0.2.6** · `zizkadb-mcp` **0.1.5** · `zizkadb-langchain` **0.1.1** · `zizkadb-crewai` **0.1.1**
 
+**Fastest win:** run the stack + demo, then paste the Python snippet below.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh | bash
+# stack already up?
+pip install zizkadb-sdk && zizkadb demo
+```
+
 ## Start the stack (pick one)
 
 **No repo clone** (recommended for new users):
