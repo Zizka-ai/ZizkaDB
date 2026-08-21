@@ -12,7 +12,7 @@ import { afterAll, expect, it } from 'vitest'
 // Save the original fetch so we can restore it after all tests finish.
 const _originalFetch = globalThis.fetch
 
-// Disable telemetry before loading the SDK so the constructor doesn't fire it.
+// Disable telemetry before loading the SDK.
 process.env.ZIZKADB_TELEMETRY = 'false'
 
 import { AgentScopeError, AuthError, ZizkaDB, ZizkaDBError } from '../src/index.ts'

@@ -1,6 +1,6 @@
 # TypeScript SDK
 
-**Package:** `zizkadb-sdk` on npm
+**Package:** `zizkadb-sdk` on npm (**0.2.6**)
 
 ```bash
 npm install zizkadb-sdk

@@ -8,10 +8,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.6] — 2026-08-21
 
-### Python SDK (`zizkadb-sdk` 0.2.6)
+### Python SDK (`zizkadb-sdk` 0.2.6, PyPI)
 
 - Telemetry pings after the first successful `log()` (usage, not import)
 - Stable anonymous `install_id` per machine (`~/.zizkadb` + machine-id fallback)
+
+### TypeScript SDK (`zizkadb-sdk` 0.2.6, npm)
+
+- Telemetry pings after the first successful `log()` (usage, not constructor)
+- Stable anonymous `install_id` per machine (`~/.zizkadb` + machine-id fallback)
+- Self-hosted / local installs skip telemetry (matches Python SDK)
 
 ### MCP (`zizkadb-mcp` 0.1.5)
 
