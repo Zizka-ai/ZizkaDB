@@ -19,13 +19,23 @@ Open-source **audit trail for AI agents** — causal lineage, session replay, an
 
 </div>
 
+<p align="center">
+  <a href="#open-source-self-host">
+    <img src="docs/assets/readme-hero-causal-graph.png" alt="ZizkaDB causal audit graph — user_message to llm_response to tool_call with db.why() walking backward to root cause" width="100%"/>
+  </a>
+</p>
+
+<p align="center">
+  <a href="http://localhost:3001/login">
+    <img src="docs/assets/readme-hero-dashboard.png" alt="ZizkaDB dashboard — Activity feed, Reports, AI Suggestions, and Agent Behavior after quickstart" width="100%"/>
+  </a>
+  <br/>
+  <sub><strong>Live product UI</strong> after <code>quickstart</code> — replay sessions, drift baselines, fix suggestions</sub>
+</p>
+
 - **Causal chains, not log dumps.** Link steps with `parent_id`, then walk backward with `why()` — root cause in one call, not manual correlation.
 - **Not a trace UI.** Built to **audit** production agents: replay sessions, compare baselines, prove what changed after a deploy.
 - **Local-first & free.** OSS stack on your machine — Docker quickstart, no signup, no API key on `localhost`.
-
-<p align="center">
-  <img src="docs/assets/why-demo.gif" alt="ZizkaDB agent debugging demo — db.why() walks a causal chain from tool call to user message" width="100%"/>
-</p>
 
 ## See it in action
 
@@ -165,12 +175,11 @@ asyncio.run(main())
 ```
 
 <p align="center">
-  <img src="docs/assets/gallery-why.png" alt="Causal chain in the ZizkaDB dashboard" width="48%"/>
-  <img src="docs/assets/readme-hero-dashboard.png" alt="ZizkaDB dashboard — Activity, Behavior, Reports, and Suggestions" width="48%"/>
+  <img src="docs/assets/gallery-mcp.png" alt="Audit agents from Cursor with ZizkaDB MCP tools" width="72%"/>
 </p>
 
 <p align="center">
-  <sub>↑ Same UI locally and on <a href="https://db.zizka.ai">managed cloud</a> — story behind the demo: <a href="worked/01-support-order-delay/">worked/01-support-order-delay</a></sub>
+  <sub>Audit from Cursor · same stack locally or on <a href="https://db.zizka.ai">managed cloud</a> · <a href="worked/01-support-order-delay/">worked example →</a></sub>
 </p>
 
 <details>

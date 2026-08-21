@@ -13,7 +13,15 @@ That blurs only the agent dropdown and account badge before writing
 `docs/assets/readme-hero-dashboard.png`, `docs/assets/hero-dashboard.png`, and `docs/assets/gallery-dashboard.png`.
 The Activity feed and event payloads remain visible.
 
-For a **live terminal** recording (~15s loop), use `python scripts/demo-why.py` after setup.
+Regenerate the **causal graph hero** (README top banner):
+
+```bash
+python scripts/generate-readme-hero-graph.py
+```
+
+Writes `docs/assets/readme-hero-causal-graph.png` — node graph + terminal strip (Graphify-style).
+
+For a **live terminal** GIF (~15s loop), use `python scripts/demo-why.py` after setup.
 
 ## Prereqs
 
