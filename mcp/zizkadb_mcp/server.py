@@ -36,7 +36,7 @@ try:
 
     __version__ = _pkg_version("zizkadb-mcp")
 except Exception:
-    __version__ = "0.1.4"
+    __version__ = "0.1.5"
 
 DEFAULT_DEV_API_KEY = "zizkadb_dev_local"
 _HOST = (
@@ -57,6 +57,21 @@ if not _KEY and _HOST and _is_local_host(_HOST):
 
 # ── Anonymous telemetry (opt-out: ZIZKADB_TELEMETRY=false) ────────────────────
 
+_telemetry_sent = False
+
+
+def _machine_stable_uuid() -> str:
+    for path in (Path("/etc/machine-id"), Path("/var/lib/dbus/machine-id")):
+        try:
+            raw = path.read_text().strip()
+            if raw:
+                return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"zizkadb:{raw}"))
+        except OSError:
+            continue
+    seed = f"{platform.node()}:{platform.system()}:{platform.machine()}"
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"zizkadb:{seed}"))
+
+
 def _get_install_id() -> str:
     try:
         path = Path.home() / ".zizkadb" / "install_id"
@@ -69,35 +84,40 @@ def _get_install_id() -> str:
         path.write_text(iid)
         return iid
     except Exception:
-        return str(uuid.uuid4())
+        return _machine_stable_uuid()
 
 
-def _telemetry_ping() -> None:
+def _telemetry_ping_on_use() -> None:
+    global _telemetry_sent
+    if _telemetry_sent:
+        return
     if os.getenv("ZIZKADB_TELEMETRY", "").lower() in ("false", "0", "no", "off"):
         return
-    try:
-        import urllib.request, json
-        mode = "self-hosted" if os.getenv("ZIZKADB_HOST") else "cloud"
-        payload = json.dumps({
-            "install_id":  _get_install_id(),
-            "sdk":         "mcp",
-            "sdk_version": __version__,
-            "python":      f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-            "os":          platform.system(),
-            "mode":        mode,
-        }).encode()
-        req = urllib.request.Request(
-            "https://db.zizka.ai/v1/telemetry",
-            data=payload,
-            headers={"Content-Type": "application/json"},
-            method="POST",
-        )
-        urllib.request.urlopen(req, timeout=3)
-    except Exception:
-        pass
+    _telemetry_sent = True
 
+    def _run() -> None:
+        try:
+            import urllib.request, json
+            mode = "self-hosted" if os.getenv("ZIZKADB_HOST") else "cloud"
+            payload = json.dumps({
+                "install_id":  _get_install_id(),
+                "sdk":         "mcp",
+                "sdk_version": __version__,
+                "python":      f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+                "os":          platform.system(),
+                "mode":        mode,
+            }).encode()
+            req = urllib.request.Request(
+                "https://db.zizka.ai/v1/telemetry",
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            urllib.request.urlopen(req, timeout=3)
+        except Exception:
+            pass
 
-threading.Thread(target=_telemetry_ping, daemon=True).start()
+    threading.Thread(target=_run, daemon=True).start()
 
 
 async def _api(method: str, path: str, body: dict | None = None) -> dict:
@@ -125,6 +145,7 @@ async def _api(method: str, path: str, body: dict | None = None) -> dict:
 
     if not r.is_success:
         return {"error": r.text, "status": r.status_code}
+    _telemetry_ping_on_use()
     return r.json()
 
 

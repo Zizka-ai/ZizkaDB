@@ -69,7 +69,7 @@ If your app logs to **different agent ids** per user (e.g. `conv-alice`, `conv-b
 | `AGENTDB_API_KEY` | Legacy alias for `ZIZKADB_API_KEY` |
 | `ZIZKADB_AGENT` | Default agent name (used in templates/examples) |
 | `ZIZKADB_HOST` | Self-hosted API URL |
-| `ZIZKADB_TELEMETRY` | Set `false` to opt out |
+| `ZIZKADB_TELEMETRY` | Set `false` to opt out (anonymous ping after first `log()`) |
 
 ## Self-host dashboard
 

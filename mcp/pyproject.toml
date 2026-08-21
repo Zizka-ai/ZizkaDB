@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zizkadb-mcp"
-version = "0.1.4"
+version = "0.1.5"
 description = "MCP server for ZizkaDB — give any AI agent persistent memory and observability"
 readme = "README.md"
 license = "MIT"

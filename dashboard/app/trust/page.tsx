@@ -534,8 +534,8 @@ docker compose -f infra/docker-compose.yml up -d`}</Code>
                 and vectors.
               </li>
               <li>
-                <strong>Telemetry:</strong> one anonymous SDK/MCP startup ping —
-                opt out with{" "}
+                <strong>Telemetry:</strong> one anonymous SDK/MCP ping per process
+                after first use (log or tool call) — opt out with{" "}
                 <code style={codeInline}>ZIZKADB_TELEMETRY=false</code>.
               </li>
             </ul>
@@ -659,8 +659,8 @@ chain = await db.why(tool.event_id)`}</Code>
               for config.
             </p>
             <p style={p}>
-              Telemetry: one anonymous SDK startup ping (name, version, OS,
-              cloud vs self-host). Opt out:{" "}
+              Telemetry: one anonymous SDK ping per process after first log (name,
+              version, OS, cloud vs self-host). Opt out:{" "}
               <code style={codeInline}>ZIZKADB_TELEMETRY=false</code>.
             </p>
           </Section>

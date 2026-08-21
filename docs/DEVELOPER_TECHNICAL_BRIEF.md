@@ -268,7 +268,7 @@ Stack: postgres (pgvector), qdrant, redis, api. Dashboard optional (`npm run dev
 
 **Embeddings:** Without `OPENAI_API_KEY`, **logging still works**; semantic search and context injection that rely on embeddings will not.
 
-**Telemetry:** SDK/MCP send **one anonymous ping** on startup (SDK name, version, OS, cloud vs self-host). No event payloads, no API keys. Opt out: `ZIZKADB_TELEMETRY=false`.
+**Telemetry:** SDK/MCP send **one anonymous ping per process** after the first successful log or MCP tool use (SDK name, version, OS, cloud vs self-host). No event payloads, no API keys. Opt out: `ZIZKADB_TELEMETRY=false`.
 
 ---
 

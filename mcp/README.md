@@ -71,7 +71,7 @@ On localhost, the dev key (`zizkadb_dev_local`) is auto-injected — no API key 
 | `ZIZKADB_API_KEY` | — | **Required on cloud.** Your key from db.zizka.ai Settings |
 | `AGENTDB_API_KEY` | — | Legacy alias for `ZIZKADB_API_KEY` |
 | `AGENTDB_HOST` | — | Legacy alias for `ZIZKADB_HOST` |
-| `ZIZKADB_TELEMETRY` | on | Set `false` to opt out |
+| `ZIZKADB_TELEMETRY` | on | Set `false` to opt out (ping after first successful tool call) |
 
 If `ZIZKADB_API_KEY` is missing on cloud, MCP tools return a clear error instead of silently failing.
 
