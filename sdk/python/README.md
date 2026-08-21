@@ -1,5 +1,7 @@
 # zizkadb-sdk
 
+**PyPI:** [zizkadb-sdk 0.2.6](https://pypi.org/project/zizkadb-sdk/0.2.6/)
+
 Python SDK for [ZizkaDB](https://db.zizka.ai) — the operational database for AI agents.
 
 ## Setup (managed cloud)

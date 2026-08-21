@@ -1,5 +1,7 @@
 # Connect your agent (self-host / OSS)
 
+**Current PyPI releases:** `zizkadb-sdk` **0.2.6** · `zizkadb-mcp` **0.1.5** · `zizkadb-langchain` **0.1.1** · `zizkadb-crewai` **0.1.1**
+
 ## Start the stack (pick one)
 
 **No repo clone** (recommended for new users):
@@ -26,7 +28,7 @@ Pick your stack below. Use the **same agent name** in code and dashboard.
 ## Python SDK
 
 ```bash
-pip install zizkadb-sdk
+pip install "zizkadb-sdk>=0.2.6"
 ```
 
 ```python
@@ -89,7 +91,7 @@ await db.log({
 ## LangChain
 
 ```bash
-pip install zizkadb-sdk zizkadb-langchain
+pip install "zizkadb-sdk>=0.2.6" "zizkadb-langchain>=0.1.1"
 ```
 
 ```python
@@ -114,7 +116,7 @@ Or scaffold: `zizkadb init my-agent --template langchain`
 ## CrewAI
 
 ```bash
-pip install zizkadb-sdk zizkadb-crewai
+pip install "zizkadb-sdk>=0.2.6" "zizkadb-crewai>=0.1.1"
 ```
 
 ```python
@@ -136,7 +138,7 @@ Or scaffold: `zizkadb init my-agent --template crewai`
 ## MCP (Cursor, Claude Desktop, Windsurf)
 
 ```bash
-pip install zizkadb-mcp
+pip install "zizkadb-mcp>=0.1.5"
 # or: uvx zizkadb-mcp
 ```
 
