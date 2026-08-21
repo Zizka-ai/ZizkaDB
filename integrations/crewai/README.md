@@ -1,5 +1,7 @@
 # zizkadb-crewai
 
+**PyPI:** [zizkadb-crewai 0.1.1](https://pypi.org/project/zizkadb-crewai/0.1.1/) · requires `zizkadb-sdk>=0.2.6`
+
 Self-hosted, open-source **observability and causal debugging** for [CrewAI](https://crewai.com).
 
 A CrewAI run is normally a black box: when the output is wrong, it's hard to see which task or
