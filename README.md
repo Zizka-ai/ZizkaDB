@@ -4,29 +4,90 @@
 
 **Don't observe — audit your AI agent.**
 
-Operational database for AI agents — replay sessions, trace decisions, detect drift.
+Open-source **audit trail for AI agents** — causal lineage, session replay, and drift detection for **LangChain**, **CrewAI**, **Cursor**, and any agent stack. Trace **why** a decision happened instead of grepping scattered logs.
 
-**Have an agent already? → [CONNECT.md](CONNECT.md) · [Integration guides](docs/integrate/)**
+**Free · self-host · no signup required**
 
+[![CI](https://github.com/Zizka-ai/ZizkaDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Zizka-ai/ZizkaDB/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/github/v/release/Zizka-ai/ZizkaDB?label=release&color=f97316)](https://github.com/Zizka-ai/ZizkaDB/releases)
 [![Python](https://img.shields.io/pypi/v/zizkadb-sdk?label=Python)](https://pypi.org/project/zizkadb-sdk/)
 [![npm](https://img.shields.io/npm/v/zizkadb-sdk?label=npm)](https://www.npmjs.com/package/zizkadb-sdk)
 [![MCP](https://img.shields.io/pypi/v/zizkadb-mcp?label=MCP)](https://pypi.org/project/zizkadb-mcp/)
 
-**[Open Source ↓](#open-source-self-host)** · **[Pro ↓](#pro-managed-cloud)** · **[Team ↓](#team-managed-cloud)** · **[Docs](https://db.zizka.ai/docs)** · **[Live site](https://db.zizka.ai)**
+**[Try free ↓](#open-source-self-host)** · **[START_HERE.md](START_HERE.md)** · **[CONNECT.md](CONNECT.md)** · **[Pro ↓](#pro-managed-cloud)** · **[Docs](https://db.zizka.ai/docs)**
 
 </div>
 
-<p align="center">
-  <a href="https://db.zizka.ai/dashboard">
-    <img src="docs/assets/readme-hero-dashboard.png" alt="ZizkaDB dashboard — Activity, Agent Behavior, Reports, and AI suggestions" width="100%"/>
-  </a>
-</p>
+- **Causal chains, not log dumps.** Link steps with `parent_id`, then walk backward with `why()` — root cause in one call, not manual correlation.
+- **Not a trace UI.** Built to **audit** production agents: replay sessions, compare baselines, prove what changed after a deploy.
+- **Local-first & free.** OSS stack on your machine — Docker quickstart, no signup, no API key on `localhost`.
 
 <p align="center">
-  <sub>↑ Activity · Behavior · Reports · Suggestions — same dashboard on <a href="https://db.zizka.ai">managed cloud</a> and after <code>quickstart</code></sub>
+  <img src="docs/assets/why-demo.gif" alt="ZizkaDB agent debugging demo — db.why() walks a causal chain from tool call to user message" width="100%"/>
 </p>
+
+## See it in action
+
+**Get started (2 minutes)** — requires [Docker](https://docs.docker.com/get-docker/):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh | bash
+```
+
+Real output from `zizkadb demo` (support-bot order delay):
+
+```text
+$ zizkadb demo
+→ ZizkaDB @ http://localhost:8000
+
+Logged chain. Walking back with db.why():
+
+tool_call · lookup_order · ORD-8842
+  └── llm_response · gpt-4o
+        └── user_message · Why was my order delayed?
+
+✓ Done — open the dashboard to explore this agent:
+  http://localhost:3001/login → Open my dashboard →
+```
+
+**Works with:** Python · TypeScript · LangChain · CrewAI · Cursor / Claude MCP · REST · any HTTP client
+
+---
+
+## What you get
+
+| Capability | What you get |
+|---|---|
+| **Causal lineage** | `db.why(event_id)` walks from any step back to the user message |
+| **Session replay** | Full agent run in the dashboard — Activity, Behavior, Reports |
+| **Drift baselines** | `db.baseline(agent)` flags when answers change vs past sessions |
+| **Time travel** | `db.at(agent, timestamp)` — what the agent knew at decision time |
+| **Semantic search** | Plain-English search over agent history (`db.search()`) |
+| **Editor integration** | MCP tools in Cursor — audit from chat without rewriting your app |
+
+## Observe vs audit
+
+| | Typical observability / logs | ZizkaDB |
+|---|---|---|
+| **Question** | What lines mention `lookup_order`? | **Why** did the agent call `lookup_order`? |
+| **Structure** | Flat, unrelated events | Linked chain via `parent_id` |
+| **After a bad answer** | Grep and guess | Replay session + walk `why()` |
+| **After prompt deploy** | Hope someone notices | Baseline / drift alert |
+| **Proof for teams** | Screenshots of log noise | Shareable audit trail in dashboard |
+
+```mermaid
+flowchart BT
+  U[user_message] --> L[llm_response]
+  L --> T[tool_call]
+  T -.->|db.why| U
+```
+
+> **New here?** You do **not** need to understand this whole repo.  
+> Copy the command above → see an audit trail in your terminal → open the dashboard.  
+> Managed cloud (Pro / Team) is optional — **[jump to OSS details ↓](#open-source-self-host)**
+
+<br/>
 
 ---
 
@@ -35,13 +96,13 @@ Operational database for AI agents — replay sessions, trace decisions, detect 
 | | **Open Source** | **Pro** | **Team** |
 | :--- | :--- | :--- | :--- |
 | **Best for** | Self-hosters & contributors | Solo devs & early prod | Teams with multiple agents |
-| **Price** | Free forever (AGPL) | €29 / month | €69 / month |
+| **Price** | **Free forever (AGPL)** | €29 / month | €69 / month |
 | **Hosting** | Your machine / VPC | [db.zizka.ai](https://db.zizka.ai) | [db.zizka.ai](https://db.zizka.ai) |
 | **Events / month** | Unlimited (your infra) | 50k† | 100k† |
 | **Active API keys** | Unlimited | 2 | 5 |
 | **Dashboard** | Activity · Behavior · Reports · Suggestions | Same + **Fleet** (managed) | Same + **Fleet** + priority support |
 | **Support** | Community | Email | Priority |
-| **Jump to** | [4 steps ↓](#open-source-self-host) | [4 steps ↓](#pro-managed-cloud) | [4 steps ↓](#team-managed-cloud) |
+| **Jump to** | **[Start free ↓](#open-source-self-host)** | [4 steps ↓](#pro-managed-cloud) | [4 steps ↓](#team-managed-cloud) |
 
 > **Enterprise VPC?** Single-tenant deploy, commercial license → [db.zizka.ai/enterprise](https://db.zizka.ai/enterprise)
 
@@ -53,39 +114,89 @@ Operational database for AI agents — replay sessions, trace decisions, detect 
 
 ## Open Source (self-host)
 
-**Free · AGPL-3.0 · Your infrastructure**
+**Free · AGPL-3.0 · No signup · Your infrastructure**
 
 | Step | What you get |
 | :---: | :--- |
 | **① What it is** | ZizkaDB stores every agent step as a **linked event** — not scattered logs. Trace decisions with **`why()`**, rewind with **`at()`**, search history in plain English, and catch **behavioral drift** before users notice. You run the full stack: API + dashboard + SDKs. |
-| **② How to integrate** | Run locally in ~2 min: `curl -fsSL …/quickstart-remote.sh \| bash` then `pip install zizkadb-sdk` (or TS / MCP / REST). Link events with `parent_id` so `why()` can walk the chain. → **[Full connect guide](CONNECT.md)** |
-| **③ Documentation** | [CONNECT.md](CONNECT.md) · [docs/](docs/) · [Self-hosting](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) · [Examples](examples/) · [Architecture](https://github.com/Zizka-ai/ZizkaDB/wiki/Architecture) |
+| **② How to integrate** | Run locally: `curl -fsSL …/quickstart-remote.sh \| bash` then `pip install zizkadb-sdk` (or TS / MCP / REST). Link events with `parent_id` so `why()` can walk the chain. → **[Full connect guide](CONNECT.md)** |
+| **③ Documentation** | [START_HERE.md](START_HERE.md) · [CONNECT.md](CONNECT.md) · [worked example](worked/01-support-order-delay/) · [Examples](examples/) · [Self-hosting](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) |
 | **④ Live dashboard** | **[localhost:3001/login](http://localhost:3001/login)** → **Open my dashboard** (no signup). Log from SDK → refresh → see sessions live. |
 
-**Quickstart**
+**Quickstart** — ~2 min cached · ~5–10 min first Docker image pull
+
+Already ran the command above? Skip to **[Connect your agent](#connect-your-agent-3-lines)**.
+
+<details>
+<summary>Prerequisites</summary>
+
+| Requirement | Minimum | Check |
+|---|---|---|
+| Docker | Desktop or Engine | `docker info` |
+| Python | 3.10+ (for demo CLI) | `python3 --version` |
+| Disk | ~2 GB for images | first pull only |
+
+</details>
+
+**Run the demo again anytime:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh | bash
+pip install zizkadb-sdk
+zizkadb demo
 ```
 
+**Story behind the demo:** [worked/01-support-order-delay](worked/01-support-order-delay/) — support-bot, order delay, full `parent_id` chain.
+
+<a id="connect-your-agent-3-lines"></a>
+
+**Connect your agent (3 lines):**
+
 ```python
-async with ZizkaDB(host="http://localhost:8000") as db:
-    user = await db.log(agent="my-bot", event="user_message", data={"text": "Why is my order late?"})
-    tool = await db.log(agent="my-bot", event="tool_call", data={"tool": "lookup_order"}, parent_id=user.event_id)
-    await db.why(tool.event_id).print()
+import asyncio
+from zizkadb import ZizkaDB
+
+async def main():
+    async with ZizkaDB(host="http://localhost:8000") as db:
+        user = await db.log(agent="my-bot", event="user_message", data={"text": "Why is my order late?"})
+        tool = await db.log(agent="my-bot", event="tool_call", data={"tool": "lookup_order"}, parent_id=user.event_id)
+        (await db.why(tool.event_id)).print()
+
+asyncio.run(main())
 ```
 
 <p align="center">
-  <img src="docs/assets/why-demo.gif" alt="Terminal demo — trace why an agent called a tool with db.why()" width="640"/>
-  <br/>
-  <sub>Causal chain replay with <code>db.why()</code> after <code>quickstart</code></sub>
+  <img src="docs/assets/gallery-why.png" alt="Causal chain in the ZizkaDB dashboard" width="48%"/>
+  <img src="docs/assets/readme-hero-dashboard.png" alt="ZizkaDB dashboard — Activity, Behavior, Reports, and Suggestions" width="48%"/>
 </p>
+
+<p align="center">
+  <sub>↑ Same UI locally and on <a href="https://db.zizka.ai">managed cloud</a> — story behind the demo: <a href="worked/01-support-order-delay/">worked/01-support-order-delay</a></sub>
+</p>
+
+<details>
+<summary>Other local install options</summary>
+
+**Already cloned this repo:**
+
+```bash
+bash scripts/quickstart.sh
+```
+
+**Stack only (no demo):**
+
+```bash
+bash scripts/setup-local.sh
+```
+
+**No Docker?** See [Self-hosting wiki](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) or [Pro (managed cloud)](#pro-managed-cloud) below.
+
+</details>
 
 ---
 
 ## Pro (managed cloud)
 
-**Hosted for you · No Docker to maintain**
+**Optional · Hosted for you · No Docker to maintain**
 
 | Step | What you get |
 | :---: | :--- |
@@ -111,7 +222,7 @@ async with ZizkaDB(api_key="zizkadb_live_...") as db:
 
 ## Team (managed cloud)
 
-**Multiple agents in production**
+**Optional · Multiple agents in production**
 
 | Step | What you get |
 | :---: | :--- |
@@ -218,10 +329,56 @@ zizkadb init my-agent --template basic
 
 ---
 
+## Worked examples
+
+| Scenario | Command / link | What you prove |
+|---|---|---|
+| Support-bot order delay | `zizkadb demo` | 3-step causal chain + dashboard session |
+| Step-by-step walkthrough | [worked/01-support-order-delay](worked/01-support-order-delay/) | Same story with source code |
+| LangChain agent | [examples/langchain-agent](examples/langchain-agent/) | Auto-log every chain step |
+| Cursor MCP | [examples/mcp-cursor](examples/mcp-cursor/) | Audit from the editor |
+
+---
+
+## FAQ
+
+<details>
+<summary><strong>Do I need to clone this repo?</strong></summary>
+
+No. `curl … quickstart-remote.sh | bash` downloads a few config files and pulls Docker images — no full clone required.
+
+</details>
+
+<details>
+<summary><strong>Do I need an API key for local dev?</strong></summary>
+
+No. The local stack uses a built-in dev key on `http://localhost:8000`. Open the dashboard at [localhost:3001/login](http://localhost:3001/login) with no signup.
+
+</details>
+
+<details>
+<summary><strong>How is this different from LangSmith / Langfuse?</strong></summary>
+
+Those tools **observe** traces and spans. ZizkaDB is built to **audit** agent behavior: causal `parent_id` chains, session replay, drift baselines, and time-travel state — optimized for *why did production behavior change?* See [wiki comparisons](https://github.com/Zizka-ai/ZizkaDB/wiki).
+
+</details>
+
+<details>
+<summary><strong><code>zizkadb demo</code> fails — connection refused?</strong></summary>
+
+Start the stack first: `curl -fsSL …/quickstart-remote.sh | bash` or `bash scripts/setup-local.sh`. Check API health: `curl http://localhost:8000/health`.
+
+</details>
+
+---
+
 ## Community & license
 
 | Resource | Link |
 | --- | --- |
+| **Start here (60s path)** | [START_HERE.md](START_HERE.md) |
+| Connect guide | [CONNECT.md](CONNECT.md) |
+| Worked example | [worked/01-support-order-delay](worked/01-support-order-delay/) |
 | Documentation index | [docs/README.md](docs/README.md) |
 | Integrate any agent | [docs/integrate/](docs/integrate/) |
 | Issues | [GitHub Issues](https://github.com/Zizka-ai/ZizkaDB/issues) |
