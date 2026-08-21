@@ -31,7 +31,7 @@ from typing import Any
 
 from .models import Event, LogResult, CausalChain, AgentState, AgentInfo
 from .exceptions import ZizkaDBError, AuthError, NotFoundError, RateLimitError, AgentScopeError
-from .telemetry import ping as _telemetry_ping
+from .telemetry import ping_on_use as _telemetry_ping
 
 CLOUD_HOST = "https://db.zizka.ai"
 DEFAULT_DEV_API_KEY = "zizkadb_dev_local"
@@ -92,8 +92,7 @@ class ZizkaDB:
         self._base_url = host.rstrip("/") if host else CLOUD_HOST
         self._timeout = timeout
         self._client: httpx.AsyncClient | None = None
-
-        _telemetry_ping(mode="self-hosted" if host else "cloud")
+        self._telemetry_mode = "self-hosted" if host else "cloud"
 
     # ─────────────────────────────────────────
     # CONTEXT MANAGER
@@ -149,6 +148,7 @@ class ZizkaDB:
                 "metadata": metadata,
             },
         )
+        _telemetry_ping(mode=self._telemetry_mode)
         return LogResult.from_dict(response)
 
     # ─────────────────────────────────────────
