@@ -5,7 +5,7 @@ Only list **SUPPORTED** when an adapter or official example exists in this repos
 | Framework | Status | Package (version) |
 |-----------|--------|-------------------|
 | **Python (custom)** | Supported | `zizkadb-sdk` **0.2.6** — [any-agent.md](any-agent.md) |
-| **TypeScript / Node** | Supported | `zizkadb-sdk` **0.2.5** (npm) — [CONNECT.md](../../CONNECT.md#typescript-sdk) |
+| **TypeScript / Node** | Supported | `zizkadb-sdk` **0.2.6** (npm) — [CONNECT.md](../../CONNECT.md#typescript-sdk) |
 | **REST / any HTTP client** | Supported | `POST /v1/events` — [wiki/REST-API](../../wiki/REST-API.md) |
 | **LangChain (Python)** | Supported | `zizkadb-langchain` **0.1.1** — [examples/langchain-agent](../../examples/langchain-agent/) |
 | **CrewAI (Python)** | Supported | `zizkadb-crewai` **0.1.1** — [examples/crewai-agent](../../examples/crewai-agent/) |

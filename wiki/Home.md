@@ -11,7 +11,7 @@
 | PyPI MCP | [zizkadb-mcp](https://pypi.org/project/zizkadb-mcp/) **0.1.5** |
 | PyPI LangChain | [zizkadb-langchain](https://pypi.org/project/zizkadb-langchain/) **0.1.1** |
 | PyPI CrewAI | [zizkadb-crewai](https://pypi.org/project/zizkadb-crewai/) **0.1.1** |
-| npm SDK | [zizkadb-sdk](https://www.npmjs.com/package/zizkadb-sdk) **0.2.5** |
+| npm SDK | [zizkadb-sdk](https://www.npmjs.com/package/zizkadb-sdk) **0.2.6** |
 | Docs site | [db.zizka.ai/docs](https://db.zizka.ai/docs) |
 | Managed cloud (optional) | [db.zizka.ai/signup](https://db.zizka.ai/signup) |
 

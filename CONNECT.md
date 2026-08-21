@@ -1,6 +1,6 @@
 # Connect your agent (self-host / OSS)
 
-**Current PyPI releases:** `zizkadb-sdk` **0.2.6** · `zizkadb-mcp` **0.1.5** · `zizkadb-langchain` **0.1.1** · `zizkadb-crewai` **0.1.1**
+**Current releases:** PyPI/npm `zizkadb-sdk` **0.2.6** · `zizkadb-mcp` **0.1.5** · `zizkadb-langchain` **0.1.1** · `zizkadb-crewai` **0.1.1**
 
 ## Start the stack (pick one)
 
@@ -65,7 +65,7 @@ export ZIZKADB_AGENT=my-bot
 ## TypeScript SDK
 
 ```bash
-npm install zizkadb-sdk
+npm install zizkadb-sdk@0.2.6
 ```
 
 ```typescript

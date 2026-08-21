@@ -16,7 +16,7 @@ TypeScript SDK for [ZizkaDB](https://db.zizka.ai) — causal lineage, time trave
 ## Install
 
 ```bash
-npm install zizkadb-sdk
+npm install zizkadb-sdk@0.2.6
 ```
 
 ## Quickstart
