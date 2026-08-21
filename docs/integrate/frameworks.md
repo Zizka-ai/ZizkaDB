@@ -2,14 +2,14 @@
 
 Only list **SUPPORTED** when an adapter or official example exists in this repository.
 
-| Framework | Status | How to integrate |
-|-----------|--------|------------------|
-| **Python (custom)** | Supported | `zizkadb-sdk` — [any-agent.md](any-agent.md) |
-| **TypeScript / Node** | Supported | `zizkadb-sdk` (npm) — [CONNECT.md](../../CONNECT.md#typescript-sdk) |
+| Framework | Status | Package (version) |
+|-----------|--------|-------------------|
+| **Python (custom)** | Supported | `zizkadb-sdk` **0.2.6** — [any-agent.md](any-agent.md) |
+| **TypeScript / Node** | Supported | `zizkadb-sdk` **0.2.5** (npm) — [CONNECT.md](../../CONNECT.md#typescript-sdk) |
 | **REST / any HTTP client** | Supported | `POST /v1/events` — [wiki/REST-API](../../wiki/REST-API.md) |
-| **LangChain (Python)** | Supported | `zizkadb-langchain` — `ZizkaDBCallbackHandler` · [examples/langchain-agent](../../examples/langchain-agent/) |
-| **CrewAI (Python)** | Supported | `zizkadb-crewai` — `ZizkaDBCrewLogger` · [examples/crewai-agent](../../examples/crewai-agent/) |
-| **MCP (Cursor, Claude Desktop)** | Supported | `uvx zizkadb-mcp` · [mcp/README.md](../../mcp/README.md) |
+| **LangChain (Python)** | Supported | `zizkadb-langchain` **0.1.1** — [examples/langchain-agent](../../examples/langchain-agent/) |
+| **CrewAI (Python)** | Supported | `zizkadb-crewai` **0.1.1** — [examples/crewai-agent](../../examples/crewai-agent/) |
+| **MCP (Cursor, Claude Desktop)** | Supported | `zizkadb-mcp` **0.1.5** · [mcp/README.md](../../mcp/README.md) |
 | **OpenAI / Anthropic SDKs** | Example pattern | Manual `log()` around API calls · [examples/openai-agent](../../examples/openai-agent/) |
 | **LangGraph** | Generic only | No official adapter — call `db.log()` inside graph nodes · [any-agent.md](any-agent.md) |
 | **LlamaIndex** | Generic only | Log at retrieval/tool boundaries via SDK or REST |

@@ -1,2 +1,1 @@
-zizkadb-sdk>=0.2.1
-openai>=1.40.0
+zizkadb-sdk>=0.2.6

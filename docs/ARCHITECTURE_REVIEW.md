@@ -86,7 +86,7 @@ observability baseline).
 | R10 | **No CD + out-of-tree deploy assets** — `deploy-production.sh` and prod `nginx.conf` are referenced but absent from the repo → DR/reproducibility risk | **Medium** | referenced in `infra/docker-compose.yml:12,99`, `dashboard/ecosystem.config.js:8` |
 | R11 | **Datastore SPOFs** — single Postgres/Qdrant/Redis, no replication/HA | **Medium** | single containers, local volumes |
 | R12 | **Stale docs / dead references** — largely reconciled this cycle (router map 14→9; absent `admin`/`stats`/`community`/`demo`/`marketing`) | **Low** | fixed in `CLAUDE.md`, KB, wiki |
-| R13 | **Version drift** — `core/main.py` 0.1.0, SDKs 0.2.5, MCP 0.1.4; version hardcoded twice in `main.py` | **Low** | vs the "bump together" doc rule |
+| R13 | **Version drift** — `core/main.py` 0.1.0, SDKs 0.2.6, MCP 0.1.5; version hardcoded twice in `main.py` | **Low** | vs the "bump together" doc rule |
 
 ---
 
