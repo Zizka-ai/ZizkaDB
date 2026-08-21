@@ -6,14 +6,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
-- Documentation hub: `docs/README.md`, `docs/integrate/`
-- `AGENTS.md` for AI coding tools
-- `wiki/Production-Deployment.md` (self-host production ops)
+## [0.2.6] — 2026-08-21
 
-### Fixed
-- README plan terminology (API keys vs "projects")
-- CONNECT.md dashboard verify steps (Activity tab)
+### TypeScript SDK (`zizkadb-sdk` 0.2.6, npm)
+
+- Telemetry pings after the first successful `log()` (usage, not constructor)
+- Stable anonymous `install_id` per machine (`~/.zizkadb` + machine-id fallback)
+- Self-hosted / local installs skip telemetry (matches Python SDK)
+
+See Python SDK **0.2.6**, MCP **0.1.5**, and integrations **0.1.1** on PyPI (released separately).
 
 ## [0.1.0] — 2026-08-21
 
@@ -29,5 +30,6 @@ Production-hardening sprint merged to `main` (via stacked PRs #125–#139), incl
 
 See [GitHub releases](https://github.com/Zizka-ai/ZizkaDB/releases) for tagged artifacts.
 
-[Unreleased]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.2.6...HEAD
+[0.2.6]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.1.0...v0.2.6
 [0.1.0]: https://github.com/Zizka-ai/ZizkaDB/releases

@@ -40,7 +40,7 @@ export * from './types'
 
 const CLOUD_HOST = 'https://db.zizka.ai'
 const TELEMETRY_URL = 'https://db.zizka.ai/v1/telemetry'
-const SDK_VERSION = '0.2.5'
+const SDK_VERSION = '0.2.6'
 const DEFAULT_DEV_API_KEY = 'zizkadb_dev_local'
 
 function isLocalHost(host: string): boolean {
@@ -55,12 +55,22 @@ function apiKeyFromEnv(): string | undefined {
 
 let _telemetrySent = false
 
+function _isLocalSelfHost(): boolean {
+  const host = process.env.ZIZKADB_HOST ?? ''
+  return (
+    host.startsWith('http://localhost') ||
+    host.startsWith('http://127.0.0.1') ||
+    host.startsWith('http://0.0.0.0')
+  )
+}
+
 function _sendTelemetry(mode: 'cloud' | 'self-hosted'): void {
   if (_telemetrySent) return
   if (
     typeof process !== 'undefined' &&
     /^(false|0|no|off)$/i.test(process.env.ZIZKADB_TELEMETRY ?? '')
   ) return
+  if (mode === 'self-hosted' || _isLocalSelfHost()) return
 
   _telemetrySent = true
 
@@ -103,6 +113,32 @@ function _getInstallId(): string {
     writeFileSync(file, id)
     return id
   } catch {
+    return _stableMachineId()
+  }
+}
+
+function _stableMachineId(): string {
+  try {
+    const { readFileSync, existsSync } = require('fs') as typeof import('fs')
+    const { createHash } = require('crypto') as typeof import('crypto')
+    const { hostname, platform, arch } = require('os') as typeof import('os')
+    for (const p of ['/etc/machine-id', '/var/lib/dbus/machine-id']) {
+      if (existsSync(p)) {
+        const raw = readFileSync(p, 'utf8').trim()
+        if (raw) {
+          return createHash('sha256').update(`zizkadb:${raw}`).digest('hex').replace(
+            /^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/,
+            '$1-$2-$3-$4-$5',
+          )
+        }
+      }
+    }
+    const seed = `${hostname()}:${platform()}:${arch()}`
+    return createHash('sha256').update(`zizkadb:${seed}`).digest('hex').replace(
+      /^(.{8})(.{4})(.{4})(.{4})(.{12}).*$/,
+      '$1-$2-$3-$4-$5',
+    )
+  } catch {
     return _uuid()
   }
 }
@@ -136,6 +172,7 @@ export class ZizkaDB {
   private readonly baseUrl: string
   private readonly headers: Record<string, string>
   private readonly timeout: number
+  private readonly telemetryMode: 'cloud' | 'self-hosted'
 
   constructor(config: ZizkaDBConfig) {
     if (!config.apiKey && !config.host) {
@@ -171,7 +208,7 @@ export class ZizkaDB {
       ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
     }
 
-    _sendTelemetry(config.host ? 'self-hosted' : 'cloud')
+    this.telemetryMode = config.host ? 'self-hosted' : 'cloud'
   }
 
   // ─────────────────────────────────────────
@@ -192,6 +229,7 @@ export class ZizkaDB {
       sequence_no: number
       checksum: string
     }
+    _sendTelemetry(this.telemetryMode)
     return {
       eventId: res.event_id,
       timestamp: new Date(res.timestamp),
