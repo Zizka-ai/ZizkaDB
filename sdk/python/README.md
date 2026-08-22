@@ -1,91 +1,85 @@
 # zizkadb-sdk
 
-Python SDK for [ZizkaDB](https://github.com/Zizka-ai/ZizkaDB) — audit trails, causal lineage, and drift baselines for AI agents.
+**PyPI:** [zizkadb-sdk 0.2.7](https://pypi.org/project/zizkadb-sdk/0.2.7/)
 
-**PyPI:** [zizkadb-sdk 0.2.6](https://pypi.org/project/zizkadb-sdk/)
+Python SDK for [ZizkaDB](https://db.zizka.ai) — the operational database for AI agents.
 
-## Try free (local — no signup)
+## Setup (managed cloud)
 
-Start the OSS stack + demo (requires Docker):
+1. [Sign up](https://db.zizka.ai/signup) at db.zizka.ai  
+2. **Dashboard → Create agent** (e.g. `my-bot`) — you get an API key for that agent  
+3. Use the **same agent name** in every `db.log()` call  
+4. Set `ZIZKADB_API_KEY` (or pass the key to the constructor)
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh | bash
-```
-
-Or, if the stack is already running:
-
-```bash
-pip install zizkadb-sdk
-zizkadb demo
-```
-
-Dashboard: http://localhost:3001/login → **Open my dashboard →**
+> **Important:** The `agent` in `db.log(agent="...", ...)` must match the agent you created in the dashboard. A mismatch returns **403 AgentScopeError**.
 
 ## Install
 
 ```bash
-pip install "zizkadb-sdk>=0.2.6"
+pip install zizkadb-sdk
 ```
 
-> Install **`zizkadb-sdk`**, not the unrelated `agentdb` package on PyPI.
-
-## Quickstart (local)
-
-```python
-import asyncio
-from zizkadb import ZizkaDB
-
-async def main():
-    async with ZizkaDB(host="http://localhost:8000") as db:
-        user = await db.log(agent="my-bot", event="user_message", data={"text": "Hello"})
-        tool = await db.log(agent="my-bot", event="tool_call", data={"tool": "search"}, parent_id=user.event_id)
-        (await db.why(tool.event_id)).print()
-
-asyncio.run(main())
-```
-
-No API key on localhost — the local stack uses a built-in dev key.
+> **Note:** There is an unrelated package called `agentdb` on PyPI. Install **`zizkadb-sdk`**. Import: `from zizkadb import ZizkaDB`.
 
 ## Scaffold a project
 
 ```bash
+pip install zizkadb-sdk
 zizkadb init my-agent --template basic
-cd my-agent
-cp .env.example .env   # ZIZKADB_HOST=http://localhost:8000
+cd my-agent && cp .env.example .env   # paste your key into ZIZKADB_API_KEY
 pip install -r requirements.txt
 python agent.py
 ```
 
 Templates: `basic`, `openai`, `langchain`, `crewai`, `mcp-cursor`.
 
-## Managed cloud (optional)
-
-[Sign up](https://db.zizka.ai/signup) → create an agent → use the same agent name in every `db.log()`:
+## Quickstart
 
 ```python
-async with ZizkaDB(api_key="zizkadb_live_...") as db:
-    await db.log(agent="my-bot", event="tool_call", data={...})
+from zizkadb import ZizkaDB
+
+# Key from Dashboard → Settings → API keys → create "my-bot" → copy key
+db = ZizkaDB("zizkadb_live_xxxx")
+
+async with db:
+    result = await db.log(
+        agent="my-bot",  # must match dashboard agent name
+        event="tool_call",
+        data={"tool": "search", "query": "billing"},
+    )
+    chain = await db.why(result.event_id)
+    chain.print()
 ```
 
-## CLI
+## Multi-agent apps (one key, many agent names)
 
-| Command | Description |
-|---------|-------------|
-| `zizkadb demo` | Run the support-bot lineage demo |
-| `zizkadb init NAME -t basic` | Scaffold from a template |
-| `zizkadb why EVENT_ID` | Print causal chain as JSON |
+If your app logs to **different agent ids** per user (e.g. `conv-alice`, `conv-bob`), create a **tenant-wide key** in **Settings → Tenant-wide API key**. Per-agent keys only work for that one agent name.
+
+## Errors
+
+| Exception | Meaning |
+|-----------|---------|
+| `AuthError` | Invalid or revoked API key |
+| `AgentScopeError` | Key is for agent A but you logged to agent B |
+| `NotFoundError` | Event or agent not found |
 
 ## Environment variables
 
 | Variable | Purpose |
 |----------|---------|
-| `ZIZKADB_HOST` | Local/self-hosted API (default stack: `http://localhost:8000`) |
-| `ZIZKADB_API_KEY` | Managed cloud API key |
-| `ZIZKADB_AGENT` | Default agent name in templates |
-| `ZIZKADB_TELEMETRY` | Set `false` to opt out |
+| `ZIZKADB_API_KEY` | Your cloud API key (preferred) |
+| `AGENTDB_API_KEY` | Legacy alias for `ZIZKADB_API_KEY` |
+| `ZIZKADB_AGENT` | Default agent name (used in templates/examples) |
+| `ZIZKADB_HOST` | Self-hosted API URL |
+| `ZIZKADB_TELEMETRY` | Set `false` to opt out (anonymous ping on client construct) |
+
+## Self-host dashboard
+
+1. `bash scripts/setup-local.sh` (API + dashboard on port **3001**)
+2. Open http://localhost:3001/login → **Open my dashboard →**
 
 ## Links
 
-- [GitHub README](https://github.com/Zizka-ai/ZizkaDB#readme)
-- [CONNECT.md](https://github.com/Zizka-ai/ZizkaDB/blob/main/CONNECT.md)
 - [Docs](https://db.zizka.ai/docs)
+- [API explorer](https://db.zizka.ai/swagger)
+- [GitHub](https://github.com/Zizka-ai/ZizkaDB)

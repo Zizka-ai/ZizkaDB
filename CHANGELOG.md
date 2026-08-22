@@ -6,6 +6,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.2.7] — 2026-08-22
+
+### Python SDK (`zizkadb-sdk` 0.2.7, PyPI)
+
+- Restore telemetry ping on client construct (process start), including self-hosted localhost
+
+### TypeScript SDK (`zizkadb-sdk` 0.2.7, npm)
+
+- Restore telemetry ping on client construct (process start), including self-hosted localhost
+
+### MCP (`zizkadb-mcp` 0.1.6)
+
+- Restore telemetry ping on MCP server startup (not first tool call only)
+
+### Integrations
+
+- `zizkadb-langchain` **0.1.2** — requires `zizkadb-sdk>=0.2.7`
+- `zizkadb-crewai` **0.1.2** — requires `zizkadb-sdk>=0.2.7`
+
 ## [0.2.6] — 2026-08-21
 
 ### Python SDK (`zizkadb-sdk` 0.2.6, PyPI)
@@ -48,6 +67,7 @@ Production-hardening sprint merged to `main` (via stacked PRs #125–#139), incl
 
 See [GitHub releases](https://github.com/Zizka-ai/ZizkaDB/releases) for tagged artifacts.
 
-[Unreleased]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.2.6...HEAD
+[Unreleased]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.2.7...HEAD
+[0.2.7]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.1.0...v0.2.6
 [0.1.0]: https://github.com/Zizka-ai/ZizkaDB/releases

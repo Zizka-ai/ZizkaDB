@@ -1,6 +1,6 @@
 # zizkadb-langchain
 
-**PyPI:** [zizkadb-langchain 0.1.1](https://pypi.org/project/zizkadb-langchain/0.1.1/)
+**PyPI:** [zizkadb-langchain 0.1.2](https://pypi.org/project/zizkadb-langchain/0.1.2/)
 
 LangChain `AsyncCallbackHandler` that logs LLM and tool steps to ZizkaDB with `parent_id` lineage.
 

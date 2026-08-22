@@ -2,7 +2,7 @@
 
 See root [`CLAUDE.md`](../../CLAUDE.md) for full project context.
 
-Package: **`zizkadb-sdk` 0.2.6** on npm. Import: `import { ZizkaDB } from 'zizkadb-sdk'`.
+Package: **`zizkadb-sdk` 0.2.7** on npm. Import: `import { ZizkaDB } from 'zizkadb-sdk'`.
 
 ---
 

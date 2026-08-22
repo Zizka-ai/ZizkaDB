@@ -8,16 +8,16 @@ Two standalone adapter packages: **`zizkadb-langchain`** and **`zizkadb-crewai`*
 
 ## Packages
 
-Both adapters are **published on PyPI** (`zizkadb-sdk` **0.2.6**, integrations **0.1.1**), so users install directly — no git URLs.
+Both adapters are **published on PyPI** (`zizkadb-sdk` **0.2.7**, integrations **0.1.2**), so users install directly — no git URLs.
 
 | Package | Directory | Class | PyPI (current) |
 |---|---|---|---|
-| `zizkadb-langchain` | `integrations/langchain/` | `ZizkaDBCallbackHandler` (auto callback handler) | `0.1.1` |
-| `zizkadb-crewai` | `integrations/crewai/` | `ZizkaDBCrewLogger` (kickoff/task/output logger) | `0.1.1` |
+| `zizkadb-langchain` | `integrations/langchain/` | `ZizkaDBCallbackHandler` (auto callback handler) | `0.1.2` |
+| `zizkadb-crewai` | `integrations/crewai/` | `ZizkaDBCrewLogger` (kickoff/task/output logger) | `0.1.2` |
 
 Install for users:
 ```bash
-pip install "zizkadb-sdk>=0.2.6" "zizkadb-langchain>=0.1.1"    # or zizkadb-crewai>=0.1.1
+pip install "zizkadb-sdk>=0.2.7" "zizkadb-langchain>=0.1.2"    # or zizkadb-crewai>=0.1.2
 ```
 
 ---

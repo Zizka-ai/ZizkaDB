@@ -7,11 +7,11 @@
 | GitHub | [Zizka-ai/ZizkaDB](https://github.com/Zizka-ai/ZizkaDB) |
 | OSS quickstart (no clone) | `curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh \| bash` |
 | Connect guide | [CONNECT.md](https://github.com/Zizka-ai/ZizkaDB/blob/main/CONNECT.md) |
-| PyPI SDK | [zizkadb-sdk](https://pypi.org/project/zizkadb-sdk/) **0.2.6** |
-| PyPI MCP | [zizkadb-mcp](https://pypi.org/project/zizkadb-mcp/) **0.1.5** |
-| PyPI LangChain | [zizkadb-langchain](https://pypi.org/project/zizkadb-langchain/) **0.1.1** |
-| PyPI CrewAI | [zizkadb-crewai](https://pypi.org/project/zizkadb-crewai/) **0.1.1** |
-| npm SDK | [zizkadb-sdk](https://www.npmjs.com/package/zizkadb-sdk) **0.2.6** |
+| PyPI SDK | [zizkadb-sdk](https://pypi.org/project/zizkadb-sdk/) **0.2.7** |
+| PyPI MCP | [zizkadb-mcp](https://pypi.org/project/zizkadb-mcp/) **0.1.6** |
+| PyPI LangChain | [zizkadb-langchain](https://pypi.org/project/zizkadb-langchain/) **0.1.2** |
+| PyPI CrewAI | [zizkadb-crewai](https://pypi.org/project/zizkadb-crewai/) **0.1.2** |
+| npm SDK | [zizkadb-sdk](https://www.npmjs.com/package/zizkadb-sdk) **0.2.5** |
 | Docs site | [db.zizka.ai/docs](https://db.zizka.ai/docs) |
 | Managed cloud (optional) | [db.zizka.ai/signup](https://db.zizka.ai/signup) |
 

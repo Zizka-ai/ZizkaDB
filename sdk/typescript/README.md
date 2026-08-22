@@ -1,6 +1,6 @@
 # zizkadb-sdk
 
-**npm:** [zizkadb-sdk 0.2.6](https://www.npmjs.com/package/zizkadb-sdk)
+**npm:** [zizkadb-sdk 0.2.7](https://www.npmjs.com/package/zizkadb-sdk)
 
 TypeScript SDK for [ZizkaDB](https://db.zizka.ai) — causal lineage, time travel, and semantic search for AI agents.
 
@@ -16,7 +16,7 @@ TypeScript SDK for [ZizkaDB](https://db.zizka.ai) — causal lineage, time trave
 ## Install
 
 ```bash
-npm install zizkadb-sdk@0.2.6
+npm install zizkadb-sdk
 ```
 
 ## Quickstart
@@ -54,7 +54,7 @@ If your app logs to **different agent ids** per user (e.g. `conv-alice`, `conv-b
 | `ZIZKADB_API_KEY` | Your cloud API key (preferred) |
 | `AGENTDB_API_KEY` | Legacy alias for `ZIZKADB_API_KEY` |
 | `ZIZKADB_HOST` | Self-hosted API URL |
-| `ZIZKADB_TELEMETRY` | Set `false` to opt out (anonymous ping after first `log()`) |
+| `ZIZKADB_TELEMETRY` | Set `false` to opt out (anonymous ping on client construct) |
 
 Core HTTP client only — LangChain and CrewAI adapters are Python packages (`zizkadb-langchain`, `zizkadb-crewai`).
 
