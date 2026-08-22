@@ -17,6 +17,8 @@ Open-source **audit trail for AI agents** — causal lineage, session replay, an
 [![CrewAI](https://img.shields.io/pypi/v/zizkadb-crewai?label=CrewAI)](https://pypi.org/project/zizkadb-crewai/)
 [![MCP](https://img.shields.io/pypi/v/zizkadb-mcp?label=MCP)](https://pypi.org/project/zizkadb-mcp/)
 
+<sub>Current packages: SDK <strong>0.2.7</strong> · MCP <strong>0.1.6</strong> · LangChain/CrewAI <strong>0.1.2</strong></sub>
+
 **[Try free ↓](#open-source-self-host)** · **[START_HERE.md](START_HERE.md)** · **[CONNECT.md](CONNECT.md)** · **[Pro ↓](#pro-managed-cloud)** · **[Docs](https://db.zizka.ai/docs)**
 
 </div>
