@@ -10,14 +10,12 @@ Open-source **audit trail for AI agents** — causal lineage, session replay, an
 
 [![CI](https://github.com/Zizka-ai/ZizkaDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Zizka-ai/ZizkaDB/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/github/v/release/Zizka-ai/ZizkaDB?label=release&color=f97316)](https://github.com/Zizka-ai/ZizkaDB/releases)
-[![Python](https://img.shields.io/pypi/v/zizkadb-sdk?label=Python)](https://pypi.org/project/zizkadb-sdk/)
-[![npm](https://img.shields.io/npm/v/zizkadb-sdk?label=npm)](https://www.npmjs.com/package/zizkadb-sdk)
-[![LangChain](https://img.shields.io/pypi/v/zizkadb-langchain?label=LangChain)](https://pypi.org/project/zizkadb-langchain/)
-[![CrewAI](https://img.shields.io/pypi/v/zizkadb-crewai?label=CrewAI)](https://pypi.org/project/zizkadb-crewai/)
-[![MCP](https://img.shields.io/pypi/v/zizkadb-mcp?label=MCP)](https://pypi.org/project/zizkadb-mcp/)
-
-<sub>Current packages: SDK <strong>0.2.7</strong> · MCP <strong>0.1.6</strong> · LangChain/CrewAI <strong>0.1.2</strong></sub>
+[![Release](https://img.shields.io/badge/release-v0.2.7-f97316)](https://github.com/Zizka-ai/ZizkaDB/releases)
+[![Python](https://img.shields.io/badge/Python-0.2.7-f97316)](https://pypi.org/project/zizkadb-sdk/0.2.7/)
+[![npm](https://img.shields.io/badge/npm-0.2.7-f97316)](https://www.npmjs.com/package/zizkadb-sdk/v/0.2.7)
+[![LangChain](https://img.shields.io/badge/LangChain-0.1.2-f97316)](https://pypi.org/project/zizkadb-langchain/0.1.2/)
+[![CrewAI](https://img.shields.io/badge/CrewAI-0.1.2-f97316)](https://pypi.org/project/zizkadb-crewai/0.1.2/)
+[![MCP](https://img.shields.io/badge/MCP-0.1.6-f97316)](https://pypi.org/project/zizkadb-mcp/0.1.6/)
 
 **[Try free ↓](#open-source-self-host)** · **[START_HERE.md](START_HERE.md)** · **[CONNECT.md](CONNECT.md)** · **[Pro ↓](#pro-managed-cloud)** · **[Docs](https://db.zizka.ai/docs)**
 
