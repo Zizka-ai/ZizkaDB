@@ -296,7 +296,7 @@ Core unit tests plus the SDK and MCP package tests do not require a running Zizk
 
 ## Integrations
 
-**Current releases:** PyPI `zizkadb-sdk` **0.2.6** · npm `zizkadb-sdk` **0.2.6** · `zizkadb-mcp` **0.1.5** · `zizkadb-langchain` **0.1.1** · `zizkadb-crewai` **0.1.1**
+**Current releases:** PyPI `zizkadb-sdk` **0.2.7** · npm `zizkadb-sdk` **0.2.7** · `zizkadb-mcp` **0.1.6** · `zizkadb-langchain` **0.1.2** · `zizkadb-crewai` **0.1.2**
 
 | Python | TypeScript | LangChain | CrewAI | MCP (Cursor) | REST |
 | :---: | :---: | :---: | :---: | :---: | :---: |

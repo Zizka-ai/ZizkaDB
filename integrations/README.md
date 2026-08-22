@@ -4,11 +4,10 @@ Official adapters for agent frameworks. Each package is optional — core SDK is
 
 | Package | PyPI version | Install | Use case |
 |---------|--------------|---------|----------|
-| `zizkadb-sdk` | **0.2.6** | `pip install zizkadb-sdk` | Core Python client |
-| `zizkadb-sdk` (npm) | **0.2.6** | `npm install zizkadb-sdk` | TypeScript / Node client |
-| [langchain](langchain/) | **0.1.1** | `pip install zizkadb-langchain` | `ZizkaDBCallbackHandler` on LangChain runnables |
-| [crewai](crewai/) | **0.1.1** | `pip install zizkadb-crewai` | `ZizkaDBCrewLogger` for crew kickoff / output |
-| [mcp](../mcp/) | **0.1.5** | `uvx zizkadb-mcp` | Cursor, Claude Desktop, Windsurf tools |
+| `zizkadb-sdk` | **0.2.7** | `pip install zizkadb-sdk` | Core Python client |
+| [langchain](langchain/) | **0.1.2** | `pip install zizkadb-langchain` | `ZizkaDBCallbackHandler` on LangChain runnables |
+| [crewai](crewai/) | **0.1.2** | `pip install zizkadb-crewai` | `ZizkaDBCrewLogger` for crew kickoff / output |
+| [mcp](../mcp/) | **0.1.6** | `uvx zizkadb-mcp` | Cursor, Claude Desktop, Windsurf tools |
 
 **Configure once (all packages):**
 

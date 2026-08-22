@@ -1,9 +1,9 @@
 # TypeScript SDK
 
-**Package:** `zizkadb-sdk` on npm (**0.2.6**)
+**Package:** `zizkadb-sdk` on npm (**0.2.7**)
 
 ```bash
-npm install zizkadb-sdk@0.2.6
+npm install zizkadb-sdk
 ```
 
 ## Quickstart
@@ -30,7 +30,7 @@ chain.print()
 | `ZIZKADB_API_KEY` | Cloud API key |
 | `AGENTDB_API_KEY` | Legacy alias |
 | `ZIZKADB_HOST` | Self-hosted URL |
-| `ZIZKADB_TELEMETRY` | Set `false` to opt out (anonymous ping after first `log()`) |
+| `ZIZKADB_TELEMETRY` | Set `false` to opt out |
 
 Core HTTP client only — LangChain and CrewAI adapters are Python packages (`zizkadb-langchain`, `zizkadb-crewai`).
 

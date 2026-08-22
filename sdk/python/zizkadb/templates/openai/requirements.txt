@@ -1,1 +1,1 @@
-zizkadb-sdk>=0.2.6
+zizkadb-sdk>=0.2.7

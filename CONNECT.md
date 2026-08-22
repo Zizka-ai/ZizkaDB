@@ -1,14 +1,6 @@
 # Connect your agent (self-host / OSS)
 
-**Current releases:** PyPI/npm `zizkadb-sdk` **0.2.6** · `zizkadb-mcp` **0.1.5** · `zizkadb-langchain` **0.1.1** · `zizkadb-crewai` **0.1.1**
-
-**Fastest win:** run the stack + demo, then paste the Python snippet below.
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh | bash
-# stack already up?
-pip install zizkadb-sdk && zizkadb demo
-```
+**Current PyPI releases:** `zizkadb-sdk` **0.2.7** · `zizkadb-mcp` **0.1.6** · `zizkadb-langchain` **0.1.2** · `zizkadb-crewai` **0.1.2**
 
 ## Start the stack (pick one)
 
@@ -36,7 +28,7 @@ Pick your stack below. Use the **same agent name** in code and dashboard.
 ## Python SDK
 
 ```bash
-pip install "zizkadb-sdk>=0.2.6"
+pip install "zizkadb-sdk>=0.2.7"
 ```
 
 ```python
@@ -73,7 +65,7 @@ export ZIZKADB_AGENT=my-bot
 ## TypeScript SDK
 
 ```bash
-npm install zizkadb-sdk@0.2.6
+npm install zizkadb-sdk
 ```
 
 ```typescript
@@ -99,7 +91,7 @@ await db.log({
 ## LangChain
 
 ```bash
-pip install "zizkadb-sdk>=0.2.6" "zizkadb-langchain>=0.1.1"
+pip install "zizkadb-sdk>=0.2.7" "zizkadb-langchain>=0.1.2"
 ```
 
 ```python
@@ -124,7 +116,7 @@ Or scaffold: `zizkadb init my-agent --template langchain`
 ## CrewAI
 
 ```bash
-pip install "zizkadb-sdk>=0.2.6" "zizkadb-crewai>=0.1.1"
+pip install "zizkadb-sdk>=0.2.7" "zizkadb-crewai>=0.1.2"
 ```
 
 ```python
@@ -146,7 +138,7 @@ Or scaffold: `zizkadb init my-agent --template crewai`
 ## MCP (Cursor, Claude Desktop, Windsurf)
 
 ```bash
-pip install "zizkadb-mcp>=0.1.5"
+pip install "zizkadb-mcp>=0.1.6"
 # or: uvx zizkadb-mcp
 ```
 

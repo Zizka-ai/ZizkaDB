@@ -1,6 +1,6 @@
 # zizkadb-mcp
 
-**PyPI:** [zizkadb-mcp 0.1.5](https://pypi.org/project/zizkadb-mcp/0.1.5/)
+**PyPI:** [zizkadb-mcp 0.1.6](https://pypi.org/project/zizkadb-mcp/0.1.6/)
 
 MCP server for [ZizkaDB](https://db.zizka.ai). Gives any MCP-compatible AI agent persistent memory, semantic search, causal debugging, and time travel.
 
@@ -73,7 +73,7 @@ On localhost, the dev key (`zizkadb_dev_local`) is auto-injected — no API key 
 | `ZIZKADB_API_KEY` | — | **Required on cloud.** Your key from db.zizka.ai Settings |
 | `AGENTDB_API_KEY` | — | Legacy alias for `ZIZKADB_API_KEY` |
 | `AGENTDB_HOST` | — | Legacy alias for `ZIZKADB_HOST` |
-| `ZIZKADB_TELEMETRY` | on | Set `false` to opt out (ping after first successful tool call) |
+| `ZIZKADB_TELEMETRY` | on | Set `false` to opt out (ping on MCP server startup) |
 
 If `ZIZKADB_API_KEY` is missing on cloud, MCP tools return a clear error instead of silently failing.
 
