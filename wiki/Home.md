@@ -1,6 +1,6 @@
 # ZizkaDB Wiki
 
-**Dont Observe - Audit your AI Agent.** — causal lineage, time travel, semantic search, and dashboards for AI agents.
+**Don't observe — audit your AI agent.** Causal lineage, time travel, semantic search, and dashboards for AI agents.
 
 | Resource | Link |
 |----------|------|
@@ -11,7 +11,7 @@
 | PyPI MCP | [zizkadb-mcp](https://pypi.org/project/zizkadb-mcp/) **0.1.6** |
 | PyPI LangChain | [zizkadb-langchain](https://pypi.org/project/zizkadb-langchain/) **0.1.2** |
 | PyPI CrewAI | [zizkadb-crewai](https://pypi.org/project/zizkadb-crewai/) **0.1.2** |
-| npm SDK | [zizkadb-sdk](https://www.npmjs.com/package/zizkadb-sdk) **0.2.5** |
+| npm SDK | [zizkadb-sdk](https://www.npmjs.com/package/zizkadb-sdk) **0.2.7** |
 | Docs site | [db.zizka.ai/docs](https://db.zizka.ai/docs) |
 | Managed cloud (optional) | [db.zizka.ai/signup](https://db.zizka.ai/signup) |
 
