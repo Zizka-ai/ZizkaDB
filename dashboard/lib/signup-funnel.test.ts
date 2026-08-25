@@ -6,6 +6,9 @@ import {
   clearSignupSession,
   getStoredSignupPlan,
   hasSignupConsent,
+  persistSignupPlanParam,
+  resolveSignupStartPlan,
+  signupOtpRedirect,
 } from './signup-funnel'
 
 describe('signup-funnel helpers', () => {
@@ -29,6 +32,28 @@ describe('signup-funnel helpers', () => {
     expect(getStoredSignupPlan()).toBe('pro')
     sessionStorage.setItem(SIGNUP_PLAN_KEY, 'team')
     expect(getStoredSignupPlan()).toBe('team')
+  })
+
+  it('persistSignupPlanParam stores only pro or team', () => {
+    persistSignupPlanParam('enterprise')
+    expect(sessionStorage.getItem(SIGNUP_PLAN_KEY)).toBeNull()
+    persistSignupPlanParam('pro')
+    expect(sessionStorage.getItem(SIGNUP_PLAN_KEY)).toBe('pro')
+  })
+
+  it('signupOtpRedirect sends to plan, then consent, then null', () => {
+    expect(signupOtpRedirect()).toBe('/signup/plan')
+    sessionStorage.setItem(SIGNUP_PLAN_KEY, 'team')
+    expect(signupOtpRedirect()).toBe('/signup/start?plan=team')
+    sessionStorage.setItem(SIGNUP_CONSENT_GDPR_KEY, '1')
+    expect(signupOtpRedirect()).toBeNull()
+  })
+
+  it('resolveSignupStartPlan prefers URL plan and persists it', () => {
+    expect(resolveSignupStartPlan(null)).toBeNull()
+    expect(resolveSignupStartPlan('pro')).toBe('pro')
+    expect(sessionStorage.getItem(SIGNUP_PLAN_KEY)).toBe('pro')
+    expect(resolveSignupStartPlan('enterprise')).toBe('pro')
   })
 
   it('clearSignupSession removes plan and both consent keys', () => {
