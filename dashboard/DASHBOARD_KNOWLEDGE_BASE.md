@@ -2,7 +2,7 @@
 
 > Single source of truth for the Dashboard module. Reverse-engineered directly from the codebase.
 >
-> **Last verified:** 2026-08-21 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
+> **Last verified:** 2026-08-25 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
 >
 > **OSS scope:** This repo ships the tenant dashboard and public marketing/community surfaces. The managed-cloud **operator admin console** (`/admin`, `/v1/admin/*`) is **not** in this tree — §16 / §20.5 admin sections are historical reference only.
 >
@@ -458,7 +458,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 
 ## 15. Local Development, Build & Environment
 
-**Scripts (`package.json`):** `dev` (`next dev`), `build` (`next build`), `start` (`next start`), `lint` (`next lint`). **No `test` script — there are no tests.**
+**Scripts (`package.json`):** `dev` (`next dev`), `build` (`next build`), `start` (`next start`), `lint` (`next lint`), `test` (`vitest run`), `test:watch` (`vitest`). CI runs lint + vitest + build.
 
 **Build output:** `output: 'standalone'` (`next.config.mjs`) for containerized deploy.
 
