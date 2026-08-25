@@ -51,7 +51,17 @@ ZIZKADB_RUN_INTEGRATION=1 pytest core/tests/test_integration_selfhost.py -v
 | `test_community.py` | Community posts, honeypot, rate limit |
 | `test_marketing_subscriptions.py` | Marketing subscription create + honeypot |
 | `test_settings_auth.py` | Settings embeddings requires dashboard session |
-| `test_deep_health.py` | Deep health dependency status |
+| `test_a2a.py` | Agent-to-agent protocol routes |
+| `test_reports.py` | Per-agent report payload |
+| `test_suggestions.py` | Suggestions extractor / grounding |
+| `test_token_usage.py` | Token/cost aggregation |
+| `test_token_optimization.py` | Deterministic token-waste detectors |
+| `test_api_key_agent_bind.py` | First-use bind of a key to one agent |
+| `test_invalid_api_key.py` | Rejected / malformed API keys |
+| `test_tenant_isolation.py` | Cross-tenant read isolation |
+| `test_exceptions.py` | HTTP exception handlers |
+| `test_secret_fallback_security.py` | Secret fallback hardening |
+| `test_telemetry.py` | Anonymous usage telemetry |
 
 ## CI gates
 
@@ -71,5 +81,5 @@ Optional (weekly / manual): `.github/workflows/integration.yml` — full stack i
 
 - Python tests: use `pytest` + `pytest-asyncio`. Fixtures in `core/tests/conftest.py`.
 - Mark integration tests: `@pytest.mark.integration`
-- TypeScript SDK: Jest in `sdk/typescript/src/tests/`
+- TypeScript SDK: Vitest in `sdk/typescript/` (`npm test`)
 - MCP tests: pytest in `mcp/tests/test_server.py`
