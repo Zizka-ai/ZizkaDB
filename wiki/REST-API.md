@@ -77,12 +77,34 @@ GET /v1/events/{event_id}/why?depth=10
 
 **API key creation** requires a dashboard login session (JWT), not an API key. Active keys per tenant are limited by plan (Self-Hosted 1, Pro 2, Team 5, Enterprise 50; unknown/no plan unlimited); exceeding the limit returns `409` with `{detail:{code:"api_key_limit_reached", plan, limit, used}}`. Enforcement is gated by the `API_KEY_LIMITS_ENFORCED` server flag; self-hosted deployments resolve their plan via `DEPLOYMENT_MODE=self_hosted`, not the `users.plan` column.
 
+## Memory
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/v1/memory/context` | Prompt-ready context for an agent (`agent` required) |
+| GET | `/v1/memory/diff` | What changed after a session |
+| DELETE | `/v1/memory/forget` | GDPR-style delete by metadata field |
+
+Scoped API keys must match the `agent` on these routes (`assert_agent_allowed`).
+
+## Analytics (per agent)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/v1/agents/{id}/report` | Date-ranged report (`from`, `to`, `granularity`) |
+| GET | `/v1/agents/{id}/suggestions` | Evidence-backed AI suggestions (`refresh=1` bypasses cache) |
+| GET | `/v1/agents/{id}/baseline` | Behavioral baseline |
+| GET | `/v1/agents/{id}/token-usage` | Token/cost aggregation |
+| GET | `/v1/agents/{id}/token-optimization` | Deterministic token-waste detectors |
+
 ## Health
 
 ```http
 GET /health
 → {"status":"ok","version":"0.1.0"}
 ```
+
+`GET /health/deep` checks Postgres, Redis, and Qdrant. Use that for real dependency status; `/health` is liveness only.
 
 ## Common status codes
 
@@ -122,4 +144,4 @@ Content-Type: application/json
 | `source` | no | Allowlist: `enterprise`, `landing`, `newsletter` — invalid → **422** |
 | `botcheck` | no | Honeypot; non-empty → **400** |
 
-Response **201:** `{ "id": "<uuid>", "created_at": "<iso>" }`. Rate limit: 8 requests / hour / IP (**429**). Admin list: `GET /v1/admin/demo-requests` (JWT, founder OTP).
+Response **201:** `{ "id": "<uuid>", "created_at": "<iso>" }`. Rate limit: 8 requests / hour / IP (**429**). Listing demo requests is a managed-cloud operator action — there is no `/v1/admin` router in this OSS repo.
