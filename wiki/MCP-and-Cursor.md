@@ -65,6 +65,11 @@ Dev key `zizkadb_dev_local` is auto-injected on localhost (matches `DEV_API_KEY`
 | `why` | Causal chain |
 | `query_events` | List/filter recent events |
 | `time_travel` | State at timestamp |
+| `get_baseline` | Behavioral baseline vs recent sessions |
+| `get_token_usage` | Token/cost aggregation for an agent |
+| `get_token_optimization` | Deterministic token-waste suggestions |
+| `memory_diff` | What changed after a session |
+| `forget` | GDPR-style delete by metadata field |
 
 ## Example prompt in Cursor
 

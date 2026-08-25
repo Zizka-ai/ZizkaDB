@@ -10,6 +10,7 @@
 | `docker compose ... --build` hangs/fails on `load metadata for docker.io/library/...` with `DeadlineExceeded` | Registry metadata check timed out even though the base image is already cached locally. Pre-pull once: `docker pull python:3.12-slim && docker pull node:20-alpine`, then re-run `bash scripts/setup-local.sh` — the build reuses the cached layers and finishes in seconds. |
 | Port 8000 / 3001 in use | Stop other services or edit compose ports |
 | Dashboard empty after demo | Login → **Open my dashboard →** → agent **support-bot** |
+| `/health` is 200 but events fail | `/health` is liveness only. Check `curl http://localhost:8000/health/deep` for Postgres/Redis/Qdrant |
 | `zizkadb demo` fails | Ensure API healthy: `curl http://localhost:8000/health` |
 
 ---
@@ -24,15 +25,15 @@ No successful authenticated request reached the API.
 | Space in key | Re-paste as one continuous line |
 | Wrong URL | Must be `https://db.zizka.ai/v1/events` not `/v1_` |
 | Placeholder in curl | Use real key, not `YOUR_KEY` |
-| Revoked key | Create new key on agent page |
+| Revoked key | Create a new key in Settings |
 
 Test from server:
 
 ```bash
 cd ~/your-app
-export $(grep -E '^AGENTDB_API_KEY=' .env | xargs)
+export $(grep -E '^ZIZKADB_API_KEY=' .env | xargs)
 curl -s -w "\nHTTP %{http_code}\n" \
-  -H "Authorization: Bearer ${AGENTDB_API_KEY}" \
+  -H "Authorization: Bearer ${ZIZKADB_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"agent":"YOUR_AGENT","event":"test","data":{}}' \
   https://db.zizka.ai/v1/events
