@@ -12,12 +12,12 @@ import {
 import { setToken } from "@/lib/auth";
 import { OTP_LENGTH } from "@/lib/constants";
 import { useResendCooldown } from "@/hooks/useResendCooldown";
+import { useSignupFunnelGuard } from "@/hooks/useSignupFunnelGuard";
 import {
   clearSignupSession,
   getStoredSignupPlan,
   hasSignupConsent,
   SIGNUP_CONSENT_MARKETING_KEY,
-  SIGNUP_PLAN_KEY,
 } from "@/lib/signup-funnel";
 import { BrandLogo } from "@/components/BrandLogo";
 import {
@@ -72,10 +72,7 @@ function SignupForm() {
   const verifyLock = useRef(false);
   const verifyFormRef = useRef<HTMLFormElement>(null);
   const { cooldown, canResend, startCooldown } = useResendCooldown();
-  // Gate the form render until the guard confirms the user belongs on /signup.
-  // Prevents the email screen from flashing before a redirect to /signup/plan
-  // or /signup/start resolves. Monotonic: only ever set true.
-  const [checked, setChecked] = useState(false);
+  const { ready: checked } = useSignupFunnelGuard("otp");
 
   useEffect(() => {
     // Always start from email step when entering /signup to avoid stale OTP view.
@@ -83,25 +80,7 @@ function SignupForm() {
     setOtp("");
     setError("");
     setAlreadyRegistered(false);
-
-    const planParam = searchParams.get("plan");
-    if (planParam === "pro" || planParam === "team") {
-      sessionStorage.setItem(SIGNUP_PLAN_KEY, planParam);
-    }
-
-    const stored = getStoredSignupPlan();
-    if (!stored) {
-      router.replace("/signup/plan");
-      return;
-    }
-
-    if (!hasSignupConsent()) {
-      router.replace(`/signup/start?plan=${stored}`);
-      return;
-    }
-
-    setChecked(true);
-  }, [searchParams, router]);
+  }, [searchParams]);
 
   useEffect(() => {
     if (
