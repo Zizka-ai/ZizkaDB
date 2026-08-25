@@ -431,7 +431,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 
 1. **Duplicate plan definitions** (landing, `/signup/plan`, backend `PLAN_CATALOG`) → drift risk; consolidate on one API or shared config.
 2. **No shared trial-CTA component** — 13 inline links; a `<StartTrialButton plan?>` would centralize analytics + copy.
-3. **Repeated funnel-guard logic** (`sessionStorage` plan/consent checks re-implemented in `/signup`, `/signup/start`) → extract a hook (`useSignupFunnelGuard`).
+3. ~~**Repeated funnel-guard logic**~~ — **done 2026-08-25:** `useSignupFunnelGuard` (`hooks/useSignupFunnelGuard.ts`) plus `signupOtpRedirect` / `resolveSignupStartPlan` in `lib/signup-funnel.ts`. `/signup` and `/signup/start` share the same plan/consent redirects and keep the fallback gate so the form does not flash.
 4. **Duplicated OTP form** (`login` vs `signup` are ~90% identical) → shared `<OtpForm/>`.
 5. **No analytics/telemetry** on funnel steps → hard to measure drop-off.
 6. **No React Query/SWR** → manual polling + no dedupe/caching; billing status fetched on mount by `TenantPlanBanner`.

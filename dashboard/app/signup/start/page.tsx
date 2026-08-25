@@ -1,10 +1,11 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { BrandLogo } from '@/components/BrandLogo'
-import { SIGNUP_CONSENT_GDPR_KEY, SIGNUP_CONSENT_MARKETING_KEY, SIGNUP_PLAN_KEY, getStoredSignupPlan } from '@/lib/signup-funnel'
+import { useSignupFunnelGuard } from '@/hooks/useSignupFunnelGuard'
+import { SIGNUP_CONSENT_GDPR_KEY, SIGNUP_CONSENT_MARKETING_KEY } from '@/lib/signup-funnel'
 import { authPage, authCard, authTitle, authSubtitle, authSubmitBtn, authMutedLink } from '@/components/marketing/auth-styles'
 import { M } from '@/components/marketing/marketing-theme'
 
@@ -44,24 +45,9 @@ export default function SignupStartPage() {
 
 function SignupStartInner() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const [plan, setPlan] = useState<'pro' | 'team' | null>(null)
+  const { ready, plan } = useSignupFunnelGuard('consent')
   const [gdprConsent, setGdprConsent] = useState(false)
   const [marketingConsent, setMarketingConsent] = useState(false)
-
-  useEffect(() => {
-    const planParam = searchParams.get('plan')
-    const resolved =
-      planParam === 'pro' || planParam === 'team'
-        ? planParam
-        : getStoredSignupPlan()
-    if (!resolved) {
-      router.replace('/signup/plan')
-      return
-    }
-    sessionStorage.setItem(SIGNUP_PLAN_KEY, resolved)
-    setPlan(resolved)
-  }, [searchParams, router])
 
   function handleContinue() {
     if (!plan || !gdprConsent) return
@@ -70,7 +56,7 @@ function SignupStartInner() {
     router.push(`/signup?plan=${plan}`)
   }
 
-  if (!plan) return <StartFallback />
+  if (!ready || !plan) return <StartFallback />
 
   return (
     <div style={{
