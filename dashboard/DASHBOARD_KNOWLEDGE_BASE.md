@@ -430,7 +430,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 ## 13. Areas for Improvement (documented, not changed)
 
 1. **Duplicate plan definitions** (landing, `/signup/plan`, backend `PLAN_CATALOG`) → drift risk; consolidate on one API or shared config.
-2. **No shared trial-CTA component** — 13 inline links; a `<StartTrialButton plan?>` would centralize analytics + copy.
+2. ~~**No shared trial-CTA component**~~ — **done 2026-08-26:** `<StartTrialButton plan?>` (`components/marketing/StartTrialButton.tsx`) plus `startTrialHref()` in `lib/plans.ts`. Landing hero/footer, SiteNav, and managed pricing cards share `/signup/plan` (no plan) or `/signup?plan=`. Docs, login, and trust links are left as-is.
 3. ~~**Repeated funnel-guard logic**~~ — **done 2026-08-25:** `useSignupFunnelGuard` (`hooks/useSignupFunnelGuard.ts`) plus `signupOtpRedirect` / `resolveSignupStartPlan` in `lib/signup-funnel.ts`. `/signup` and `/signup/start` share the same plan/consent redirects and keep the fallback gate so the form does not flash.
 4. **Duplicated OTP form** (`login` vs `signup` are ~90% identical) → shared `<OtpForm/>`.
 5. **No analytics/telemetry** on funnel steps → hard to measure drop-off.
@@ -443,7 +443,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 
 ## 14. Potential Risks
 
-1. **Copy inconsistency on credit card:** landing pricing may still say "card required" while funnel says "No credit card required" — align copy when payment is reintroduced.
+1. ~~**Copy inconsistency on credit card:**~~ — **checked 2026-08-26:** funnel says "No credit card required"; landing pricing cards have no "card required" copy. Revisit if checkout is reintroduced.
 2. **Access token is XSS-exposed:** the **access** JWT lives in `localStorage` + a non-`HttpOnly` (JS-readable) cookie. (The **refresh** token is a proper `HttpOnly` cookie set by the backend — `core/api/auth.py:104-112` — so it is not JS-readable.) A structural fix would move the access token to an `HttpOnly` server-set cookie too. Middleware trusts the access cookie only.
 3. **Auth source mismatch:** middleware reads the access cookie, app code reads localStorage. If one is cleared (cookie expiry vs localStorage), a user can pass the edge guard but fail client calls, or vice-versa.
 4. ~~**`selectBillingPlan` best-effort swallow**~~ — **fixed:** signup now awaits `selectBillingPlan` and surfaces errors instead of silent `catch {}`.
