@@ -9,6 +9,7 @@ import { MarketingShell } from "@/components/marketing/MarketingShell";
 import { HeroOperationalField } from "@/components/marketing/HeroOperationalField";
 import { LiveDashboardDemo } from "@/components/marketing/LiveDashboardDemo";
 import { PricingCard } from "@/components/marketing/PricingCard";
+import { StartTrialButton } from "@/components/marketing/StartTrialButton";
 import { LANDING_PRICING_PLANS } from "@/components/marketing/pricing-plans";
 import { BRAND } from "@/components/brand";
 import {
@@ -130,9 +131,9 @@ export default function LandingPage() {
               marginBottom: 48,
             }}
           >
-            <Link href="/signup" style={primaryBtn}>
+            <StartTrialButton style={primaryBtn}>
               Use managed cloud
-            </Link>
+            </StartTrialButton>
             <a
               href={GITHUB_URL}
               target="_blank"
@@ -196,9 +197,9 @@ export default function LandingPage() {
               </p>
               <LiveDashboardDemo variant="managed" autoRotateMs={6000} />
               <div style={{ marginTop: 16 }}>
-                <Link href="/signup" style={{ ...primaryBtn, fontSize: 14, padding: "12px 22px" }}>
+                <StartTrialButton style={{ ...primaryBtn, fontSize: 14, padding: "12px 22px" }}>
                   Get started
-                </Link>
+                </StartTrialButton>
               </div>
             </div>
           </div>
@@ -326,9 +327,9 @@ export default function LandingPage() {
               title="Debug production incidents"
               body="Prompt change broke behavior? Replay the full session, trace the decision chain, find root cause."
               actions={
-                <Link href="/signup" style={{ ...primaryBtn, fontSize: 14, padding: "12px 22px" }}>
+                <StartTrialButton style={{ ...primaryBtn, fontSize: 14, padding: "12px 22px" }}>
                   Get started
-                </Link>
+                </StartTrialButton>
               }
             />
             <FeatureCard
@@ -434,9 +435,9 @@ export default function LandingPage() {
               flexWrap: "wrap",
             }}
           >
-            <Link href="/signup" style={primaryBtn}>
+            <StartTrialButton style={primaryBtn}>
               Use managed cloud
-            </Link>
+            </StartTrialButton>
             <Link href="/docs" style={ghostBtn}>
               Read the docs
             </Link>

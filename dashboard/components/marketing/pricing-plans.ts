@@ -10,7 +10,7 @@ export interface PricingPlan {
   note?: string
 }
 
-import { MANAGED_PLANS } from "@/lib/plans";
+import { MANAGED_PLANS, startTrialHref } from "@/lib/plans";
 
 const managedPricing = MANAGED_PLANS.map(
   (p): PricingPlan => ({
@@ -19,7 +19,7 @@ const managedPricing = MANAGED_PLANS.map(
     sub: p.priceSub,
     features: p.features,
     cta: "Get started",
-    href: `/signup?plan=${p.id}`,
+    href: startTrialHref(p.id),
     highlight: p.highlight,
     ctaPrimary: p.id === "pro",
   }),

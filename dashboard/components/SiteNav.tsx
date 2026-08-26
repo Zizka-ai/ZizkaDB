@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { BrandLogo } from "./BrandLogo";
+import { StartTrialButton } from "./marketing/StartTrialButton";
 import {
   BRAND,
   BRAND_DARK,
@@ -159,9 +160,9 @@ export function SiteNav({ active, suffix }: SiteNavProps) {
           >
             Sign in
           </Link>
-          <Link href="/signup" style={brandCtaStyle}>
+          <StartTrialButton style={brandCtaStyle}>
             Get started
-          </Link>
+          </StartTrialButton>
         </div>
 
         <button
@@ -226,13 +227,12 @@ export function SiteNav({ active, suffix }: SiteNavProps) {
               >
                 Sign in
               </Link>
-              <Link
-                href="/signup"
+              <StartTrialButton
                 onClick={() => setMenuOpen(false)}
                 style={{ ...brandCtaStyle, justifyContent: "center", width: "100%" }}
               >
                 Get started
-              </Link>
+              </StartTrialButton>
             </div>
           </div>
         </div>
