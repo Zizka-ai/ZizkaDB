@@ -49,6 +49,8 @@ def cmd_init(args: argparse.Namespace) -> None:
         print("  # Copy mcp.json → ~/.cursor/mcp.json and reload Cursor")
     else:
         print("  python agent.py")
+        print("  # Stack not running? curl -fsSL …/quickstart-remote.sh | bash")
+        print("  # Then: zizkadb demo")
 
 
 def cmd_demo(args: argparse.Namespace) -> None:

@@ -25,6 +25,7 @@ Usage:
 """
 
 import os
+import sys
 import httpx
 from datetime import datetime
 from typing import Any
@@ -45,6 +46,21 @@ def _is_local_host(host: str) -> bool:
 def _api_key_from_env() -> str | None:
     """ZIZKADB_API_KEY preferred; AGENTDB_API_KEY kept for legacy managed users."""
     return os.getenv("ZIZKADB_API_KEY") or os.getenv("AGENTDB_API_KEY")
+
+
+def _log_hints_enabled(base_url: str) -> bool:
+    """Show CLI hints after log() on localhost unless ZIZKADB_QUIET is set."""
+    quiet = os.getenv("ZIZKADB_QUIET", "").lower()
+    if quiet in ("1", "true", "yes", "on"):
+        return False
+    if os.getenv("ZIZKADB_LOG_HINTS", "").lower() in ("1", "true", "yes", "on"):
+        return True
+    return _is_local_host(base_url)
+
+
+def _emit_log_hint(base_url: str, event_id: str) -> None:
+    if _log_hints_enabled(base_url):
+        print(f"  → zizkadb why {event_id}", file=sys.stderr)
 
 
 class ZizkaDB:
@@ -152,8 +168,10 @@ class ZizkaDB:
                 "metadata": metadata,
             },
         )
-        _telemetry_ping(mode=self._telemetry_mode)
-        return LogResult.from_dict(response)
+        _telemetry_ping(mode=self._telemetry_mode        )
+        result = LogResult.from_dict(response)
+        _emit_log_hint(self._base_url, result.event_id)
+        return result
 
     # ─────────────────────────────────────────
     # QUERY — fetch events

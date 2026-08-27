@@ -1,33 +1,26 @@
 # Start here
 
-**Free, local, no signup.** Audit your first AI agent in a few minutes.
+**When your agent misbehaves, see why** — free, local, no signup.
 
-Open-source agent debugging: causal lineage, session replay, drift baselines — works with **LangChain**, **CrewAI**, **Cursor MCP**, Python, and TypeScript.
-
-## 1. Run the demo
+## 1. Try it (60 seconds)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh | bash
 ```
 
-Requires Docker. First image pull may take 5–10 minutes.
+Requires Docker. You should see a tree from `tool_call` back to `user_message`.
 
-## 2. Check the terminal
+Run again: `pip install zizkadb-sdk && zizkadb demo`
 
-You should see a causal chain ending in `user_message · Why was my order delayed?`
+## 2. Why?
 
-```text
-$ zizkadb demo
-tool_call · lookup_order · ORD-8842
-  └── llm_response · gpt-4o
-        └── user_message · Why was my order delayed?
-```
+1. Log steps with `parent_id`
+2. `zizkadb why <event_id>` or dashboard → event → **Why? (causal)**
+3. Root cause in seconds
 
-## 3. Open the dashboard
+Dashboard: http://localhost:3001/dashboard/activity?agent=support-bot
 
-http://localhost:3001/login → **Open my dashboard →** (no account, no API key)
-
-## 4. Connect your code
+## 3. Connect your code
 
 ```python
 async with ZizkaDB(host="http://localhost:8000") as db:
@@ -36,18 +29,12 @@ async with ZizkaDB(host="http://localhost:8000") as db:
     (await db.why(tool.event_id)).print()
 ```
 
-Full guide: [CONNECT.md](CONNECT.md)
-
-## Run again
-
-```bash
-pip install zizkadb-sdk && zizkadb demo
-```
+→ [CONNECT.md](CONNECT.md) for LangChain, CrewAI, TypeScript, MCP
 
 ## Next
 
-- [worked/01-support-order-delay](worked/01-support-order-delay/) — the demo scenario
-- [examples/](examples/) — LangChain, CrewAI, OpenAI, MCP
-- [wiki/Getting-Started](https://github.com/Zizka-ai/ZizkaDB/wiki/Getting-Started)
+- [worked/01-support-order-delay](worked/01-support-order-delay/) — demo story
+- [examples/](examples/) — sample agents
+- [README.md](README.md) — full overview
 
-**Managed cloud (optional, no Docker):** [db.zizka.ai/signup](https://db.zizka.ai/signup)
+**Managed cloud (optional):** [db.zizka.ai/signup](https://db.zizka.ai/signup)

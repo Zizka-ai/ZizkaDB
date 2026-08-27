@@ -34,3 +34,9 @@ export const MANAGED_PLANS: readonly ManagedPlanMeta[] = [
 export function managedPlanById(id: ManagedPlanId): ManagedPlanMeta {
   return MANAGED_PLANS.find((p) => p.id === id) ?? MANAGED_PLANS[0]
 }
+
+/** Managed-cloud trial CTA. No plan → plan picker; pro/team skip straight into the funnel. */
+export function startTrialHref(plan?: ManagedPlanId): string {
+  if (plan === 'pro' || plan === 'team') return `/signup?plan=${plan}`
+  return '/signup/plan'
+}

@@ -2,7 +2,7 @@
 
 import { memo, useMemo } from 'react'
 import { format } from 'date-fns'
-import { AlertCircle, ChevronDown, ChevronRight } from 'lucide-react'
+import { AlertCircle, ChevronDown, ChevronRight, GitBranch } from 'lucide-react'
 import type { AgentEvent } from '@/lib/api'
 import { eventColor, groupBySession, isErrorEvent } from '@/lib/events'
 import { colors, radii } from '@/lib/design-tokens'
@@ -23,6 +23,7 @@ interface EventRowProps {
   selected: boolean
   expanded: boolean
   onSelect: (e: AgentEvent) => void
+  onOpenWhy?: (e: AgentEvent) => void
   onToggleExpand: (id: string) => void
 }
 
@@ -35,6 +36,7 @@ const EventRow = memo(function EventRow({
   selected,
   expanded,
   onSelect,
+  onOpenWhy,
   onToggleExpand,
 }: EventRowProps) {
   const preview = JSON.stringify(event.data ?? {}).slice(0, 90)
@@ -84,7 +86,26 @@ const EventRow = memo(function EventRow({
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0 text-xs font-mono" style={{ color: colors.textFaint }}>
+          <div className="flex items-center gap-2 shrink-0 text-xs font-mono" style={{ color: colors.textFaint }}>
+            {onOpenWhy && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onOpenWhy(event)
+                }}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded transition row-hover"
+                style={{
+                  background: colors.surfaceHover,
+                  border: `1px solid ${colors.borderStrong}`,
+                  color: colors.success,
+                }}
+                title="Trace what caused this event"
+              >
+                <GitBranch size={11} aria-hidden />
+                Why?
+              </button>
+            )}
             <span>#{event.sequence_no}</span>
             <span>{format(new Date(event.timestamp), 'HH:mm:ss')}</span>
           </div>
@@ -146,12 +167,14 @@ export function EventList({
   selected,
   expanded,
   onSelect,
+  onOpenWhy,
   onToggleExpand,
 }: {
   events: AgentEvent[]
   selected: AgentEvent | null
   expanded: string | null
   onSelect: (e: AgentEvent) => void
+  onOpenWhy?: (e: AgentEvent) => void
   onToggleExpand: (id: string) => void
 }) {
   const grouped = useMemo(() => groupBySession(events), [events])
@@ -187,6 +210,7 @@ export function EventList({
                 selected={selected?.event_id === ev.event_id}
                 expanded={expanded === ev.event_id}
                 onSelect={onSelect}
+                onOpenWhy={onOpenWhy}
                 onToggleExpand={onToggleExpand}
               />
             ))}

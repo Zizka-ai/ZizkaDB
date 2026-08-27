@@ -1,6 +1,6 @@
 # Worked example 01 — Support order delay
 
-A minimal agent session you can run in under a minute after [OSS quickstart](../../README.md#-start-in-60-seconds-no-repo-clone).
+A minimal agent session you can run in under a minute after [OSS quickstart](../../README.md#try-it-60-seconds).
 
 ## Story
 
@@ -34,11 +34,13 @@ tool_call: {'tool': 'lookup_order', 'order_id': 'ORD-8842'}
         └── user_message: {'text': 'Why was my order delayed?'}
 ```
 
-## Dashboard
+## Dashboard — Why? tab
 
-1. Open http://localhost:3001/login  
-2. Click **Open my dashboard →**  
-3. Open agent **support-bot** → Events / sessions
+1. Open http://localhost:3001/dashboard/activity?agent=support-bot  
+2. Click **`tool_call`** (lookup_order)  
+3. **Why? (causal)** tab — same tree as `zizkadb demo`
+
+(Login gate: http://localhost:3001/login → **Open my dashboard →**)
 
 ## Next
 

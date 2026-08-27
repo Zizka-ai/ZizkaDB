@@ -53,6 +53,21 @@ function apiKeyFromEnv(): string | undefined {
   return process.env.ZIZKADB_API_KEY ?? process.env.AGENTDB_API_KEY
 }
 
+function logHintsEnabled(baseUrl: string): boolean {
+  const quiet = (process.env.ZIZKADB_QUIET ?? '').toLowerCase()
+  if (['1', 'true', 'yes', 'on'].includes(quiet)) return false
+  if (['1', 'true', 'yes', 'on'].includes((process.env.ZIZKADB_LOG_HINTS ?? '').toLowerCase())) {
+    return true
+  }
+  return isLocalHost(baseUrl)
+}
+
+function emitLogHint(baseUrl: string, eventId: string): void {
+  if (logHintsEnabled(baseUrl)) {
+    console.error(`  → zizkadb why ${eventId}`)
+  }
+}
+
 let _telemetrySent = false
 
 function _isLocalSelfHost(): boolean {
@@ -230,12 +245,14 @@ export class ZizkaDB {
       checksum: string
     }
     _sendTelemetry(this.telemetryMode)
-    return {
+    const result = {
       eventId: res.event_id,
       timestamp: new Date(res.timestamp),
       sequenceNo: res.sequence_no,
       checksum: res.checksum,
     }
+    emitLogHint(this.baseUrl, result.eventId)
+    return result
   }
 
   // ─────────────────────────────────────────

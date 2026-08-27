@@ -2,7 +2,7 @@
 
 **PyPI:** [zizkadb-sdk 0.2.7](https://pypi.org/project/zizkadb-sdk/0.2.7/)
 
-Python SDK for [ZizkaDB](https://db.zizka.ai) — the operational database for AI agents.
+Python SDK for [ZizkaDB](https://github.com/Zizka-ai/ZizkaDB) — **Why did your agent do that?** Call `db.why(event_id)` or `zizkadb why <id>` after logging with `parent_id`.
 
 ## Setup (managed cloud)
 

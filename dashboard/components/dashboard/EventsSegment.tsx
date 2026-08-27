@@ -1,15 +1,20 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import type { AgentEvent, AgentStats } from '@/lib/api'
+import { getEvents } from '@/lib/api'
+import { getToken } from '@/lib/auth'
 import { eventColor } from '@/lib/events'
 import { colors, radii } from '@/lib/design-tokens'
 import { Button, EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import type { AgentEventsState } from '@/hooks/useAgentEvents'
 import { useWhyChain } from '@/hooks/useWhyChain'
+import { seedWhyDemo } from '@/lib/why-demo'
 import { EventList } from './EventList'
 import { EventDetailPanel, type PanelTab } from './EventDetailPanel'
+import { WhyDemoBanner } from './WhyDemoBanner'
 
 function FilterPill({
   label,
@@ -46,18 +51,66 @@ function FilterPill({
 }
 
 export function EventsSegment({
+  agentId,
   events,
   stats,
 }: {
+  agentId: string | null
   events: AgentEventsState
   stats: AgentStats | null
 }) {
+  const searchParams = useSearchParams()
   const [selected, setSelected] = useState<AgentEvent | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [panelTab, setPanelTab] = useState<PanelTab>('data')
+  const [demoRunning, setDemoRunning] = useState(false)
+  const [demoError, setDemoError] = useState<string | null>(null)
+  const autoDemoRan = useRef(false)
   const why = useWhyChain()
 
   const { displayEvents, searchResults } = events
+
+  const openWhy = useCallback(
+    (ev: AgentEvent) => {
+      setSelected(ev)
+      setPanelTab('why')
+      why.load(ev.event_id)
+    },
+    [why],
+  )
+
+  const runWhyDemo = useCallback(async () => {
+    if (!agentId) return
+    const token = getToken()
+    if (!token) return
+
+    setDemoRunning(true)
+    setDemoError(null)
+    try {
+      const leafId = await seedWhyDemo(token, agentId)
+      const rows = await getEvents(token, agentId, { limit: '20' })
+      await events.refresh()
+      const leaf = rows.find((r) => r.event_id === leafId)
+      if (leaf) {
+        openWhy(leaf)
+      } else {
+        setDemoError('Demo logged events but could not find the leaf event — refresh the page.')
+      }
+    } catch (e) {
+      setDemoError(e instanceof Error ? e.message : 'Why demo failed')
+    } finally {
+      setDemoRunning(false)
+    }
+  }, [agentId, events, openWhy])
+
+  // Deep link from `zizkadb demo` or README: ?agent=support-bot&demo=why
+  useEffect(() => {
+    if (autoDemoRan.current) return
+    if (searchParams.get('demo') !== 'why') return
+    if (!agentId || events.loading) return
+    autoDemoRan.current = true
+    void runWhyDemo()
+  }, [agentId, events.loading, runWhyDemo, searchParams])
 
   // Re-clicking the selected event closes the panel.
   const selectEvent = useCallback(
@@ -119,6 +172,10 @@ export function EventsSegment({
   return (
     <div className="flex flex-col lg:flex-row gap-4">
       <div className="flex-1 min-w-0">
+        {!searchResults && agentId && (
+          <WhyDemoBanner onRun={runWhyDemo} running={demoRunning} error={demoError} />
+        )}
+
         <form onSubmit={onSubmitSearch} className="flex gap-2 mb-4">
           <div className="relative flex-1">
             <Search
@@ -234,7 +291,7 @@ export function EventsSegment({
           ) : (
             <EmptyState
               title="No events yet"
-              description="Once this agent logs its first event with the SDK, it will appear here in real time."
+              description="Run the Why demo above, or log your first event with the SDK — it will appear here in real time."
             />
           )
         ) : (
@@ -244,6 +301,7 @@ export function EventsSegment({
               selected={selected}
               expanded={expanded}
               onSelect={selectEvent}
+              onOpenWhy={openWhy}
               onToggleExpand={(id) => setExpanded(expanded === id ? null : id)}
             />
 
