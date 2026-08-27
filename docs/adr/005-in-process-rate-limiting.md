@@ -60,7 +60,9 @@ Each route module holds its own `store` dict as a module-level variable. Rate li
 **Why accepted despite limitations — with one important exception:**
 The marketing and community routes are low-traffic surfaces; burst requests slipping through (extra demo form submissions, extra community posts) are tolerable.
 
-**The OTP route is different and this decision does NOT apply to it.** `POST /v1/auth/request-otp` uses a separate `_otp_rate` dict in `core/api/auth.py` (not the shared `check_rate()` util) with a 10-attempt / 15-minute limit. With 4 uvicorn workers, the real limit is 40 attempts per 15 minutes per email — weakening the brute-force protection for a 6-digit OTP (900,000 possible values) to a material degree. The OTP rate limiter **must** be migrated to Redis before horizontal scaling or any public multi-tenant deployment.
+**The OTP route is different.** `POST /v1/auth/request-otp` uses Redis when `ENV=production` or `OTP_RATE_LIMIT_STORAGE=redis` (see `core/api/auth.py`). Community, demo, and other `check_rate()` stores remain in-process and still multiply by uvicorn `--workers` (4× in production compose).
+
+**Current state (2026-08):** OTP brute-force protection is Redis-backed in production. Do not assume every limiter is Redis — in-process `check_rate()` is unchanged.
 
 ---
 
