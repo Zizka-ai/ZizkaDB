@@ -1,42 +1,26 @@
 # Start here
 
-**One feature:** see **why** your agent did something — in the terminal or dashboard.
+**When your agent misbehaves, see why** — free, local, no signup.
 
-Free, local, no signup. Works with **LangChain**, **CrewAI**, **Cursor MCP**, Python, and TypeScript.
-
-## 1. Run the demo
+## 1. Try it (60 seconds)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh | bash
 ```
 
-Requires Docker. First image pull may take 5–10 minutes.
+Requires Docker. You should see a tree from `tool_call` back to `user_message`.
 
-## 2. See Why in the terminal
+Run again: `pip install zizkadb-sdk && zizkadb demo`
 
-You should see a tree from `tool_call` back to `user_message`:
+## 2. Why?
 
-```text
-$ zizkadb demo
-tool_call · lookup_order · ORD-8842
-  └── llm_response · gpt-4o
-        └── user_message · Why was my order delayed?
-```
+1. Log steps with `parent_id`
+2. `zizkadb why <event_id>` or dashboard → event → **Why? (causal)**
+3. Root cause in seconds
 
-That is **`db.why()`** — root cause in one call.
+Dashboard: http://localhost:3001/dashboard/activity?agent=support-bot
 
-```bash
-zizkadb why <event_id>   # inspect any logged step
-```
-
-## 3. See Why in the dashboard
-
-1. Open http://localhost:3001/dashboard/activity?agent=support-bot  
-   (login gate: http://localhost:3001/login → **Open my dashboard →**)
-2. Click the **`tool_call`** event  
-3. Open the **Why? (causal)** tab — same chain as the terminal
-
-## 4. Connect your code
+## 3. Connect your code
 
 ```python
 async with ZizkaDB(host="http://localhost:8000") as db:
@@ -45,18 +29,12 @@ async with ZizkaDB(host="http://localhost:8000") as db:
     (await db.why(tool.event_id)).print()
 ```
 
-Full guide: [CONNECT.md](CONNECT.md)
-
-## Run again
-
-```bash
-pip install zizkadb-sdk && zizkadb demo
-```
+→ [CONNECT.md](CONNECT.md) for LangChain, CrewAI, TypeScript, MCP
 
 ## Next
 
-- [worked/01-support-order-delay](worked/01-support-order-delay/) — the demo scenario
-- [examples/](examples/) — LangChain, CrewAI, OpenAI, MCP
-- [wiki/Getting-Started](https://github.com/Zizka-ai/ZizkaDB/wiki/Getting-Started)
+- [worked/01-support-order-delay](worked/01-support-order-delay/) — demo story
+- [examples/](examples/) — sample agents
+- [README.md](README.md) — full overview
 
-**Managed cloud (optional, no Docker):** [db.zizka.ai/signup](https://db.zizka.ai/signup)
+**Managed cloud (optional):** [db.zizka.ai/signup](https://db.zizka.ai/signup)

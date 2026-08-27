@@ -1,6 +1,6 @@
 # Worked example 01 — Support order delay
 
-A minimal agent session you can run in under a minute after [OSS quickstart](../../README.md#-start-in-60-seconds-no-repo-clone).
+A minimal agent session you can run in under a minute after [OSS quickstart](../../README.md#try-it-60-seconds).
 
 ## Story
 
