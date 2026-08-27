@@ -212,6 +212,30 @@ export async function getWhyChain(token: string, eventId: string): Promise<WhyCh
   return apiFetch(`/v1/events/${eventId}/why`, token)
 }
 
+export interface LogEventResult {
+  event_id: string
+  timestamp: string
+  sequence_no: number
+  checksum?: string
+  indexed?: boolean
+}
+
+export interface LogEventRequest {
+  agent: string
+  event: string
+  data: Record<string, unknown>
+  parent_id?: string | null
+  session_id?: string | null
+  metadata?: Record<string, unknown> | null
+}
+
+export async function postEvent(token: string, body: LogEventRequest): Promise<LogEventResult> {
+  return apiFetch('/v1/events', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
 // The backend's search response shape isn't fully pinned down (some call
 // sites defensively handle both `{ results: [...] }` and a bare array) — kept
 // loosely typed here rather than forcing a shape that would fight that
