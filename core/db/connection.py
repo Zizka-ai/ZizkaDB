@@ -26,25 +26,40 @@ PG_POOL_MAX_SIZE = 20
 PG_DEFAULT_MAX_CONNECTIONS = 100
 
 
-def uvicorn_worker_count() -> int:
-    raw = os.getenv("WEB_CONCURRENCY") or os.getenv("UVICORN_WORKERS") or "4"
-    try:
-        return max(int(raw), 1)
-    except ValueError:
-        return 4
+def uvicorn_worker_count() -> tuple[int, bool]:
+    """Return (worker_count, assumed).
+
+    Compose production uses ``uvicorn --workers 4``. Local ``uvicorn --reload``
+    is one process. Only assume 4 when ``ENV=production`` and neither
+    ``WEB_CONCURRENCY`` nor ``UVICORN_WORKERS`` is set.
+    """
+    raw = os.getenv("WEB_CONCURRENCY") or os.getenv("UVICORN_WORKERS")
+    if raw:
+        try:
+            return max(int(raw), 1), False
+        except ValueError:
+            pass
+    if os.getenv("ENV", "").strip().lower() == "production":
+        return 4, True
+    return 1, True
 
 
 def warn_if_pool_near_pg_limit(
     max_size: int,
     workers: int,
     pg_max_connections: int = PG_DEFAULT_MAX_CONNECTIONS,
+    *,
+    assumed: bool = False,
 ) -> str | None:
     """Return a warning if pool × workers is ≥ 80% of typical max_connections."""
     potential = max_size * max(workers, 1)
     if potential < int(pg_max_connections * 0.8):
         return None
+    worker_bit = f"workers={workers}"
+    if assumed:
+        worker_bit += " (assumed; set WEB_CONCURRENCY)"
     return (
-        f"Postgres pool max_size={max_size} × workers={workers} = {potential} "
+        f"Postgres pool max_size={max_size} × {worker_bit} = {potential} "
         f"connections; default max_connections={pg_max_connections}. "
         "Add PgBouncer before scaling workers."
     )
@@ -66,7 +81,10 @@ async def init_db():
     )
 
     logger.info("Postgres connected")
-    pool_warn = warn_if_pool_near_pg_limit(PG_POOL_MAX_SIZE, uvicorn_worker_count())
+    workers, assumed = uvicorn_worker_count()
+    pool_warn = warn_if_pool_near_pg_limit(
+        PG_POOL_MAX_SIZE, workers, assumed=assumed
+    )
     if pool_warn:
         logger.warning(pool_warn)
 
