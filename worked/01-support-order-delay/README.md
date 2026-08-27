@@ -34,15 +34,13 @@ tool_call: {'tool': 'lookup_order', 'order_id': 'ORD-8842'}
         └── user_message: {'text': 'Why was my order delayed?'}
 ```
 
-## Dashboard
+## Dashboard — Why? tab
 
 1. Open http://localhost:3001/dashboard/activity?agent=support-bot  
-2. Or http://localhost:3001/login → **Open my dashboard →** if the login gate appears  
-3. Agent **support-bot** → Events / Sessions — same chain as `zizkadb demo`
+2. Click **`tool_call`** (lookup_order)  
+3. **Why? (causal)** tab — same tree as `zizkadb demo`
 
-## CLI
-
-After logging on localhost, the SDK prints `→ zizkadb why <event_id>` after each `db.log()`.
+(Login gate: http://localhost:3001/login → **Open my dashboard →**)
 
 ## Next
 

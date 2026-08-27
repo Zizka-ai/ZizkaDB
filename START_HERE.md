@@ -1,8 +1,8 @@
 # Start here
 
-**Free, local, no signup.** Audit your first AI agent in a few minutes.
+**One feature:** see **why** your agent did something — in the terminal or dashboard.
 
-Open-source agent debugging: causal lineage, session replay, drift baselines — works with **LangChain**, **CrewAI**, **Cursor MCP**, Python, and TypeScript.
+Free, local, no signup. Works with **LangChain**, **CrewAI**, **Cursor MCP**, Python, and TypeScript.
 
 ## 1. Run the demo
 
@@ -12,9 +12,9 @@ curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quick
 
 Requires Docker. First image pull may take 5–10 minutes.
 
-## 2. Check the terminal
+## 2. See Why in the terminal
 
-You should see a causal chain ending in `user_message · Why was my order delayed?`
+You should see a tree from `tool_call` back to `user_message`:
 
 ```text
 $ zizkadb demo
@@ -23,11 +23,18 @@ tool_call · lookup_order · ORD-8842
         └── user_message · Why was my order delayed?
 ```
 
-## 3. Open the dashboard
+That is **`db.why()`** — root cause in one call.
 
-http://localhost:3001/dashboard/activity?agent=support-bot
+```bash
+zizkadb why <event_id>   # inspect any logged step
+```
 
-(If prompted: http://localhost:3001/login → **Open my dashboard →** — no account, no API key)
+## 3. See Why in the dashboard
+
+1. Open http://localhost:3001/dashboard/activity?agent=support-bot  
+   (login gate: http://localhost:3001/login → **Open my dashboard →**)
+2. Click the **`tool_call`** event  
+3. Open the **Why? (causal)** tab — same chain as the terminal
 
 ## 4. Connect your code
 
