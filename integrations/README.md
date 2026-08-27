@@ -2,12 +2,16 @@
 
 Official adapters for agent frameworks. Each package is optional — core SDK is always `zizkadb-sdk`.
 
-| Package | PyPI version | Install | Use case |
-|---------|--------------|---------|----------|
-| `zizkadb-sdk` | **0.2.7** | `pip install zizkadb-sdk` | Core Python client |
-| [langchain](langchain/) | **0.1.2** | `pip install zizkadb-langchain` | `ZizkaDBCallbackHandler` on LangChain runnables |
-| [crewai](crewai/) | **0.1.2** | `pip install zizkadb-crewai` | `ZizkaDBCrewLogger` for crew kickoff / output |
-| [mcp](../mcp/) | **0.1.6** | `uvx zizkadb-mcp` | Cursor, Claude Desktop, Windsurf tools |
+| Package | Registry | Install | Telemetry `sdk` | Use case |
+|---------|----------|---------|-------------------|----------|
+| `zizkadb-sdk` | PyPI **0.2.7** | `pip install zizkadb-sdk` | `python` | Core Python client |
+| [langchain](langchain/) | PyPI **0.1.3** | `pip install zizkadb-langchain` | `langchain` | LangChain callback handler |
+| [crewai](crewai/) | PyPI **0.1.3** | `pip install zizkadb-crewai` | `crewai` | CrewAI crew logger |
+| [mcp](../mcp/) | PyPI **0.1.6** | `uvx zizkadb-mcp` | `mcp` | Cursor / Claude Desktop tools |
+| TypeScript SDK | npm **0.2.7** | `npm install zizkadb-sdk` | `typescript` | Node / Bun / Deno client |
+| Docker OSS | — | `bash scripts/quickstart.sh` | `docker` | Self-hosted stack |
+
+Install pings are anonymous, opt-out (`ZIZKADB_TELEMETRY=false`), and fire at **import / client init / MCP start / Docker health** — not on API calls. PyPI and npm **download** stats are separate third-party metrics.
 
 **Configure once (all packages):**
 

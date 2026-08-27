@@ -10,7 +10,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Install telemetry (OSS adoption)
 
-- **Python SDK 0.2.7**, **TypeScript SDK**, **MCP 0.1.6**: count **installs** at client/server start (including self-hosted localhost), not on first `log()` / tool call
+- **Python SDK 0.2.7**, **TypeScript SDK 0.2.7 (npm)**, **MCP 0.1.6**, **langchain 0.1.3**, **crewai 0.1.3**: count **installs** at import/client/server start (including self-hosted localhost), not on first API call
+- Per-package telemetry keys: `python`, `langchain`, `crewai`, `mcp`, `typescript`, `docker`
 - **Docker quickstart**: anonymous install ping (`sdk=docker`, `mode=self-hosted`) after stack is healthy
 - **`sdk_telemetry`**: composite primary key `(install_id, sdk)` so Python + MCP + Docker on one machine each count separately
 

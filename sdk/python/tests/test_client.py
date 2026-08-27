@@ -10,7 +10,7 @@ from zizkadb.exceptions import AgentScopeError, AuthError, NotFoundError, RateLi
 
 def _prevent_telemetry(monkeypatch):
     """Stop telemetry from firing before/inside ZizkaDB.__init__."""
-    monkeypatch.setattr("zizkadb.client._telemetry_ping", lambda mode: None)
+    monkeypatch.setattr("zizkadb.client._telemetry_ping", lambda mode, sdk="python": None)
     monkeypatch.setenv("ZIZKADB_TELEMETRY", "false")
 
 

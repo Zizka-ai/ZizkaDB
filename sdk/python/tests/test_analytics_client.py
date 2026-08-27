@@ -6,7 +6,7 @@ from zizkadb.client import ZizkaDB
 
 
 def _prevent_telemetry(monkeypatch):
-    monkeypatch.setattr("zizkadb.client._telemetry_ping", lambda mode: None)
+    monkeypatch.setattr("zizkadb.client._telemetry_ping", lambda mode, sdk="python": None)
     monkeypatch.setenv("ZIZKADB_TELEMETRY", "false")
 
 

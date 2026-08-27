@@ -109,7 +109,7 @@ class ZizkaDB:
         self._timeout = timeout
         self._client: httpx.AsyncClient | None = None
         self._telemetry_mode = "self-hosted" if host else "cloud"
-        _telemetry_ping(mode=self._telemetry_mode)
+        _telemetry_ping(mode=self._telemetry_mode, sdk="python")
 
     # ─────────────────────────────────────────
     # CONTEXT MANAGER

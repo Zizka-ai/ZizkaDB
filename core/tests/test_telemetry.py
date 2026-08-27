@@ -71,16 +71,16 @@ class TestTelemetryPing:
         mock_get_pool.return_value = mock_pool
 
         install_id = PING["install_id"]
-        for sdk in ("python", "docker", "mcp"):
+        for sdk in ("python", "langchain", "crewai", "mcp", "typescript", "docker"):
             response = client.post(
                 "/v1/telemetry",
                 json={**PING, "sdk": sdk},
             )
             assert response.status_code == 200
 
-        assert mock_pool.execute.call_count == 3
+        assert mock_pool.execute.call_count == 6
         sdks = {call.args[2] for call in mock_pool.execute.call_args_list}
-        assert sdks == {"python", "docker", "mcp"}
+        assert sdks == {"python", "langchain", "crewai", "mcp", "typescript", "docker"}
 
 
 class TestTelemetryUpdates:
