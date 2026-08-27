@@ -1,7 +1,7 @@
 {
   "name": "zizkadb-sdk",
   "version": "0.2.6",
-  "description": "ZizkaDB tells you when your agent stops behaving like itself. Causal lineage, time travel and behavioral baselines for any AI agent.",
+  "description": "Self-hosted audit trail for AI agents — prove why an agent did something with causal lineage (why()), time-travel state, and drift baselines.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -24,13 +24,16 @@
     "test:coverage": "vitest run --coverage"
   },
   "keywords": [
-    "ai",
-    "agents",
-    "database",
-    "memory",
-    "llm",
+    "ai-agents",
+    "causal-lineage",
+    "agent-audit",
+    "self-hosted",
+    "langchain",
+    "crewai",
+    "llm-debugging",
+    "behavioral-drift",
+    "gdpr",
     "observability",
-    "drift",
     "zizkadb"
   ],
   "author": "Zizka AI",

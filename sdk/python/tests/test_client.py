@@ -76,6 +76,51 @@ def test_log_posts_expected_event_payload(monkeypatch):
     assert result.sequence_no == 1
 
 
+def test_log_prints_why_hint_on_localhost(monkeypatch, capsys):
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "event_id": "00000000-0000-0000-0000-000000000001",
+                "timestamp": "2026-06-19T00:00:00Z",
+                "sequence_no": 1,
+                "checksum": "abc123",
+            },
+        )
+
+    db = _client(monkeypatch, handler, host="http://localhost:8000")
+    try:
+        asyncio.run(db.log(agent="test-agent", event="tool_call", data={"tool": "search"}))
+    finally:
+        asyncio.run(_close(db))
+
+    err = capsys.readouterr().err
+    assert "zizkadb why 00000000-0000-0000-0000-000000000001" in err
+
+
+def test_log_hint_suppressed_when_quiet(monkeypatch, capsys):
+    monkeypatch.setenv("ZIZKADB_QUIET", "1")
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "event_id": "00000000-0000-0000-0000-000000000001",
+                "timestamp": "2026-06-19T00:00:00Z",
+                "sequence_no": 1,
+                "checksum": "abc123",
+            },
+        )
+
+    db = _client(monkeypatch, handler, host="http://localhost:8000")
+    try:
+        asyncio.run(db.log(agent="test-agent", event="tool_call", data={"tool": "search"}))
+    finally:
+        asyncio.run(_close(db))
+
+    assert "zizkadb why" not in capsys.readouterr().err
+
+
 @pytest.mark.parametrize(
     ("status", "payload", "error_type"),
     [

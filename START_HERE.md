@@ -25,7 +25,9 @@ tool_call · lookup_order · ORD-8842
 
 ## 3. Open the dashboard
 
-http://localhost:3001/login → **Open my dashboard →** (no account, no API key)
+http://localhost:3001/dashboard/activity?agent=support-bot
+
+(If prompted: http://localhost:3001/login → **Open my dashboard →** — no account, no API key)
 
 ## 4. Connect your code
 

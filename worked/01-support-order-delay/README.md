@@ -36,9 +36,13 @@ tool_call: {'tool': 'lookup_order', 'order_id': 'ORD-8842'}
 
 ## Dashboard
 
-1. Open http://localhost:3001/login  
-2. Click **Open my dashboard →**  
-3. Open agent **support-bot** → Events / sessions
+1. Open http://localhost:3001/dashboard/activity?agent=support-bot  
+2. Or http://localhost:3001/login → **Open my dashboard →** if the login gate appears  
+3. Agent **support-bot** → Events / Sessions — same chain as `zizkadb demo`
+
+## CLI
+
+After logging on localhost, the SDK prints `→ zizkadb why <event_id>` after each `db.log()`.
 
 ## Next
 

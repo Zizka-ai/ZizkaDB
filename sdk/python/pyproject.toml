@@ -5,12 +5,23 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "zizkadb-sdk"
 version = "0.2.6"
-description = "ZizkaDB tells you when your agent stops behaving like itself. Causal lineage, time travel and behavioral baselines for any AI agent."
+description = "Self-hosted audit trail for AI agents — prove why an agent did something with causal lineage (why()), time-travel state, and drift baselines."
 readme = "README.md"
 license = "AGPL-3.0-or-later"
 requires-python = ">=3.10"
 authors = [{ name = "Zizka AI", email = "founder@zizka.ai" }]
-keywords = ["ai", "agents", "database", "memory", "llm", "observability"]
+keywords = [
+    "ai-agents",
+    "causal-lineage",
+    "agent-audit",
+    "self-hosted",
+    "langchain",
+    "crewai",
+    "llm-debugging",
+    "behavioral-drift",
+    "gdpr",
+    "observability",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
