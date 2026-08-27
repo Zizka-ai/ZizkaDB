@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { getAgents, type Agent } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 import { POLL_INTERVAL_MS } from '@/lib/constants'
+import { isDocumentVisible } from '@/lib/page-visible'
 
 export interface AgentsState {
   agents: Agent[]
@@ -32,6 +33,11 @@ interface Snapshot {
 let snapshot: Snapshot = { agents: [], loading: true, error: null }
 const subscribers = new Set<(s: Snapshot) => void>()
 let pollTimer: ReturnType<typeof setInterval> | null = null
+let visibilityBound = false
+
+function onAgentsVisibility() {
+  if (document.visibilityState === 'visible') void fetchAgents(false)
+}
 
 function publish(next: Partial<Snapshot>) {
   snapshot = { ...snapshot, ...next }
@@ -69,7 +75,14 @@ export function useAgents(pollMs: number = POLL_INTERVAL_MS): AgentsState {
     // First subscriber starts the shared poll and the initial fetch.
     if (subscribers.size === 1) {
       fetchAgents(true)
-      pollTimer = setInterval(() => fetchAgents(false), pollMs)
+      pollTimer = setInterval(() => {
+        if (!isDocumentVisible()) return
+        fetchAgents(false)
+      }, pollMs)
+      if (typeof document !== 'undefined' && !visibilityBound) {
+        document.addEventListener('visibilitychange', onAgentsVisibility)
+        visibilityBound = true
+      }
     } else {
       setState(snapshot)
     }
@@ -81,6 +94,10 @@ export function useAgents(pollMs: number = POLL_INTERVAL_MS): AgentsState {
       if (subscribers.size === 0 && pollTimer) {
         clearInterval(pollTimer)
         pollTimer = null
+        if (visibilityBound) {
+          document.removeEventListener('visibilitychange', onAgentsVisibility)
+          visibilityBound = false
+        }
         snapshot = { agents: [], loading: true, error: null }
       }
     }
