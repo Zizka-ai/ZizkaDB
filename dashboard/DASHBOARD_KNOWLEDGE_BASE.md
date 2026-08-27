@@ -2,7 +2,7 @@
 
 > Single source of truth for the Dashboard module. Reverse-engineered directly from the codebase.
 >
-> **Last verified:** 2026-08-25 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
+> **Last verified:** 2026-08-27 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
 >
 > **OSS scope:** This repo ships the tenant dashboard and public marketing/community surfaces. The managed-cloud **operator admin console** (`/admin`, `/v1/admin/*`) is **not** in this tree — §16 / §20.5 admin sections are historical reference only.
 >
@@ -64,7 +64,7 @@ middleware.ts (edge) → checks zizkadb_token cookie
 app/dashboard/layout.tsx
    → DashboardShell (sidebar/nav/signout)
        → TenantPlanBanner (fetches billing status — informational)
-       → ConnectionStatus (polls /health)
+       → AccountMenu health dot (`useConnectionHealth` polls `/health`)
        → children (page)
 ```
 
@@ -344,7 +344,7 @@ All in `lib/api.ts` via `apiFetch` (except unauthenticated `fetch` calls for OTP
 
 **Error handling:** `formatApiError` flattens string / array / `{msg}` FastAPI detail shapes. `DashboardPage` special-cases `401`/"invalid token" → redirect to `/login` (`dashboard/page.tsx:54`).
 
-**Polling:** Agents list every 10s (`dashboard/page.tsx:66`); `/health` every 30s (`ConnectionStatus.tsx:25`); billing status fetched once by `TenantPlanBanner` on mount; `useApiKeyQuota` refreshes on window focus.
+**Polling:** Shared agent list every 10s (`hooks/useAgents.ts`); `/health` every 30s via `useConnectionHealth` (header AccountMenu). Both skip ticks while `document.visibilityState === 'hidden'` and check again on `visibilitychange`. Event/stats pollers (`useAgentEvents`, `useAgentStats`) still run in background tabs. Billing status fetched once by `TenantPlanBanner` on mount; `useApiKeyQuota` refreshes on window focus. Hidden-tab health can stay stale `'ok'` until the tab is shown again.
 
 ---
 
@@ -392,7 +392,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 - **Missing consent:** `/signup` bounces to `/signup/start`.
 - **Legacy checkout/success URLs:** immediately redirect client-side (`checkout` → plan, `success` → dashboard).
 - **401 / invalid token:** Agents page redirects to `/login`; `requireAuth()` hard-redirects via `window.location`.
-- **API unreachable:** `ConnectionStatus` red dot + setup hint; dev-login shows docker hint.
+- **API unreachable:** header health dot (`useConnectionHealth`) goes red; may stay green until the tab is visible again if the API died while hidden. Dev-login shows docker hint.
 - **Browser refresh mid-funnel:** state survives via `sessionStorage`; token via `localStorage`+cookie.
 - **Multiple clicks / races:** async effects guarded by `cancelled` flags; buttons disabled while `loading`/`creating`/`busy`.
 - **Empty states:** agents → `GettingStartedChecklist`; no API keys → prompt to create agent.
@@ -466,8 +466,8 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 
 | Var | Where read | Default | Purpose |
 |-----|-----------|---------|---------|
-| `NEXT_PUBLIC_API_URL` | client (`lib/api.ts`, `lib/demo.ts`, `lib/community.ts`, `ConnectionStatus`, `login`) | `''` (same-origin; `login` falls back to `http://localhost:8000`) | API base URL |
-| `NEXT_PUBLIC_DEV_MODE` | client (`ConnectionStatus`, `login`) | unset | `'true'` = self-host: enables dev-token login, changes onboarding copy |
+| `NEXT_PUBLIC_API_URL` | client (`lib/api.ts`, `lib/demo.ts`, `lib/community.ts`, `useConnectionHealth`, `login`) | `''` (same-origin; `login` falls back to `http://localhost:8000`) | API base URL |
+| `NEXT_PUBLIC_DEV_MODE` | client (`login`, onboarding copy) | unset | `'true'` = self-host: enables dev-token login, changes onboarding copy |
 | `API_REWRITE_TARGET` | build/server (`next.config.mjs`) | `http://127.0.0.1:8000` | upstream host for the `/swagger` + `/openapi.json` rewrites |
 
 **Rewrites / redirects (`next.config.mjs`):**
@@ -489,7 +489,7 @@ A root-level `.env.example` exists (repo root, not `dashboard/`) and documents t
 | `DashboardShell` | sidebar / mobile nav / sign-out frame |
 | `TenantPlanBanner` | plan pill + trial / active state + signed-in email (informational) |
 | `ApiKeyUsage` | quota indicator (used/limit from `/v1/auth/api-keys/usage`) |
-| `ConnectionStatus` (+ `GettingStartedChecklist`) | `/health` poll + empty-state onboarding |
+| `GettingStartedChecklist` (from `ConnectionStatus.tsx`) | Activity empty-state onboarding; health poll is `useConnectionHealth` |
 | `AgentApiKeys` | key create / reveal-once / revoke (uses `useApiKeyQuota`) |
 | `SiteNav`, `BrandLogo`, `brand.ts` | marketing nav + branding tokens |
 | `marketing/*` | `CalendlyBookModal`, `CompetitorCompare`, `ConversationCompare`, `PricingCard`, `pricing-plans.ts`, `ThreeWaysConnectSection`, `TrustBar`, `IntegrationStrip`, `MarketingFooter`, `MarketingPageStyles`, `marketing-theme.ts` |
@@ -659,7 +659,7 @@ range validated like `/report`. Provider failure → 503 (never 500). Never inve
 
 **Demo (`lib/demo.ts`):** `submitDemoRequest` → POST `/v1/demo-requests` → `demo_requests.py:48` (unauthenticated, honeypot `botcheck`).
 
-**Health:** `ConnectionStatus` → GET `/health` → `main.py:82`.
+**Health:** `useConnectionHealth` (AccountMenu) → GET `/health` → `main.py`. Hidden tabs skip polls.
 
 ### 17.4 Data producers vs the dashboard (consumer)
 
@@ -876,8 +876,9 @@ Suggestions now has two sub-tabs sharing one `SuggestionsSubTabs` strip
 Server component; `metadata.robots` = noindex/nofollow; wraps children in `DashboardTabsShell`. No API, no branching of its own.
 
 `DashboardTabsShell` (`components/dashboard/DashboardTabsShell.tsx`) renders the brand, the
-`AgentSelector`, Settings/Sign-out icons, and the `Tabs` bar, then `TenantPlanBanner` +
-`ConnectionStatus` above the page. It reads `useSearchParams` via `useSelectedAgent`, so it
+`AgentSelector`, Settings/Sign-out icons, and the `Tabs` bar, then `TenantPlanBanner` above
+the page. Health is the AccountMenu dot (`useConnectionHealth`), not a full-width banner.
+It reads `useSearchParams` via `useSelectedAgent`, so it
 sits inside a `<Suspense>` boundary — required or the build fails on CSR bailout.
 
 ### 19.6 Login — `app/login/page.tsx`
@@ -900,9 +901,10 @@ sits inside a `<Suspense>` boundary — required or the build fails on CSR bailo
 
 ### 19.9 Components
 
-- **`DashboardShell.tsx`** — no state; `usePathname`/`useRouter`. Nav items Agents/Search/Settings (`:11-15`); active = exact/prefix match (`:40`); sign out `clearToken()` → `router.push('/login')` (`:21-24`). Renders `TenantPlanBanner` (`:84`) + `ConnectionStatus` (`:85`) + children.
+- **`DashboardShell.tsx`** — horizontal tabs + header. Sign out `clearToken()`. Renders `TenantPlanBanner` + children. Health lives in `AccountMenu` via `useConnectionHealth`, not a full-width ConnectionStatus banner.
 - **`TenantPlanBanner.tsx`** — state `status`; effect once, no token → return, `getBillingStatus` with `cancelled` cleanup (errors swallowed). Email from `getSessionEmail()` (JWT decode via `jose`, sync on render). Returns `null` if neither plan nor email; plan row when `status.plan`; email row below plan with truncate + `title` tooltip. Shows trial end date if `trialing`, "Active" if `active`. Informational only.
-- **`ConnectionStatus.tsx`** — state `health: 'checking'|'ok'|'error'` (`:11`); effect mount + **30s `/health` poll** (`:14-30`, `cache:'no-store'`, `cancelled`+`clearInterval` cleanup). Empty `API` → label "same-origin (nginx)" (`:12`); dev label + setup hint on error. Also exports `GettingStartedChecklist` (static; Python snippet + step 1 copy differ by `IS_DEV`).
+- **`useConnectionHealth.ts`** — state `health: 'checking'|'ok'|'error'`; mount + **30s `/health` poll** (`cache:'no-store'`, `cancelled` + interval + `visibilitychange` cleanup). Ticks skipped while the tab is hidden; a check runs when the tab becomes visible. First paint in a hidden tab can stay `'checking'`.
+- **`ConnectionStatus.tsx`** — no longer polls. Exports `GettingStartedChecklist` only (Activity empty state; Python snippet + step 1 copy differ by edition).
 - **`AgentApiKeys.tsx`** — state keys/loading/creating/revokingId/newKey/copied/err/testBusy/testMsg (`:24-32`); `load` useCallback → `getAgentApiKeys` (normalizes to array, `:34-44`); effect re-loads when `agentId` changes (`:46-48`). `createAgentApiKey` (`:55`) → reload; `revokeAgentApiKey` (`:72`, confirm first `:66-67`); `sendAgentTestEvent` (`:110`) → `onTestSuccess?.()` (`:112`). One-time key display; copy resets 2s (`:84`).
 
 ### 19.10 Cross-cutting quick reference
@@ -914,7 +916,7 @@ sits inside a `<Suspense>` boundary — required or the build fails on CSR bailo
 | `requireAuth()` | no token → `window.location.href='/login'`, throws |
 | Agents home | explicit `router.replace('/login')` on missing/invalid token |
 | Edge auth | middleware cookie check on `/dashboard/*` |
-| Polling | agents home 10s, agent detail 10s (tab-aware), `ConnectionStatus` 30s |
+| Polling | agents 10s (`useAgents`, hidden-tab pause), events/stats 10s (still run when hidden), health 30s (`useConnectionHealth`, hidden-tab pause) |
 | `NEXT_PUBLIC_DEV_MODE=true` | dev login bypass; dev onboarding copy |
 
 ### 19.11 Signup email/OTP — `app/signup/page.tsx`

@@ -51,6 +51,7 @@ ZIZKADB_RUN_INTEGRATION=1 pytest core/tests/test_integration_selfhost.py -v
 | `test_community.py` | Community posts, honeypot, rate limit |
 | `test_marketing_subscriptions.py` | Marketing subscription create + honeypot |
 | `test_settings_auth.py` | Settings embeddings requires dashboard session |
+| `test_pg_pool_warn.py` | Postgres pool × workers warning (no live DB) |
 | `test_a2a.py` | Agent-to-agent protocol routes |
 | `test_reports.py` | Per-agent report payload |
 | `test_suggestions.py` | Suggestions extractor / grounding |

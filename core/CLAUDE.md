@@ -132,7 +132,7 @@ Never use SQLAlchemy, never open a direct `asyncpg.connect()` — always use the
 |---|---|---|
 | `GET /health` is liveness-only, not dependency status | `main.py:109-111` | Always returns HTTP 200 once the process is up; by design it's a fast readiness probe, not a Postgres/Redis/Qdrant check. Use `/health/deep` for real dependency status. `scripts/setup-local.sh` and `scripts/quickstart-remote.sh` poll `/health` only to know the container is up; `scripts/smoke-test.sh` and `scripts/validate-selfhost-config.sh` correctly check both |
 | Rate limiting 4× effective limit | `api/utils.py` in-process helpers | Non-OTP in-process limiters (if wired) still multiply by workers. OTP uses Redis when `ENV=production` or `OTP_RATE_LIMIT_STORAGE=redis` |
-| 80 Postgres connections at full load | `db/connection.py:22–25` | `max_size=20` × 4 workers = 80 connections. Postgres default `max_connections=100`. Add PgBouncer before horizontal scaling |
+| 80 Postgres connections at full load | `db/connection.py` pool × workers | `max_size=20` × 4 production workers = 80 vs typical `max_connections=100`. `init_db()` logs a warning. Local/dev (not `ENV=production`) assumes 1 worker so the warning stays off. Set `WEB_CONCURRENCY` to match `--workers`. Add PgBouncer before horizontal scaling |
 
 ---
 
