@@ -161,9 +161,7 @@ function ActivityContent() {
         </div>
       )}
 
-      {segment === 'events' && (
-        <EventsSegment agentId={agentId} events={events} stats={stats} />
-      )}
+      {segment === 'events' && <EventsSegment events={events} stats={stats} />}
       {segment === 'sessions' && <SessionsSegment agentId={agentId} />}
       {segment === 'timetravel' && <TimeTravelSegment agentId={agentId} />}
     </>

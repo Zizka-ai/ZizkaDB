@@ -18,7 +18,7 @@ def _is_local_host(host: str) -> bool:
 def dashboard_activity_url(host: str, agent: str = DEMO_AGENT) -> str:
     """Deep link to Activity for an agent (local or cloud)."""
     base = "http://localhost:3001" if _is_local_host(host) else "https://db.zizka.ai"
-    return f"{base}/dashboard/activity?agent={agent}&demo=why"
+    return f"{base}/dashboard/activity?agent={agent}"
 
 
 async def run_support_order_delay_demo(host: str | None = None) -> str:
