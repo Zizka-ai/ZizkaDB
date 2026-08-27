@@ -20,6 +20,35 @@ _qdrant: AsyncQdrantClient | None = None
 QDRANT_COLLECTION = "agent_events"
 VECTOR_SIZE = 1536  # OpenAI text-embedding-3-small
 
+# Matches infra/docker-compose.yml (`uvicorn --workers 4`). Override with
+# WEB_CONCURRENCY or UVICORN_WORKERS if you change the process count.
+PG_POOL_MAX_SIZE = 20
+PG_DEFAULT_MAX_CONNECTIONS = 100
+
+
+def uvicorn_worker_count() -> int:
+    raw = os.getenv("WEB_CONCURRENCY") or os.getenv("UVICORN_WORKERS") or "4"
+    try:
+        return max(int(raw), 1)
+    except ValueError:
+        return 4
+
+
+def warn_if_pool_near_pg_limit(
+    max_size: int,
+    workers: int,
+    pg_max_connections: int = PG_DEFAULT_MAX_CONNECTIONS,
+) -> str | None:
+    """Return a warning if pool × workers is ≥ 80% of typical max_connections."""
+    potential = max_size * max(workers, 1)
+    if potential < int(pg_max_connections * 0.8):
+        return None
+    return (
+        f"Postgres pool max_size={max_size} × workers={workers} = {potential} "
+        f"connections; default max_connections={pg_max_connections}. "
+        "Add PgBouncer before scaling workers."
+    )
+
 
 # --------------------------------------------------------------------
 # Initialize all databases
@@ -33,10 +62,13 @@ async def init_db():
     _pg_pool = await asyncpg.create_pool(
         dsn=os.getenv("DATABASE_URL"),
         min_size=2,
-        max_size=20,
+        max_size=PG_POOL_MAX_SIZE,
     )
 
     logger.info("Postgres connected")
+    pool_warn = warn_if_pool_near_pg_limit(PG_POOL_MAX_SIZE, uvicorn_worker_count())
+    if pool_warn:
+        logger.warning(pool_warn)
 
     try:
         user_count = await _pg_pool.fetchval(
