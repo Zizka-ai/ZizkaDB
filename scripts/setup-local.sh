@@ -101,6 +101,9 @@ for i in $(seq 1 30); do
   fi
 done
 
+# Count OSS Docker install (anonymous; separate from PyPI download stats).
+bash scripts/telemetry-install-ping.sh docker oss || true
+
 if [ "$SHOW_BANNER" -eq 0 ]; then
   exit 0
 fi

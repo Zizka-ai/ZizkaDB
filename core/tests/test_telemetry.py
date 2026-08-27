@@ -64,6 +64,24 @@ class TestTelemetryPing:
         assert response.status_code == 200
         assert response.json() == {"ok": True}
 
+    @patch("api.telemetry.get_pool")
+    def test_same_install_id_different_sdk_are_separate(self, mock_get_pool):
+        mock_pool = MagicMock()
+        mock_pool.execute = AsyncMock()
+        mock_get_pool.return_value = mock_pool
+
+        install_id = PING["install_id"]
+        for sdk in ("python", "langchain", "crewai", "mcp", "typescript", "docker"):
+            response = client.post(
+                "/v1/telemetry",
+                json={**PING, "sdk": sdk},
+            )
+            assert response.status_code == 200
+
+        assert mock_pool.execute.call_count == 6
+        sdks = {call.args[2] for call in mock_pool.execute.call_args_list}
+        assert sdks == {"python", "langchain", "crewai", "mcp", "typescript", "docker"}
+
 
 class TestTelemetryUpdates:
     def setup_method(self):

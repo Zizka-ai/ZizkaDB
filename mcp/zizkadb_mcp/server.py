@@ -87,7 +87,8 @@ def _get_install_id() -> str:
         return _machine_stable_uuid()
 
 
-def _telemetry_ping_on_use() -> None:
+def _telemetry_ping_on_install() -> None:
+    """One anonymous install ping per MCP server process (not per tool call)."""
     global _telemetry_sent
     if _telemetry_sent:
         return
@@ -98,7 +99,7 @@ def _telemetry_ping_on_use() -> None:
     def _run() -> None:
         try:
             import urllib.request, json
-            mode = "self-hosted" if os.getenv("ZIZKADB_HOST") else "cloud"
+            mode = "self-hosted" if _is_local_host(_HOST) else "cloud"
             payload = json.dumps({
                 "install_id":  _get_install_id(),
                 "sdk":         "mcp",
@@ -145,7 +146,6 @@ async def _api(method: str, path: str, body: dict | None = None) -> dict:
 
     if not r.is_success:
         return {"error": r.text, "status": r.status_code}
-    _telemetry_ping_on_use()
     return r.json()
 
 
@@ -404,6 +404,7 @@ async def forget(filter_key: str, filter_value: str) -> dict:
 
 
 def main() -> None:
+    _telemetry_ping_on_install()
     mcp.run()
 
 

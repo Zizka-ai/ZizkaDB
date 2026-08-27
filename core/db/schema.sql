@@ -148,8 +148,8 @@ CREATE TABLE usage_daily (
 -- (also created at runtime via init_db() in core/db/connection.py)
 -- ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sdk_telemetry (
-    install_id   VARCHAR(64) PRIMARY KEY,
-    sdk          VARCHAR(50),
+    install_id   VARCHAR(64) NOT NULL,
+    sdk          VARCHAR(50) NOT NULL DEFAULT 'unknown',
     sdk_version  VARCHAR(30),
     runtime      VARCHAR(50),
     os           VARCHAR(50),
@@ -157,7 +157,8 @@ CREATE TABLE IF NOT EXISTS sdk_telemetry (
     country_code CHAR(2),
     first_seen   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_seen    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    ping_count   INT NOT NULL DEFAULT 1
+    ping_count   INT NOT NULL DEFAULT 1,
+    PRIMARY KEY (install_id, sdk)
 );
 
 CREATE TABLE IF NOT EXISTS sdk_update_subscriptions (

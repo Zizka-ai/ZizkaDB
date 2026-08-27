@@ -252,7 +252,7 @@ async def init_db():
 
     await _pg_pool.execute("""
         CREATE TABLE IF NOT EXISTS sdk_telemetry (
-            install_id TEXT PRIMARY KEY,
+            install_id TEXT NOT NULL,
             sdk TEXT NOT NULL DEFAULT 'unknown',
             sdk_version TEXT NOT NULL DEFAULT 'unknown',
             runtime TEXT NOT NULL DEFAULT 'unknown',
@@ -261,12 +261,34 @@ async def init_db():
             country_code CHAR(2),
             first_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            ping_count INTEGER NOT NULL DEFAULT 1
+            ping_count INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (install_id, sdk)
         )
     """)
 
     await _pg_pool.execute("""
         ALTER TABLE sdk_telemetry ADD COLUMN IF NOT EXISTS country_code CHAR(2);
+    """)
+
+    await _pg_pool.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1
+                FROM pg_constraint c
+                JOIN pg_class t ON c.conrelid = t.oid
+                WHERE t.relname = 'sdk_telemetry'
+                  AND c.contype = 'p'
+                  AND c.conname = 'sdk_telemetry_pkey'
+                  AND array_length(c.conkey, 1) = 1
+            ) THEN
+                UPDATE sdk_telemetry SET sdk = COALESCE(NULLIF(sdk, ''), 'unknown');
+                ALTER TABLE sdk_telemetry DROP CONSTRAINT sdk_telemetry_pkey;
+                ALTER TABLE sdk_telemetry ADD PRIMARY KEY (install_id, sdk);
+            END IF;
+        EXCEPTION
+            WHEN duplicate_table THEN NULL;
+        END $$;
     """)
 
     await _pg_pool.execute("""
