@@ -1,8 +1,10 @@
 """
-Anonymous usage telemetry for the ZizkaDB Python SDK.
+Anonymous install telemetry for the ZizkaDB Python SDK.
 
-One ping per process after the first successful log() — usage, not import.
+One ping per process when the client is constructed — install adoption, not usage.
 install_id is stable per machine (~/.zizkadb/install_id).
+
+Self-hosted (localhost Docker) installs are counted with mode=self-hosted.
 
 What is NOT sent: API keys, agent names, event data, IP address, hostname.
 
@@ -33,13 +35,6 @@ def _sdk_version() -> str:
         return "unknown"
 
 
-def _is_local_self_host() -> bool:
-    host = os.getenv("ZIZKADB_HOST", "")
-    if host.startswith("http://localhost") or host.startswith("http://127.0.0.1"):
-        return True
-    return host.startswith("http://0.0.0.0")
-
-
 def _send(mode: str) -> None:
     payload = json.dumps(
         {
@@ -61,14 +56,12 @@ def _send(mode: str) -> None:
     urllib.request.urlopen(req, timeout=2)
 
 
-def ping_on_use(mode: str = "cloud") -> None:
-    """Fire-and-forget: one ping per process after first successful log()."""
+def ping_on_install(mode: str = "cloud") -> None:
+    """Fire-and-forget: one install ping per process when ZizkaDB() is constructed."""
     global _sent
     if _sent:
         return
     if os.getenv("ZIZKADB_TELEMETRY", "").lower() in ("false", "0", "no", "off"):
-        return
-    if mode == "self-hosted" or _is_local_self_host():
         return
     _sent = True
 
@@ -81,6 +74,11 @@ def ping_on_use(mode: str = "cloud") -> None:
     threading.Thread(target=_run, daemon=True).start()
 
 
+def ping_on_use(mode: str = "cloud") -> None:
+    """Back-compat alias — install is counted at construct time, not on log()."""
+    ping_on_install(mode)
+
+
 def ping(mode: str = "cloud") -> None:
-    """Back-compat alias for ping_on_use."""
-    ping_on_use(mode)
+    """Back-compat alias for ping_on_install."""
+    ping_on_install(mode)

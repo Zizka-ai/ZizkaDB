@@ -1,8 +1,8 @@
 """
-POST /v1/telemetry — anonymous SDK usage ping.
+POST /v1/telemetry — anonymous SDK / OSS install ping.
 
 No auth required. Never returns errors (always 200).
-Stores: install_id, sdk, sdk_version, runtime, OS, mode, country_code,
+Stores: install_id + sdk (composite key), sdk_version, runtime, OS, mode, country_code,
 first_seen, last_seen, ping_count.
 
 POST /v1/telemetry/updates — optional email opt-in for product/security updates.
@@ -67,7 +67,7 @@ async def receive_ping(body: TelemetryPing, request: Request):
             INSERT INTO sdk_telemetry
                 (install_id, sdk, sdk_version, runtime, os, mode, country_code)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ON CONFLICT (install_id)
+            ON CONFLICT (install_id, sdk)
             DO UPDATE SET
                 last_seen     = NOW(),
                 ping_count    = sdk_telemetry.ping_count + 1,

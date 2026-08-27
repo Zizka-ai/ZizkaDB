@@ -1,6 +1,6 @@
 {
   "name": "zizkadb-sdk",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Self-hosted audit trail for AI agents — prove why an agent did something with causal lineage (why()), time-travel state, and drift baselines.",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

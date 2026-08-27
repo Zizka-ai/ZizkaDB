@@ -113,6 +113,9 @@ for i in $(seq 1 60); do
   fi
 done
 
+curl -fsSL "${BASE}/scripts/telemetry-install-ping.sh" -o "${INSTALL_DIR}/telemetry-install-ping.sh"
+bash "${INSTALL_DIR}/telemetry-install-ping.sh" docker oss || true
+
 run_demo
 
 echo "  Stop:  cd ${INFRA} && docker compose -f docker-compose.quickstart.yml down"

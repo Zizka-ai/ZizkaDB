@@ -85,7 +85,6 @@ function _sendTelemetry(mode: 'cloud' | 'self-hosted'): void {
     typeof process !== 'undefined' &&
     /^(false|0|no|off)$/i.test(process.env.ZIZKADB_TELEMETRY ?? '')
   ) return
-  if (mode === 'self-hosted' || _isLocalSelfHost()) return
 
   _telemetrySent = true
 
@@ -224,6 +223,7 @@ export class ZizkaDB {
     }
 
     this.telemetryMode = config.host ? 'self-hosted' : 'cloud'
+    _sendTelemetry(this.telemetryMode)
   }
 
   // ─────────────────────────────────────────
@@ -244,7 +244,6 @@ export class ZizkaDB {
       sequence_no: number
       checksum: string
     }
-    _sendTelemetry(this.telemetryMode)
     const result = {
       eventId: res.event_id,
       timestamp: new Date(res.timestamp),
