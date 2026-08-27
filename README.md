@@ -39,6 +39,8 @@ Open-source **audit trail for AI agents** — causal lineage, session replay, an
 - **Not a trace UI.** Built to **audit** production agents: replay sessions, compare baselines, prove what changed after a deploy.
 - **Local-first & free.** OSS stack on your machine — Docker quickstart, no signup, no API key on `localhost`.
 
+<a id="start-in-60-seconds-no-repo-clone"></a>
+
 ## See it in action
 
 **Get started (2 minutes)** — requires [Docker](https://docs.docker.com/get-docker/):
@@ -58,9 +60,11 @@ Logged chain. Walking back with db.why():
 tool_call · lookup_order · ORD-8842
   └── llm_response · gpt-4o
         └── user_message · Why was my order delayed?
+  → zizkadb why <event_id>    # printed after each db.log() on localhost
 
 ✓ Done — open the dashboard to explore this agent:
-  http://localhost:3001/login → Open my dashboard →
+  http://localhost:3001/dashboard/activity?agent=support-bot
+  CLI:  zizkadb why <event_id>
 ```
 
 **Works with:** Python · TypeScript · LangChain · CrewAI · Cursor / Claude MCP · REST · any HTTP client
@@ -133,7 +137,7 @@ flowchart BT
 | **① What it is** | ZizkaDB stores every agent step as a **linked event** — not scattered logs. Trace decisions with **`why()`**, rewind with **`at()`**, search history in plain English, and catch **behavioral drift** before users notice. You run the full stack: API + dashboard + SDKs. |
 | **② How to integrate** | Run locally: `curl -fsSL …/quickstart-remote.sh \| bash` then `pip install zizkadb-sdk` (or TS / MCP / REST). Link events with `parent_id` so `why()` can walk the chain. → **[Full connect guide](CONNECT.md)** |
 | **③ Documentation** | [START_HERE.md](START_HERE.md) · [CONNECT.md](CONNECT.md) · [worked example](worked/01-support-order-delay/) · [Examples](examples/) · [Self-hosting](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) |
-| **④ Live dashboard** | **[localhost:3001/login](http://localhost:3001/login)** → **Open my dashboard** (no signup). Log from SDK → refresh → see sessions live. |
+| **④ Live dashboard** | **[Activity → support-bot](http://localhost:3001/dashboard/activity?agent=support-bot)** (after login gate). Log from SDK → refresh → see sessions live. |
 
 **Quickstart** — ~2 min cached · ~5–10 min first Docker image pull
 
@@ -370,7 +374,22 @@ No. The local stack uses a built-in dev key on `http://localhost:8000`. Open the
 <details>
 <summary><strong>How is this different from LangSmith / Langfuse?</strong></summary>
 
-Those tools **observe** traces and spans. ZizkaDB is built to **audit** agent behavior: causal `parent_id` chains, session replay, drift baselines, and time-travel state — optimized for *why did production behavior change?* See [wiki comparisons](https://github.com/Zizka-ai/ZizkaDB/wiki).
+Those tools **observe** traces and spans. ZizkaDB is built to **audit** agent behavior on **your Postgres**: explicit `parent_id` chains, `why()` in one call, session replay, drift baselines, and time-travel state — optimized for *why did production behavior change?* Self-host the full stack under AGPL with no trace billing.
+
+| | Span tracers (Langfuse, etc.) | ZizkaDB |
+|---|---|---|
+| Causal proof | Infer from span tree | `db.why(event_id)` walks `parent_id` |
+| Agent state at T | — | `db.at(agent, timestamp)` |
+| Self-hosted audit DB | Partial / trace store | Full product (API + dashboard) |
+
+See [wiki comparisons](https://github.com/Zizka-ai/ZizkaDB/wiki).
+
+</details>
+
+<details>
+<summary><strong>What are the <code>→ zizkadb why</code> lines after <code>db.log()</code>?</strong></summary>
+
+On **localhost**, the Python SDK prints a CLI hint after each successful log so you can inspect causality immediately. Disable with `export ZIZKADB_QUIET=1`. Force on cloud with `export ZIZKADB_LOG_HINTS=1`.
 
 </details>
 
