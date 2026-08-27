@@ -2,9 +2,9 @@
 
 # ZizkaDB
 
-**Don't observe — audit your AI agent.**
+**When your agent misbehaves, see why — in one command or one click.**
 
-Open-source **audit trail for AI agents** — causal lineage, session replay, and drift detection for **LangChain**, **CrewAI**, **Cursor**, and any agent stack. Trace **why** a decision happened instead of grepping scattered logs.
+Self-hosted audit trail for AI agents. Pick any step → run **`db.why()`** or open **Why?** in the dashboard → walk back to the user message or decision that caused it.
 
 **Free · self-host · no signup required**
 
@@ -22,22 +22,48 @@ Open-source **audit trail for AI agents** — causal lineage, session replay, an
 </div>
 
 <p align="center">
-  <a href="#open-source-self-host">
-    <img src="docs/assets/readme-hero-causal-graph.png" alt="ZizkaDB causal audit graph — user_message to llm_response to tool_call with db.why() walking backward to root cause" width="100%"/>
+  <a href="#the-feature-why">
+    <img src="docs/assets/readme-hero-causal-graph.png" alt="Why feature — db.why(event_id) walks from tool_call back to user_message with root cause in one call" width="100%"/>
   </a>
+</p>
+
+## The feature: Why?
+
+**Question every agent team asks:** *Why did it say that? Why did it call that tool?*
+
+| Typical logs / traces | ZizkaDB **Why?** |
+|---|---|
+| Grep and guess which span mattered | One command: `db.why(event_id)` |
+| Flat events with no causality | Linked chain via `parent_id` |
+| Share a screenshot of noise | Share the decision tree |
+
+**Terminal** (after quickstart):
+
+```bash
+zizkadb why <event_id>     # or: (await db.why(event_id)).print()
+```
+
+**Dashboard** (same data): Activity → click any event → **Why? (causal)** tab.
+
+<p align="center">
+  <a href="http://localhost:3001/dashboard/activity?agent=support-bot">
+    <img src="docs/assets/gallery-why.png" alt="Terminal output — db.why() walks from tool_call to llm_response to user_message" width="640"/>
+  </a>
+  <br/>
+  <sub>Same <strong>Why?</strong> chain in the CLI and dashboard — self-host on your Postgres under AGPL</sub>
 </p>
 
 <p align="center">
   <a href="http://localhost:3001/login">
-    <img src="docs/assets/readme-hero-dashboard.png" alt="ZizkaDB dashboard — Activity feed, Reports, AI Suggestions, and Agent Behavior after quickstart" width="100%"/>
+    <img src="docs/assets/readme-hero-dashboard.png" alt="ZizkaDB dashboard — click an event and open the Why (causal) tab" width="100%"/>
   </a>
   <br/>
-  <sub><strong>Live product UI</strong> after <code>quickstart</code> — replay sessions, drift baselines, fix suggestions</sub>
+  <sub>After <code>quickstart</code> — Activity feed, then <strong>Why? (causal)</strong> on any event. Drift &amp; reports are optional extras.</sub>
 </p>
 
-- **Causal chains, not log dumps.** Link steps with `parent_id`, then walk backward with `why()` — root cause in one call, not manual correlation.
-- **Not a trace UI.** Built to **audit** production agents: replay sessions, compare baselines, prove what changed after a deploy.
-- **Local-first & free.** OSS stack on your machine — Docker quickstart, no signup, no API key on `localhost`.
+- **One feature, two surfaces.** CLI (`why()` / `zizkadb why`) and dashboard (**Why?** tab) — same causal chain.
+- **Self-hosted by default.** Docker quickstart, no signup, no API key on `localhost`.
+- **Adapters:** LangChain · CrewAI · Cursor MCP · Python · TypeScript · REST.
 
 <a id="start-in-60-seconds-no-repo-clone"></a>
 
@@ -67,20 +93,27 @@ tool_call · lookup_order · ORD-8842
   CLI:  zizkadb why <event_id>
 ```
 
-**Works with:** Python · TypeScript · LangChain · CrewAI · Cursor / Claude MCP · REST · any HTTP client
+**Works with:** Python · TypeScript · LangChain · CrewAI · Cursor / Claude MCP · REST
+
+**Then in the dashboard:** open agent **support-bot** → click `tool_call` → **Why? (causal)**.
 
 ---
 
-## What you get
+## Also included
 
-| Capability | What you get |
+<details>
+<summary><strong>Drift, time-travel, search, MCP — expand</strong></summary>
+
+| Capability | What it does |
 |---|---|
-| **Causal lineage** | `db.why(event_id)` walks from any step back to the user message |
-| **Session replay** | Full agent run in the dashboard — Activity, Behavior, Reports |
-| **Drift baselines** | `db.baseline(agent)` flags when answers change vs past sessions |
+| **Session replay** | Full agent run in Activity / Sessions |
+| **Drift baselines** | `db.baseline(agent)` — behavior changed vs past sessions |
 | **Time travel** | `db.at(agent, timestamp)` — what the agent knew at decision time |
-| **Semantic search** | Plain-English search over agent history (`db.search()`) |
-| **Editor integration** | MCP tools in Cursor — audit from chat without rewriting your app |
+| **Semantic search** | `db.search()` — plain-English history search |
+| **Editor integration** | MCP in Cursor — audit without rewriting your app |
+| **GDPR erasure** | `db.forget()` — delete by metadata filter |
+
+</details>
 
 ## Observe vs audit
 
@@ -99,8 +132,7 @@ flowchart BT
   T -.->|db.why| U
 ```
 
-> **New here?** You do **not** need to understand this whole repo.  
-> Copy the command above → see an audit trail in your terminal → open the dashboard.  
+> **New here?** Run the quickstart → run **`zizkadb demo`** → see **Why?** in the terminal → click the same event in the dashboard.  
 > Managed cloud (Pro / Team) is optional — **[jump to OSS details ↓](#open-source-self-host)**
 
 <br/>
