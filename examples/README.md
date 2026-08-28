@@ -19,6 +19,7 @@ zizkadb init my-agent --template mcp-cursor # ~/.cursor/mcp.json
 | [openai-agent](openai-agent/) | AsyncOpenAI causal logging |
 | [langchain-agent](langchain-agent/) | LangChain callbacks |
 | [crewai-agent](crewai-agent/) | CrewAI kickoff + output |
+| [livekit-agent](livekit-agent/) | LiveKit voice call → Sessions + Events (transcript only) |
 | [mcp-cursor](mcp-cursor/) | MCP config for Cursor |
 
 ## Local API

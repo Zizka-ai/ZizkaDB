@@ -30,6 +30,7 @@ _SDK_DIST_NAMES: dict[str, str] = {
     "langchain": "zizkadb-langchain",
     "crewai": "zizkadb-crewai",
     "mcp": "zizkadb-mcp",
+    "livekit": "zizkadb-livekit",
 }
 
 

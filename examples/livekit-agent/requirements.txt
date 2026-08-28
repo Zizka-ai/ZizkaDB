@@ -1,0 +1,6 @@
+# LiveKit Agents + ZizkaDB (transcript-only, no audio stored in ZizkaDB)
+zizkadb-sdk>=0.2.7
+livekit-agents>=1.3.0
+# Pin your STT/LLM/TTS plugins as needed, e.g.:
+# livekit-plugins-openai
+# livekit-plugins-deepgram
