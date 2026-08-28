@@ -194,7 +194,7 @@ async def test_tenant_wide_key_cannot_send_a2a_message():
 
 
 @pytest.mark.asyncio
-async def test_recipient_must_exist(mock_pool):
+async def test_recipient_must_exist(mock_pool, mock_write_event):
     mock_pool.fetchval.return_value = None
 
     body = A2AMessageRequest(
@@ -209,6 +209,8 @@ async def test_recipient_must_exist(mock_pool):
         )
 
     assert exc.value.status_code == 404
+    assert "agent-does-not-exist" in str(exc.value.detail)
+    mock_write_event.assert_not_awaited()
 
 
 @pytest.mark.asyncio
