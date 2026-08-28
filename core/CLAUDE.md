@@ -33,6 +33,20 @@ Under `/v1/agents`: per-agent analytics (`/stats`, `/sessions`, `/baseline`, `/b
 
 Swagger UI: `http://localhost:8000/swagger` · OpenAPI schema: `/openapi.json`
 
+### A2A (`POST /v1/a2a/messages`)
+
+SDK-only. Auth is `get_tenant`, but a **tenant-wide key or JWT without `agent_id` is 403** — the sender is never a request field.
+
+| Rule | Result |
+|---|---|
+| Sender | `tenant["agent_id"]` from an agent-scoped API key |
+| Extra JSON (`sender_agent`, `from`, …) | Ignored; does not change sender |
+| Recipient | Must exist in the **same** `tenant_id` (`agents` lookup binds both) |
+| Unknown / other-tenant recipient | **404**, no `write_event` |
+| Self-send (`sender == recipient`) | **400** |
+
+Coverage: `core/tests/test_a2a.py`.
+
 ---
 
 ## Auth dependency decision tree

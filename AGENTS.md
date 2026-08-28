@@ -30,6 +30,8 @@ pytest core/tests/ -m "not integration" -v
 cd dashboard && npm run lint && npm test && npm run build
 ```
 
+When opening a PR, set **all** GitHub links in the same `gh pr create`: `--label` (`enhancement` / `bug` / `documentation`), `--assignee saadamjad`, `--reviewer Zizka-ai`, and `Closes #N` (or `Related to #N` if the issue must stay open). Do not leave labels, assignee, reviewer, or issue linking for a follow-up edit.
+
 See [.cursor/skills/zizkadb-test/SKILL.md](.cursor/skills/zizkadb-test/SKILL.md).
 
 ## Integrating ZizkaDB into user agents (product)
