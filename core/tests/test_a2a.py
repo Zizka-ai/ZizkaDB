@@ -237,6 +237,38 @@ async def test_cross_tenant_recipient_is_rejected(mock_pool):
     assert "agent_id = $2" in sql
     assert tenant_id == "tenant-1"
     assert recipient == "agent-other-tenant"
+    mock_pool.fetchval.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_recipient_lookup_ignores_tenant_id_in_payload(
+    mock_pool,
+    mock_write_event,
+):
+    """A client-supplied tenant_id in metadata must not change the SQL bind."""
+    mock_pool.fetchval.return_value = None
+
+    body = A2AMessageRequest(
+        recipient_agent="agent-other-tenant",
+        message="Hello",
+        metadata={"tenant_id": "tenant-other"},
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await send_message(
+            body,
+            tenant=TENANT,
+        )
+
+    assert exc.value.status_code == 404
+
+    sql, tenant_id, recipient = mock_pool.fetchval.await_args.args
+
+    assert "tenant_id = $1" in sql
+    assert tenant_id == "tenant-1"
+    assert tenant_id != "tenant-other"
+    assert recipient == "agent-other-tenant"
+    mock_write_event.assert_not_awaited()
 
 
 @pytest.mark.asyncio
