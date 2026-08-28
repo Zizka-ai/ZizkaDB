@@ -1,37 +1,55 @@
-# integrations/ — LangChain & CrewAI Adapters
+# integrations/ — Framework Adapters
 
 See root [`CLAUDE.md`](../CLAUDE.md) for full project context.
 
-Two standalone adapter packages: **`zizkadb-langchain`** and **`zizkadb-crewai`**.
+Standalone adapter packages: **`zizkadb-langchain`**, **`zizkadb-crewai`**, **`zizkadb-livekit`**.
 
 ---
 
 ## Packages
 
-Both adapters are **published on PyPI** (`zizkadb-sdk` **0.2.7**, integrations **0.1.2**), so users install directly — no git URLs.
-
 | Package | Directory | Class | PyPI (current) |
 |---|---|---|---|
-| `zizkadb-langchain` | `integrations/langchain/` | `ZizkaDBCallbackHandler` (auto callback handler) | `0.1.2` |
-| `zizkadb-crewai` | `integrations/crewai/` | `ZizkaDBCrewLogger` (kickoff/task/output logger) | `0.1.2` |
+| `zizkadb-langchain` | `integrations/langchain/` | `ZizkaDBCallbackHandler` | `0.1.2` |
+| `zizkadb-crewai` | `integrations/crewai/` | `ZizkaDBCrewLogger` | `0.1.2` |
+| `zizkadb-livekit` | `integrations/livekit/` | `ZizkaDBLiveKitObserver` | `0.1.0` |
 
 Install for users:
 ```bash
-pip install "zizkadb-sdk>=0.2.7" "zizkadb-langchain>=0.1.2"    # or zizkadb-crewai>=0.1.2
+pip install zizkadb-langchain    # or zizkadb-crewai / zizkadb-livekit
 ```
+
+Each package depends on `zizkadb-sdk>=0.2.7` — users install the framework package only.
 
 ---
 
-## Important: code lives in two places
+## LangChain & CrewAI: code lives in two places
 
-Integration source is **duplicated** — keep both in sync when editing:
+Integration source is **duplicated** for LangChain and CrewAI — keep both in sync when editing:
 
 | Standalone (this directory) | Bundled in SDK |
 |---|---|
 | `integrations/langchain/zizkadb_langchain/callbacks.py` | `sdk/python/zizkadb/integrations/langchain/callbacks.py` |
 | `integrations/crewai/zizkadb_crewai/logger.py` | `sdk/python/zizkadb/integrations/crewai/logger.py` |
 
-The SDK bundles integrations so users can `from zizkadb_langchain import ...` without a separate install. The standalone packages are published for users who only want the adapter without the full SDK.
+**LiveKit** lives only under `integrations/livekit/zizkadb_livekit/` — SDK re-exports when the package is installed.
+
+---
+
+## LiveKit usage
+
+One call → one ZizkaDB session. Transcript from LiveKit report; no audio stored.
+
+```python
+from zizkadb import ZizkaDB
+from zizkadb_livekit import ZizkaDBLiveKitObserver
+
+db = ZizkaDB(host="http://localhost:8000")
+observer = ZizkaDBLiveKitObserver(db, agent="support-voice", session_id=f"call_{room}")
+await observer.ingest_session_report(ctx)  # wire to on_session_end
+```
+
+See [`examples/livekit-agent/`](../examples/livekit-agent/) and [`docs/integrations/livekit.md`](../docs/integrations/livekit.md).
 
 ---
 
@@ -91,7 +109,7 @@ third-party integrations.
 ## Dev install (monorepo)
 
 ```bash
-pip install -e sdk/python -e integrations/langchain -e integrations/crewai
+pip install -e sdk/python -e integrations/langchain -e integrations/crewai -e integrations/livekit
 ```
 
 ---

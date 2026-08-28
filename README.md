@@ -71,15 +71,15 @@ async def main():
 asyncio.run(main())
 ```
 
-Full guides: **[CONNECT.md](CONNECT.md)** · [LangChain](CONNECT.md#langchain) · [CrewAI](CONNECT.md#crewai) · [MCP / Cursor](mcp/README.md)
+Full guides: **[CONNECT.md](CONNECT.md)** · [LangChain](CONNECT.md#langchain) · [CrewAI](CONNECT.md#crewai) · [LiveKit (voice)](CONNECT.md#livekit-agents-voice) · [MCP / Cursor](mcp/README.md)
 
 ---
 
 ## Integrations
 
-| Python | TypeScript | LangChain | CrewAI | MCP | REST |
-| :---: | :---: | :---: | :---: | :---: | :---: |
-| [`zizkadb-sdk`](https://pypi.org/project/zizkadb-sdk/) | [`zizkadb-sdk`](https://www.npmjs.com/package/zizkadb-sdk) | [`zizkadb-langchain`](https://pypi.org/project/zizkadb-langchain/) | [`zizkadb-crewai`](https://pypi.org/project/zizkadb-crewai/) | `uvx zizkadb-mcp` | [Swagger](https://db.zizka.ai/swagger) |
+| Python | TypeScript | LangChain | CrewAI | LiveKit | MCP | REST |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| [`zizkadb-sdk`](https://pypi.org/project/zizkadb-sdk/) | [`zizkadb-sdk`](https://www.npmjs.com/package/zizkadb-sdk) | [`zizkadb-langchain`](https://pypi.org/project/zizkadb-langchain/) | [`zizkadb-crewai`](https://pypi.org/project/zizkadb-crewai/) | [`zizkadb-livekit`](https://pypi.org/project/zizkadb-livekit/) | `uvx zizkadb-mcp` | [Swagger](https://db.zizka.ai/swagger) |
 
 Scaffold a project: `zizkadb init my-agent --template basic`
 

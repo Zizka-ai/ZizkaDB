@@ -1,6 +1,6 @@
 # Connect your agent (self-host / OSS)
 
-**Current PyPI releases:** `zizkadb-sdk` **0.2.7** · `zizkadb-mcp` **0.1.6** · `zizkadb-langchain` **0.1.2** · `zizkadb-crewai` **0.1.2**
+**Current PyPI releases:** `zizkadb-sdk` **0.2.7** · `zizkadb-mcp` **0.1.6** · `zizkadb-langchain` **0.1.2** · `zizkadb-crewai` **0.1.2** · `zizkadb-livekit` **0.1.0**
 
 ## Start the stack (pick one)
 
@@ -132,6 +132,51 @@ logger = ZizkaDBCrewLogger(db, agent="my-bot")
 ```
 
 Or scaffold: `zizkadb init my-agent --template crewai`
+
+---
+
+## LiveKit Agents (voice)
+
+One **LiveKit call** → one **ZizkaDB session** in Activity. Transcript text is copied from LiveKit at call end — **no audio** stored in ZizkaDB.
+
+```bash
+pip install "zizkadb-livekit>=0.1.0"
+```
+
+```python
+import os
+from livekit.agents import AgentServer, JobContext, AgentSession, Agent
+from zizkadb import ZizkaDB
+from zizkadb_livekit import ZizkaDBLiveKitObserver
+
+server = AgentServer()
+_observer: ZizkaDBLiveKitObserver | None = None
+
+async def on_session_end(ctx: JobContext) -> None:
+    if _observer is not None:
+        await _observer.ingest_session_report(ctx)
+
+@server.rtc_session(agent_name="support-voice", on_session_end=on_session_end)
+async def entrypoint(ctx: JobContext):
+    global _observer
+    await ctx.connect()
+
+    db = ZizkaDB(host=os.getenv("ZIZKADB_HOST", "http://localhost:8000"))
+    _observer = ZizkaDBLiveKitObserver(
+        db,
+        agent=os.getenv("ZIZKADB_AGENT", "support-voice"),
+        session_id=f"call_{ctx.room.name}",
+    )
+    await _observer.log_session_started(room=ctx.room.name, job_id=ctx.job.id)
+
+    session = AgentSession(...)  # your STT / LLM / TTS
+    _observer.attach(session, job_ctx=ctx)  # optional realtime turns
+    await session.start(agent=Agent(instructions="..."), room=ctx.room)
+```
+
+After a test call: **Activity → support-voice → Sessions** — same event types as text agents (`user_message`, `assistant_response`, `tool_call`, `session_ended`).
+
+Full sample: [examples/livekit-agent/](examples/livekit-agent/) · package docs: [integrations/livekit/](integrations/livekit/)
 
 ---
 

@@ -33,7 +33,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r core/requirements.txt -r core/requirements-dev.txt
           pip install "mcp[cli]>=1.0.0,<2.0.0"
-          pip install -e sdk/python -e integrations/langchain -e integrations/crewai -e mcp
+          pip install -e sdk/python -e integrations/langchain -e integrations/crewai -e integrations/livekit -e mcp
 
       - name: Ruff lint
         run: ruff check core sdk/python mcp integrations

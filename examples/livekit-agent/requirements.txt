@@ -1,0 +1,5 @@
+# LiveKit Agents + ZizkaDB (transcript-only)
+zizkadb-livekit>=0.1.0
+# Pin your STT/LLM/TTS plugins as needed, e.g.:
+# livekit-plugins-openai
+# livekit-plugins-deepgram
