@@ -178,7 +178,10 @@ async def test_metadata_sender_does_not_override_authenticated_agent(
 
 
 @pytest.mark.asyncio
-async def test_tenant_wide_key_cannot_send_a2a_message():
+async def test_tenant_wide_key_cannot_send_a2a_message(
+    mock_pool,
+    mock_write_event,
+):
     body = A2AMessageRequest(
         recipient_agent="agent-b",
         message="Hello",
@@ -191,6 +194,51 @@ async def test_tenant_wide_key_cannot_send_a2a_message():
         )
 
     assert exc.value.status_code == 403
+    assert "agent-scoped" in str(exc.value.detail).lower()
+    mock_pool.fetchval.assert_not_called()
+    mock_write_event.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_empty_agent_id_cannot_send_a2a_message(
+    mock_pool,
+    mock_write_event,
+):
+    body = A2AMessageRequest(
+        recipient_agent="agent-b",
+        message="Hello",
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await send_message(
+            body,
+            tenant={"tenant_id": "tenant-1", "agent_id": ""},
+        )
+
+    assert exc.value.status_code == 403
+    mock_pool.fetchval.assert_not_called()
+    mock_write_event.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_dashboard_jwt_without_agent_cannot_send_a2a_message(
+    mock_pool,
+    mock_write_event,
+):
+    body = A2AMessageRequest(
+        recipient_agent="agent-b",
+        message="Hello",
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await send_message(
+            body,
+            tenant={"tenant_id": "tenant-1", "user_id": "user-1"},
+        )
+
+    assert exc.value.status_code == 403
+    mock_pool.fetchval.assert_not_called()
+    mock_write_event.assert_not_awaited()
 
 
 @pytest.mark.asyncio

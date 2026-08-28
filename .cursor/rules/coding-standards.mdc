@@ -52,3 +52,14 @@ cd dashboard && npm run lint && npm test && npm run build
 ```
 
 See `.cursor/skills/zizkadb-test/SKILL.md` for the full matrix.
+
+## Opening a GitHub PR
+
+Fill every sidebar field in the **same** `gh pr create` (not a later `gh pr edit`):
+
+- `--label` — `enhancement`, `bug`, and/or `documentation` (add `documentation` when KB/ADR/`CLAUDE.md` changed). Never `good first issue` on PRs.
+- `--assignee saadamjad`
+- `--reviewer Zizka-ai`
+- Body includes `Closes #N` when this PR completes the issue, or `Related to #N` when it must not auto-close.
+- Footer: **Made with [Cursor](https://cursor.com) and Saad**
+- Never `git push` to `main`. Never `gh pr merge`.
