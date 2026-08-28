@@ -56,7 +56,7 @@ If your app logs to **different agent ids** per user (e.g. `conv-alice`, `conv-b
 | `ZIZKADB_HOST` | Self-hosted API URL |
 | `ZIZKADB_TELEMETRY` | Set `false` to opt out (anonymous ping on client construct) |
 
-Core HTTP client only — LangChain and CrewAI adapters are Python packages (`zizkadb-langchain`, `zizkadb-crewai`).
+Core HTTP client only — LangChain, CrewAI, and LiveKit adapters are Python packages (`zizkadb-langchain`, `zizkadb-crewai`, `zizkadb-livekit`).
 
 ## Links
 

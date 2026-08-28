@@ -32,7 +32,7 @@ chain.print()
 | `ZIZKADB_HOST` | Self-hosted URL |
 | `ZIZKADB_TELEMETRY` | Set `false` to opt out |
 
-Core HTTP client only — LangChain and CrewAI adapters are Python packages (`zizkadb-langchain`, `zizkadb-crewai`).
+Core HTTP client only — LangChain, CrewAI, and LiveKit adapters are Python packages (`zizkadb-langchain`, `zizkadb-crewai`, `zizkadb-livekit`).
 
 ## Self-hosted
 

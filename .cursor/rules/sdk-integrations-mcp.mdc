@@ -39,21 +39,13 @@ const baseline = await db.baseline({ agent: 'my-bot' })
 
 ## Integrations (`integrations/`)
 
-Two standalone packages: `zizkadb-langchain` and `zizkadb-crewai`. **Published on PyPI** — `pip install zizkadb-langchain zizkadb-crewai`.
+Three standalone packages: `zizkadb-langchain`, `zizkadb-crewai`, `zizkadb-livekit`. **Published on PyPI**.
 
-### Critical: code lives in two places — keep both in sync
-
-| Standalone (published package) | Bundled in SDK |
-|---|---|
-| `integrations/langchain/zizkadb_langchain/callbacks.py` | `sdk/python/zizkadb/integrations/langchain/callbacks.py` |
-| `integrations/crewai/zizkadb_crewai/logger.py` | `sdk/python/zizkadb/integrations/crewai/logger.py` |
-
-When editing integration logic, update both locations.
-
-Dev monorepo install:
-```bash
-pip install -e sdk/python -e integrations/langchain -e integrations/crewai
-```
+| Package | Class | Notes |
+|---|---|---|
+| `zizkadb-langchain` | `ZizkaDBCallbackHandler` | Duplicated in SDK — keep both in sync |
+| `zizkadb-crewai` | `ZizkaDBCrewLogger` | Duplicated in SDK — keep both in sync |
+| `zizkadb-livekit` | `ZizkaDBLiveKitObserver` | Standalone only — `integrations/livekit/` |
 
 ## MCP Server (`mcp/`)
 
@@ -78,6 +70,7 @@ Cursor/Claude Desktop config: `.cursor/mcp.json.example`.
 - `openai-agent/` — OpenAI function calling
 - `langchain-agent/` — LangChain with `ZizkaDBCallbackHandler`
 - `crewai-agent/` — CrewAI with `ZizkaDBCrewLogger`
+- `livekit-agent/` — LiveKit voice with `ZizkaDBLiveKitObserver`
 - `mcp-cursor/` — Cursor MCP config
 
 Import paths in examples use standalone package names:

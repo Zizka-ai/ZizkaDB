@@ -15,7 +15,7 @@ ZizkaDB is a causal event database for AI agents. It lets you log every agent ac
 | Dashboard | Next.js 14 App Router | `dashboard/app/` |
 | Python SDK | `zizkadb-sdk` (PyPI) | `sdk/python/zizkadb/client.py` |
 | TypeScript SDK | `zizkadb-sdk` (npm) | `sdk/typescript/src/index.ts` |
-| Integrations | `zizkadb-langchain`, `zizkadb-crewai` | `integrations/` (standalone) + `sdk/python/zizkadb/integrations/` (bundled) |
+| Integrations | `zizkadb-langchain`, `zizkadb-crewai`, `zizkadb-livekit` | `integrations/` (standalone) + LangChain/CrewAI bundled in `sdk/python/zizkadb/integrations/` |
 | MCP server | `zizkadb-mcp` (PyPI, **MIT**) | `mcp/zizkadb_mcp/server.py` |
 | Infra | Docker Compose | `infra/docker-compose.yml` (prod) + `infra/docker-compose.dev.yml` (dev overlay) |
 | CI | GitHub Actions | `.github/workflows/ci.yml` (lint+tests+vitest) · `integration.yml` (weekly stack) · `publish-images.yml` (GHCR on `v*` tag) |

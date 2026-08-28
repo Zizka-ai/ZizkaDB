@@ -6,12 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Integrations
+
+- **`zizkadb-livekit` 0.1.0** (PyPI) — LiveKit Agents voice calls → ZizkaDB Sessions + Events (transcript only, no audio stored). Depends on `zizkadb-sdk>=0.2.7` + `livekit-agents>=1.3.0`. Docs: [docs/integrations/livekit.md](docs/integrations/livekit.md), example: [examples/livekit-agent/](examples/livekit-agent/).
+
 ## [0.2.8] — 2026-08-27
 
 ### Install telemetry (OSS adoption)
 
 - **Python SDK 0.2.7**, **TypeScript SDK 0.2.7 (npm)**, **MCP 0.1.6**, **langchain 0.1.3**, **crewai 0.1.3**: count **installs** at import/client/server start (including self-hosted localhost), not on first API call
-- Per-package telemetry keys: `python`, `langchain`, `crewai`, `mcp`, `typescript`, `docker`
+- Per-package telemetry keys: `python`, `langchain`, `crewai`, `livekit`, `mcp`, `typescript`, `docker`
 - **Docker quickstart**: anonymous install ping (`sdk=docker`, `mode=self-hosted`) after stack is healthy
 - **`sdk_telemetry`**: composite primary key `(install_id, sdk)` so Python + MCP + Docker on one machine each count separately
 
