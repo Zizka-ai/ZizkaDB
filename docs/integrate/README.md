@@ -12,6 +12,7 @@
 |-------|-------|
 | **Any framework / custom code** | [any-agent.md](any-agent.md) |
 | **What's officially supported** | [frameworks.md](frameworks.md) |
+| **LiveKit voice agents** | [integrations/livekit.md](../integrations/livekit.md) |
 | **Copy-paste quickstart** | [CONNECT.md](../../CONNECT.md) |
 
 ## Minimal Python (local)

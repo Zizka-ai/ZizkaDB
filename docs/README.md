@@ -23,8 +23,10 @@ Start here if you are not sure which file to read.
 | Guide | Status |
 |-------|--------|
 | [Any agent (framework-agnostic)](integrate/any-agent.md) | **Start here** for custom stacks |
-| [Supported vs generic frameworks](integrate/frameworks.md) | LangChain, CrewAI, LangGraph, etc. |
-| [CONNECT.md](../CONNECT.md) | Copy-paste: Python, TS, LangChain, CrewAI, MCP, REST |
+| [Supported vs generic frameworks](integrate/frameworks.md) | LangChain, CrewAI, LiveKit, LangGraph, etc. |
+| [LiveKit (voice agents)](integrations/livekit.md) | `zizkadb-livekit` — one call → one session |
+| [LangChain](integrations/langchain.md) | Callback handler package |
+| [CONNECT.md](../CONNECT.md) | Copy-paste: Python, TS, LangChain, CrewAI, LiveKit, MCP, REST |
 
 ## Source of truth
 

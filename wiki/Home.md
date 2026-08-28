@@ -11,6 +11,7 @@
 | PyPI MCP | [zizkadb-mcp](https://pypi.org/project/zizkadb-mcp/) **0.1.6** |
 | PyPI LangChain | [zizkadb-langchain](https://pypi.org/project/zizkadb-langchain/) **0.1.2** |
 | PyPI CrewAI | [zizkadb-crewai](https://pypi.org/project/zizkadb-crewai/) **0.1.2** |
+| PyPI LiveKit | [zizkadb-livekit](https://pypi.org/project/zizkadb-livekit/) **0.1.0** |
 | npm SDK | [zizkadb-sdk](https://www.npmjs.com/package/zizkadb-sdk) **0.2.7** |
 | Docs site | [db.zizka.ai/docs](https://db.zizka.ai/docs) |
 | Managed cloud (optional) | [db.zizka.ai/signup](https://db.zizka.ai/signup) |
@@ -80,6 +81,7 @@ Details: [[Agents and API Keys]]
 | Package | Install | Use |
 |---------|---------|-----|
 | Python SDK | `pip install zizkadb-sdk` | `from zizkadb import ZizkaDB` |
+| LiveKit (voice) | `pip install zizkadb-livekit` | `ZizkaDBLiveKitObserver` — one call → one session |
 | MCP server | `uvx zizkadb-mcp` | Cursor, Claude Desktop |
 | TypeScript SDK | `npm install zizkadb-sdk` | Node / Next.js apps |
 

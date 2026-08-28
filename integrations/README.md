@@ -7,6 +7,7 @@ Official adapters for agent frameworks. Each package is optional — core SDK is
 | `zizkadb-sdk` | PyPI **0.2.7** | `pip install zizkadb-sdk` | `python` | Core Python client |
 | [langchain](langchain/) | PyPI **0.1.3** | `pip install zizkadb-langchain` | `langchain` | LangChain callback handler |
 | [crewai](crewai/) | PyPI **0.1.3** | `pip install zizkadb-crewai` | `crewai` | CrewAI crew logger |
+| [livekit](livekit/) | PyPI **0.1.0** | `pip install zizkadb-livekit` | `livekit` | LiveKit voice → Sessions + Events |
 | [mcp](../mcp/) | PyPI **0.1.6** | `uvx zizkadb-mcp` | `mcp` | Cursor / Claude Desktop tools |
 | TypeScript SDK | npm **0.2.7** | `npm install zizkadb-sdk` | `typescript` | Node / Bun / Deno client |
 | Docker OSS | — | `bash scripts/quickstart.sh` | `docker` | Self-hosted stack |
@@ -25,7 +26,7 @@ export ZIZKADB_AGENT=my-bot          # must match dashboard agent name
 Monorepo dev:
 
 ```bash
-pip install -e sdk/python -e integrations/langchain -e integrations/crewai
+pip install -e sdk/python -e integrations/langchain -e integrations/crewai -e integrations/livekit
 ```
 
 Scaffold a project:

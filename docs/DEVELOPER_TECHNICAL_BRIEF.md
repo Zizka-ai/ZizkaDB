@@ -21,7 +21,7 @@
 | ZizkaDB **is** | ZizkaDB **is not** |
 |----------------|-------------------|
 | An **event store + memory layer** for agents | A vector DB you query only by embedding similarity |
-| **Framework-agnostic** (Claude, OpenAI, LangChain, custom code) | Locked to one LLM vendor or one orchestration framework |
+| **Framework-agnostic** (Claude, OpenAI, LangChain, LiveKit, custom code) | Locked to one LLM vendor or one orchestration framework |
 | **Causal** (parent → child event links) | A chat transcript dump |
 | **Self-hostable** (Docker, full features, free) | SaaS-only |
 | **Model-agnostic** for logging; embeddings use OpenAI for semantic search | A replacement for your LLM |
@@ -155,6 +155,16 @@ db = ZizkaDB(host="http://localhost:8000")  # or DEV_API_KEY for local dev
 ```
 
 **Default cloud host in SDKs:** `https://db.zizka.ai`
+
+### Framework packages (optional)
+
+| Package | Install | Use case |
+|---------|---------|----------|
+| `zizkadb-langchain` | `pip install zizkadb-langchain` | LangChain callback handler |
+| `zizkadb-crewai` | `pip install zizkadb-crewai` | CrewAI crew logger |
+| `zizkadb-livekit` | `pip install zizkadb-livekit` | LiveKit voice calls → Sessions + Events (transcript only) |
+
+Each depends on `zizkadb-sdk` — users install the framework package only.
 
 ---
 

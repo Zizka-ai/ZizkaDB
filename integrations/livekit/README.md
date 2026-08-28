@@ -1,5 +1,7 @@
 # ZizkaDB + LiveKit Agents
 
+**PyPI:** [zizkadb-livekit 0.1.0](https://pypi.org/project/zizkadb-livekit/) · depends on `zizkadb-sdk>=0.2.7` + `livekit-agents>=1.3.0`
+
 Log voice calls to ZizkaDB with the same **Activity → Sessions / Events** model as text agents.
 
 - **One `session_id` per call** (use LiveKit room name or job id)
