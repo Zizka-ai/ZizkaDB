@@ -26,6 +26,7 @@ Start here if you are not sure which file to read.
 | [Supported vs generic frameworks](integrate/frameworks.md) | LangChain, CrewAI, LiveKit, LangGraph, etc. |
 | [LiveKit (voice agents)](integrations/livekit.md) | `zizkadb-livekit` — one call → one session |
 | [LangChain](integrations/langchain.md) | Callback handler package |
+| [CrewAI](integrations/crewai.md) | Crew logger package |
 | [CONNECT.md](../CONNECT.md) | Copy-paste: Python, TS, LangChain, CrewAI, LiveKit, MCP, REST |
 
 ## Source of truth

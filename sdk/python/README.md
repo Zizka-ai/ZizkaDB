@@ -33,6 +33,16 @@ python agent.py
 
 Templates: `basic`, `openai`, `langchain`, `crewai`, `mcp-cursor`.
 
+## Framework packages (optional)
+
+| Package | Install | Use case |
+|---------|---------|----------|
+| `zizkadb-langchain` | `pip install zizkadb-langchain` | LangChain callbacks |
+| `zizkadb-crewai` | `pip install zizkadb-crewai` | CrewAI crew logger |
+| `zizkadb-livekit` | `pip install zizkadb-livekit` | LiveKit voice → Sessions + Events |
+
+See [integrations/](../integrations/) and [docs/integrations/livekit.md](../docs/integrations/livekit.md).
+
 ## Quickstart
 
 ```python

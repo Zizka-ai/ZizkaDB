@@ -41,4 +41,4 @@ One **LiveKit call** → one **ZizkaDB session** (`call_{room_name}`). Transcrip
 | `tool_call` | From session report pipeline events |
 | `session_ended` | After `make_session_report()` ingest |
 
-Package: **`zizkadb-livekit`** on PyPI (depends on `zizkadb-sdk>=0.2.7` — no 0.2.8 required).
+Package: **`zizkadb-livekit`** on [PyPI](https://pypi.org/project/zizkadb-livekit/) **0.1.0** — one install pulls `zizkadb-sdk` automatically.

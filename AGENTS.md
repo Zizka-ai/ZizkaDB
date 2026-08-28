@@ -40,3 +40,4 @@ For **using** ZizkaDB as a product (not hacking this repo), point users to:
 
 - [CONNECT.md](CONNECT.md)
 - [docs/integrate/any-agent.md](docs/integrate/any-agent.md)
+- [docs/integrations/livekit.md](docs/integrations/livekit.md) — LiveKit voice agents (`zizkadb-livekit`)

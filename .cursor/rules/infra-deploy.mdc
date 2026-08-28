@@ -69,7 +69,7 @@ There is no AWS pipeline, no CodeDeploy, no ECS task definition.
 | `scripts/quickstart-remote.sh` | OSS quickstart without cloning — downloads config only |
 | `scripts/verify-release.sh` | Pre-publish gate (must pass before `publish-packages.sh`) |
 | `scripts/publish-packages.sh` | Publish `zizkadb-sdk` (PyPI + npm) and `zizkadb-mcp` (PyPI) |
-| `scripts/publish-integrations.sh` | Publish `zizkadb-langchain` and `zizkadb-crewai` to PyPI |
+| `scripts/publish-integrations.sh` | Publish `zizkadb-langchain`, `zizkadb-crewai`, `zizkadb-livekit` to PyPI |
 | `scripts/reset-local-db.sh` | Wipe local Docker volumes — LOCAL DEV ONLY, refuses in production |
 | `scripts/smoke-test.sh` | Smoke test against a running stack |
 | `scripts/seed-support-bot-events.py` | Seed 50+ sessions for drift/baseline testing |

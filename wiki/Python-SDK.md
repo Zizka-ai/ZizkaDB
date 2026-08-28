@@ -79,6 +79,14 @@ db = ZizkaDB(host="http://localhost:8000")
 
 Localhost auto-uses dev key `zizkadb_dev_local`.
 
+## LiveKit voice agents
+
+```bash
+pip install zizkadb-livekit
+```
+
+One call → one session in Activity. Guide: [docs/integrations/livekit.md](../docs/integrations/livekit.md) · example: [examples/livekit-agent/](../examples/livekit-agent/).
+
 ## Telemetry opt-out
 
 ```bash

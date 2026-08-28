@@ -11,6 +11,8 @@ zizkadb init my-agent --template crewai     # crew logger
 zizkadb init my-agent --template mcp-cursor # ~/.cursor/mcp.json
 ```
 
+Voice agents: **`pip install zizkadb-livekit`** — see [livekit-agent/](livekit-agent/).
+
 ## In this folder
 
 | Example | Description |

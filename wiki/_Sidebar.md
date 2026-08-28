@@ -10,6 +10,7 @@
 ### Integrate
 - [Python SDK](Python-SDK)
 - [TypeScript SDK](TypeScript-SDK)
+- [LiveKit (voice)](https://github.com/Zizka-ai/ZizkaDB/blob/main/docs/integrations/livekit.md)
 - [MCP and Cursor](MCP-and-Cursor)
 - [REST API](REST-API)
 - [Multi-Agent Apps](Multi-Agent-Apps)

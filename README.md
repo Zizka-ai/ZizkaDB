@@ -9,6 +9,11 @@ Self-hosted audit trail for AI agents — one command or one dashboard click fro
 [![CI](https://github.com/Zizka-ai/ZizkaDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Zizka-ai/ZizkaDB/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/release-v0.2.7-f97316)](https://github.com/Zizka-ai/ZizkaDB/releases)
+[![Python SDK](https://img.shields.io/pypi/v/zizkadb-sdk?label=Python%20SDK)](https://pypi.org/project/zizkadb-sdk/)
+[![LangChain](https://img.shields.io/pypi/v/zizkadb-langchain?label=LangChain)](https://pypi.org/project/zizkadb-langchain/)
+[![CrewAI](https://img.shields.io/pypi/v/zizkadb-crewai?label=CrewAI)](https://pypi.org/project/zizkadb-crewai/)
+[![LiveKit](https://img.shields.io/pypi/v/zizkadb-livekit?label=LiveKit)](https://pypi.org/project/zizkadb-livekit/)
+[![MCP](https://img.shields.io/pypi/v/zizkadb-mcp?label=MCP)](https://pypi.org/project/zizkadb-mcp/)
 
 **[Try it ↓](#try-it-60-seconds)** · **[START_HERE.md](START_HERE.md)** · **[CONNECT.md](CONNECT.md)** · **[Cloud →](https://db.zizka.ai/signup)**
 
@@ -83,6 +88,14 @@ Full guides: **[CONNECT.md](CONNECT.md)** · [LangChain](CONNECT.md#langchain) �
 
 Scaffold a project: `zizkadb init my-agent --template basic`
 
+### Voice agents (LiveKit)
+
+```bash
+pip install zizkadb-livekit
+```
+
+One LiveKit call → one **Session** in Activity (transcript only, no audio in ZizkaDB). Full guide: [CONNECT.md → LiveKit](CONNECT.md#livekit-agents-voice) · [docs/integrations/livekit.md](docs/integrations/livekit.md) · [example](examples/livekit-agent/).
+
 ---
 
 <details>
@@ -127,6 +140,9 @@ No — `http://localhost:8000` uses a built-in dev key. Dashboard: [localhost:30
 **How is this different from Langfuse / LangSmith?**  
 They **observe** span trees. ZizkaDB **audits** with explicit `parent_id` chains and `db.why()` on your Postgres — self-host under AGPL, no trace billing.
 
+**Voice agents with LiveKit?**  
+Install **`zizkadb-livekit`** — one pip command, connect to Docker with `ZIZKADB_HOST=http://localhost:8000`. See [LiveKit guide](CONNECT.md#livekit-agents-voice).
+
 **`zizkadb demo` connection refused?**  
 Start the stack: `curl -fsSL …/quickstart-remote.sh | bash` or `bash scripts/setup-local.sh`.
 
@@ -138,7 +154,8 @@ Start the stack: `curl -fsSL …/quickstart-remote.sh | bash` or `bash scripts/s
 | | |
 | --- | --- |
 | Worked example | [worked/01-support-order-delay](worked/01-support-order-delay/) |
-| Examples | [examples/](examples/) |
+| Examples | [examples/](examples/) — includes [LiveKit voice agent](examples/livekit-agent/) |
+| LiveKit integration | [docs/integrations/livekit.md](docs/integrations/livekit.md) |
 | Self-hosting | [wiki/Self-Hosting](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) |
 | Integrate any agent | [docs/integrate/](docs/integrate/) |
 | Issues · Discussions | [Issues](https://github.com/Zizka-ai/ZizkaDB/issues) · [Discussions](https://github.com/Zizka-ai/ZizkaDB/discussions) |
