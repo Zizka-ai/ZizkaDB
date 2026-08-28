@@ -120,6 +120,63 @@ async def test_sender_is_derived_from_authenticated_agent(
     assert kwargs["data"]["sender_agent"] == "agent-a"
 
 
+def test_a2a_request_model_has_no_sender_field():
+    """Clients cannot declare a sender — it is not part of the request schema."""
+    assert "sender_agent" not in A2AMessageRequest.model_fields
+    assert "agent_id" not in A2AMessageRequest.model_fields
+
+
+@pytest.mark.asyncio
+async def test_extra_sender_fields_cannot_spoof_authenticated_agent(
+    mock_pool,
+    mock_write_event,
+):
+    """Extra JSON like sender_agent / agent_id must not override the scoped key."""
+    mock_pool.fetchval.return_value = 1
+
+    body = A2AMessageRequest.model_validate(
+        {
+            "recipient_agent": "agent-b",
+            "message": "spoof attempt",
+            "sender_agent": "agent-evil",
+            "agent_id": "agent-evil",
+            "from": "agent-evil",
+        }
+    )
+
+    assert "sender_agent" not in body.model_fields_set
+    assert "agent_id" not in body.model_fields_set
+
+    result = await send_message(body, tenant=TENANT)
+
+    assert result["sender_agent"] == "agent-a"
+    kwargs = mock_write_event.await_args.kwargs
+    assert kwargs["agent"] == "agent-a"
+    assert kwargs["data"]["sender_agent"] == "agent-a"
+
+
+@pytest.mark.asyncio
+async def test_metadata_sender_does_not_override_authenticated_agent(
+    mock_pool,
+    mock_write_event,
+):
+    mock_pool.fetchval.return_value = 1
+
+    body = A2AMessageRequest(
+        recipient_agent="agent-b",
+        message="Hello",
+        metadata={"sender_agent": "agent-evil", "agent_id": "agent-evil"},
+    )
+
+    result = await send_message(body, tenant=TENANT)
+
+    assert result["sender_agent"] == "agent-a"
+    kwargs = mock_write_event.await_args.kwargs
+    assert kwargs["agent"] == "agent-a"
+    assert kwargs["data"]["sender_agent"] == "agent-a"
+    assert kwargs["metadata"]["sender_agent"] == "agent-evil"
+
+
 @pytest.mark.asyncio
 async def test_tenant_wide_key_cannot_send_a2a_message():
     body = A2AMessageRequest(
