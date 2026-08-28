@@ -11,7 +11,6 @@ Log voice calls to ZizkaDB with the same **Activity → Sessions / Events** mode
 
 ```bash
 pip install "zizkadb-livekit>=0.1.0"
-# or from monorepo: pip install -e integrations/livekit
 ```
 
 Start ZizkaDB (Docker quickstart):

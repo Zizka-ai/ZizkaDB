@@ -63,8 +63,6 @@ class ZizkaDBLiveKitObserver:
         self._last_result: LogResult | None = None
         self._report_ingested = False
 
-    # ── Session lifecycle ───────────────────────────────────────────────────
-
     async def log_session_started(
         self,
         *,
@@ -111,13 +109,7 @@ class ZizkaDBLiveKitObserver:
         self._session_ended = True
         return result
 
-    # ── LiveKit hooks ─────────────────────────────────────────────────────
-
     def attach(self, session: Any, job_ctx: Any | None = None) -> None:
-        """
-        Subscribe to conversation_item_added for optional realtime logging.
-        Authoritative transcript ingest still happens in ingest_session_report().
-        """
         if self._realtime_attached:
             return
 
@@ -137,7 +129,6 @@ class ZizkaDBLiveKitObserver:
         self._realtime_attached = True
 
     async def ingest_session_report(self, ctx: Any) -> list[LogResult]:
-        """Call from on_session_end: ctx.make_session_report().to_dict() → ZizkaDB."""
         make_report = getattr(ctx, "make_session_report", None)
         if make_report is None:
             raise TypeError("ctx must provide make_session_report() (LiveKit JobContext)")
@@ -148,10 +139,6 @@ class ZizkaDBLiveKitObserver:
         return await self.ingest_report(to_dict())
 
     async def ingest_report(self, report: dict[str, Any]) -> list[LogResult]:
-        """
-        Ingest a finalized LiveKit session report (transcript + backend events).
-        Idempotent per chat item id via metadata.livekit_item_id.
-        """
         report = normalize_report(report)
         results: list[LogResult] = []
         backfill_only = self._report_ingested
@@ -273,8 +260,6 @@ class ZizkaDBLiveKitObserver:
             data=data,
             parent_id=parent_id or self.last_event_id,
         )
-
-    # ── Internal ────────────────────────────────────────────────────────────
 
     async def _on_conversation_item(self, ev: Any) -> None:
         item = getattr(ev, "item", None)

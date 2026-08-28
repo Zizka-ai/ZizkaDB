@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from zizkadb.integrations.livekit.observer import ZizkaDBLiveKitObserver
+from zizkadb_livekit import ZizkaDBLiveKitObserver
 
 
 def _make_db(event_ids: list[str] | None = None) -> MagicMock:

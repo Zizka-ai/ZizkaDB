@@ -18,7 +18,7 @@ import os
 
 from livekit.agents import Agent, AgentServer, JobContext, AgentSession
 from zizkadb import ZizkaDB
-from zizkadb.integrations.livekit import ZizkaDBLiveKitObserver
+from zizkadb_livekit import ZizkaDBLiveKitObserver
 
 server = AgentServer()
 
