@@ -2,7 +2,7 @@
 
 > Single source of truth for the Dashboard module. Reverse-engineered directly from the codebase.
 >
-> **Last verified:** 2026-08-27 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
+> **Last verified:** 2026-08-30 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
 >
 > **OSS scope:** This repo ships the tenant dashboard and public marketing/community surfaces. The managed-cloud **operator admin console** (`/admin`, `/v1/admin/*`) is **not** in this tree — §16 / §20.5 admin sections are historical reference only.
 >
@@ -119,6 +119,7 @@ dashboard/
 │   │                        # EventList, EventDetailPanel, EventsSegment,
 │   │                        # SessionsSegment, TimeTravelSegment, BehaviorPanel,
 │   │                        # FleetTable, AgentKeysSection
+│   ├── auth/OtpForm.tsx      # Shared login/signup email + OTP (intent-scoped)
 │   ├── TenantPlanBanner.tsx, ApiKeyUsage.tsx
 │   ├── ConnectionStatus.tsx (+ GettingStartedChecklist)
 │   ├── SiteNav.tsx, BrandLogo.tsx, AgentApiKeys.tsx, brand.ts
@@ -301,7 +302,7 @@ There is a **separate** lead-capture path (`lib/demo.ts` → `submitDemoRequest`
 
 **Auth model:** passwordless email OTP for managed cloud; `POST /v1/auth/request-otp` then `/verify-otp` returns a JWT (`access_token`, 7-day TTL per `TOKEN_MAX_AGE_SEC`). Self-host DEV_MODE offers `POST /v1/auth/dev-token`.
 
-**Signup vs login:** Both flows use `intent` on `requestOtp` / `verifyOtp` (`login` | `signup`, default `login`). Login request-otp returns **404** when no account exists; signup returns **409** when the email is already registered. Login verify only succeeds for existing users; signup requires `gdpr_consent=true` and creates a new tenant/user. OTP is consumed atomically inside the verify transaction (invalid OTP or pre-check failures do not burn the code). After success, auth uses `window.location.assign` (hard redirect) to avoid stuck OTP screens. Helpers: `lib/auth-errors.ts`, `lib/signup-funnel.ts`, `hooks/useResendCooldown.ts` (60s resend cooldown on login and signup).
+**Signup vs login:** Both flows use `intent` on `requestOtp` / `verifyOtp` (`login` | `signup`, default `login`). Login request-otp returns **404** when no account exists; signup returns **409** when the email is already registered. Login verify only succeeds for existing users; signup requires `gdpr_consent=true` and creates a new tenant/user. OTP is consumed atomically inside the verify transaction (invalid OTP or pre-check failures do not burn the code). After success, auth uses `window.location.assign` (hard redirect) to avoid stuck OTP screens. Helpers: `lib/auth-errors.ts`, `lib/signup-funnel.ts`, `hooks/useResendCooldown.ts` (60s resend cooldown), shared `<OtpForm intent>` (`components/auth/OtpForm.tsx`). `requestOtp` payloads stay separate (`login` vs `signup`).
 
 **Billing / trial (no payment provider):** signup OTP verify sets `plan=pro` (if unset), `subscription_status=trialing`, `trial_ends_at=+30d` (also converts legacy `pending_checkout` rows). `postAuthRedirect()` always returns `/dashboard`. `getBillingStatus` / `billing_status_payload` always return `has_access: true`, `enforced: false`, `requires_checkout: false` — informational only for `TenantPlanBanner`.
 
@@ -432,7 +433,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 1. **Duplicate plan definitions** (landing, `/signup/plan`, backend `PLAN_CATALOG`) → drift risk; consolidate on one API or shared config.
 2. ~~**No shared trial-CTA component**~~ — **done 2026-08-26:** `<StartTrialButton plan?>` (`components/marketing/StartTrialButton.tsx`) plus `startTrialHref()` in `lib/plans.ts`. Landing hero/footer, SiteNav, and managed pricing cards share `/signup/plan` (no plan) or `/signup?plan=`. Docs, login, and trust links are left as-is.
 3. ~~**Repeated funnel-guard logic**~~ — **done 2026-08-25:** `useSignupFunnelGuard` (`hooks/useSignupFunnelGuard.ts`) plus `signupOtpRedirect` / `resolveSignupStartPlan` in `lib/signup-funnel.ts`. `/signup` and `/signup/start` share the same plan/consent redirects and keep the fallback gate so the form does not flash.
-4. **Duplicated OTP form** (`login` vs `signup` are ~90% identical) → shared `<OtpForm/>`.
+4. ~~**Duplicated OTP form**~~ — **done 2026-08-30:** `<OtpForm intent>` (`components/auth/OtpForm.tsx`) owns email/OTP/resend, `useResendCooldown`, `verifyLock`, and `OTP_LENGTH`. Login still `requestOtp(email, 'login')`; signup still `requestOtp(email, 'signup')`. Pages keep verify side effects (`onVerified`).
 5. **No analytics/telemetry** on funnel steps → hard to measure drop-off.
 6. **No React Query/SWR** → manual polling + no dedupe/caching; billing status fetched on mount by `TenantPlanBanner`.
 7. **Inconsistent styling systems** (Tailwind vs inline).
@@ -885,12 +886,12 @@ sits inside a `<Suspense>` boundary — required or the build fails on CSR bailo
 
 ### 19.6 Login — `app/login/page.tsx`
 
-- **Consts:** `IS_DEV_MODE`, `API_URL`. Suspense wrapper.
-- **State:** `email`, `otp`, `step`, `loading`, `devLoading`, `navigating`, `error`, `noAccount`; `verifyLock` ref prevents double verify; `useResendCooldown` (60s).
-- **`safeNext`:** uses `next` param only if it starts with `/dashboard` and not `//`; else `/dashboard`. `?email=` pre-fills email; `?deleted=1` shows re-register banner.
-- **Effect:** existing token → hard redirect `safeNext`. OTP auto-submits at 6 digits via `verifyFormRef.requestSubmit()`.
-- **API:** `requestOtp(email, 'login')`; `verifyOtp(email, otp, { intent: 'login' })` → `setToken` → `window.location.assign(safeNext)`.
-- **Errors:** `authErrorMessage` / `isNoAccountError` (404) → inline "Create account" CTA. Resend with cooldown. Dev-token bypass when `IS_DEV_MODE`.
+- **Consts:** `IS_DEV_MODE`. Suspense wrapper. Email/OTP UI is `<OtpForm intent="login">`.
+- **Page state:** `devLoading`, `navigating`, `error` (dev-token only). Form state (`email`, `otp`, `step`, `loading`, `noAccount`, `verifyLock`, cooldown) lives in `OtpForm`.
+- **`safeNext`:** uses `next` param only if it starts with `/dashboard` and not `//`; else `/dashboard`. `?email=` pre-fills via `initialEmail`; `?deleted=1` shows re-register banner.
+- **Effect:** existing token → hard redirect `safeNext`. OTP auto-submits at 6 digits inside `OtpForm`.
+- **API:** `OtpForm` calls `requestOtp(email, 'login')`; `onVerified` calls `verifyOtp(email, otp, { intent: 'login' })` → `setToken` → `window.location.assign(safeNext)`.
+- **Errors:** 404 → inline "Create account" CTA in `OtpForm`. Resend with 60s cooldown. Dev-token bypass when `IS_DEV_MODE`.
 
 ### 19.7 Plan selection — `app/signup/plan/page.tsx`
 
@@ -908,6 +909,7 @@ sits inside a `<Suspense>` boundary — required or the build fails on CSR bailo
 - **`useConnectionHealth.ts`** — state `health: 'checking'|'ok'|'error'`; mount + **30s `/health` poll** (`cache:'no-store'`, `cancelled` + interval + `visibilitychange` cleanup). Ticks skipped while the tab is hidden; a check runs when the tab becomes visible. First paint in a hidden tab can stay `'checking'`.
 - **`ConnectionStatus.tsx`** — no longer polls. Exports `GettingStartedChecklist` only (Activity empty state; Python snippet + step 1 copy differ by edition).
 - **`AgentApiKeys.tsx`** — state keys/loading/creating/revokingId/newKey/copied/err/testBusy/testMsg (`:24-32`); `load` useCallback → `getAgentApiKeys` (normalizes to array, `:34-44`); effect re-loads when `agentId` changes (`:46-48`). `createAgentApiKey` (`:55`) → reload; `revokeAgentApiKey` (`:72`, confirm first `:66-67`); `sendAgentTestEvent` (`:110`) → `onTestSuccess?.()` (`:112`). One-time key display; copy resets 2s (`:84`).
+- **`OtpForm.tsx`** — shared login/signup email + code form. `requestOtp(email, intent)` only (no extra payload fields). `onVerified({ email, otp })` for verify; return `'aborted'` to unlock without an error (signup GDPR redirect). Signup 409 → "Sign in →"; login 404 → "Create account".
 
 ### 19.10 Cross-cutting quick reference
 
@@ -923,11 +925,11 @@ sits inside a `<Suspense>` boundary — required or the build fails on CSR bailo
 
 ### 19.11 Signup email/OTP — `app/signup/page.tsx`
 
-- **Step 3 of the funnel** (account creation). Suspense-wrapped (`useSearchParams`); `SignupForm` inner.
-- **State:** `email`, `otp`, `step` (`'email'|'otp'`), `loading`, `error`, `alreadyRegistered`, and `checked` (the render gate).
-- **Guard effect:** resets step/otp/error; persists `?plan=` via `SIGNUP_PLAN_KEY`; missing plan → `/signup/plan`; missing consent → `/signup/start`; else `setChecked(true)`. Renders `SignupFallback` until `checked`.
-- **API:** `requestOtp(email, 'signup')`; `verifyOtp(..., { intent: 'signup', gdprConsent, marketingConsent })` → `setToken` → `clearSignupSession()` → best-effort `selectBillingPlan` → `window.location.assign('/dashboard')`.
-- **UX:** OTP auto-submit at 6 digits; resend with 60s cooldown; `auth-errors` helpers for 409/GDPR; "already registered" links to `/login?email=`.
+- **Step 3 of the funnel** (account creation). Suspense-wrapped (`useSearchParams`); `SignupForm` inner. Email/OTP UI is `<OtpForm intent="signup" key={searchParams}>`.
+- **Page state:** `navigating` plus `checked` from `useSignupFunnelGuard('otp')`. Form state lives in `OtpForm`.
+- **Guard:** missing plan → `/signup/plan`; missing consent → `/signup/start`. Renders `SignupFallback` until `checked`.
+- **API:** `OtpForm` calls `requestOtp(email, 'signup')`; `onVerified` checks GDPR then `verifyOtp(..., { intent: 'signup', gdprConsent, marketingConsent })` → `setToken` → `clearSignupSession()` → `selectBillingPlan` → `window.location.assign('/dashboard')`. Missing GDPR or `isGdprConsentError` → `router.replace('/signup/start')` and `'aborted'`.
+- **UX:** OTP auto-submit at 6 digits; resend with 60s cooldown; 409 → "Sign in →" to `/login?email=`.
 
 ### 19.12 Before-you-begin / consent — `app/signup/start/page.tsx`
 

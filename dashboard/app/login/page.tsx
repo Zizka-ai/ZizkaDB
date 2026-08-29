@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { requestOtp, verifyOtp, devLogin } from "@/lib/api";
-import { authErrorMessage, isNoAccountError } from "@/lib/auth-errors";
+import { verifyOtp, devLogin } from "@/lib/api";
 import { getToken, setToken } from "@/lib/auth";
-import { OTP_LENGTH, IS_DEV_MODE } from "@/lib/constants";
-import { useResendCooldown } from "@/hooks/useResendCooldown";
+import { IS_DEV_MODE } from "@/lib/constants";
 import { BrandLogo } from "@/components/BrandLogo";
+import { OtpForm } from "@/components/auth/OtpForm";
 
 function completeAuthRedirect(path: string) {
   window.location.assign(path);
@@ -42,31 +41,17 @@ function LoginFallback() {
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"email" | "otp">("email");
-  const [loading, setLoading] = useState(false);
   const [devLoading, setDevLoading] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [error, setError] = useState("");
-  const [noAccount, setNoAccount] = useState(false);
-  const verifyLock = useRef(false);
-  const verifyFormRef = useRef<HTMLFormElement>(null);
-  const { cooldown, canResend, startCooldown } = useResendCooldown();
 
   const accountDeleted = searchParams.get("deleted") === "1";
-  const emailPrefill = searchParams.get("email");
+  const emailPrefill = searchParams.get("email") ?? "";
   const nextPath = searchParams.get("next");
   const safeNext =
     nextPath && nextPath.startsWith("/dashboard") && !nextPath.startsWith("//")
       ? nextPath
       : "/dashboard";
-
-  useEffect(() => {
-    if (emailPrefill) {
-      setEmail(emailPrefill);
-    }
-  }, [emailPrefill]);
 
   useEffect(() => {
     const existing = getToken();
@@ -76,72 +61,17 @@ function LoginForm() {
     }
   }, [safeNext]);
 
-  useEffect(() => {
-    if (
-      step !== "otp" ||
-      otp.length !== OTP_LENGTH ||
-      loading ||
-      navigating ||
-      verifyLock.current
-    )
-      return;
-    verifyFormRef.current?.requestSubmit();
-  }, [otp, step, loading, navigating]);
-
-  async function sendLoginOtp() {
-    await requestOtp(email, "login");
-    setStep("otp");
-    startCooldown();
-  }
-
-  async function handleRequestOtp(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setNoAccount(false);
-    try {
-      await sendLoginOtp();
-    } catch (err) {
-      setNoAccount(isNoAccountError(err));
-      setError(authErrorMessage(err, "Failed to send code. Try again."));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleResendOtp() {
-    if (!canResend || loading) return;
-    setLoading(true);
-    setError("");
-    setNoAccount(false);
-    try {
-      await sendLoginOtp();
-    } catch (err) {
-      setNoAccount(isNoAccountError(err));
-      setError(authErrorMessage(err, "Failed to resend code. Try again."));
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleVerifyOtp(e: React.FormEvent) {
-    e.preventDefault();
-    if (verifyLock.current || navigating) return;
-    verifyLock.current = true;
-    setLoading(true);
-    setError("");
-    setNoAccount(false);
-    try {
-      const data = await verifyOtp(email, otp, { intent: "login" });
-      setToken(data.access_token);
-      setNavigating(true);
-      completeAuthRedirect(safeNext);
-    } catch (err) {
-      verifyLock.current = false;
-      setNoAccount(isNoAccountError(err));
-      setError(authErrorMessage(err, "Invalid or expired code."));
-      setLoading(false);
-    }
+  async function handleVerified({
+    email,
+    otp,
+  }: {
+    email: string;
+    otp: string;
+  }) {
+    const data = await verifyOtp(email, otp, { intent: "login" });
+    setToken(data.access_token);
+    setNavigating(true);
+    completeAuthRedirect(safeNext);
   }
 
   async function handleDevLogin() {
@@ -304,248 +234,19 @@ function LoginForm() {
             </p>
           )}
 
-          {step === "email" ? (
-            <>
-              {!IS_DEV_MODE && (
-                <h1
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 700,
-                    color: "#111",
-                    marginBottom: 6,
-                  }}
-                >
-                  Sign in
-                </h1>
-              )}
-              {!IS_DEV_MODE && (
-                <p style={{ fontSize: 14, color: "#888", marginBottom: 24 }}>
-                  Enter your email and we&apos;ll send a 6-digit login code.
-                </p>
-              )}
-              <form
-                onSubmit={handleRequestOtp}
-                style={{ display: "flex", flexDirection: "column", gap: 16 }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: "#555",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Email address
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    required
-                    autoFocus={!IS_DEV_MODE}
-                    style={{
-                      width: "100%",
-                      boxSizing: "border-box",
-                      padding: "10px 14px",
-                      borderRadius: 9,
-                      fontSize: 14,
-                      border: "1px solid #ddd",
-                      outline: "none",
-                      color: "#111",
-                      background: "#fafafa",
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = "#111")}
-                    onBlur={(e) => (e.target.style.borderColor = "#ddd")}
-                  />
-                </div>
-                {error && (
-                  <div style={{ fontSize: 13, color: "#ef4444" }}>
-                    <p style={{ margin: 0 }}>{error}</p>
-                    {noAccount && (
-                      <Link
-                        href="/signup"
-                        style={{
-                          display: "inline-block",
-                          marginTop: 10,
-                          padding: "8px 14px",
-                          borderRadius: 8,
-                          background: "#111",
-                          color: "#fff",
-                          fontWeight: 600,
-                          textDecoration: "none",
-                          fontSize: 13,
-                        }}
-                      >
-                        Create account
-                      </Link>
-                    )}
-                  </div>
-                )}
-                <button
-                  type="submit"
-                  disabled={loading || !email}
-                  style={{
-                    padding: "11px",
-                    borderRadius: 9,
-                    fontSize: 14,
-                    fontWeight: 500,
-                    background: "#111",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                    opacity: loading || !email ? 0.4 : 1,
-                  }}
-                >
-                  {loading ? "Sending..." : "Send code →"}
-                </button>
-                <p style={{ fontSize: 12, color: "#bbb", textAlign: "center" }}>
-                  We send a 6-digit code to your email. No password needed.
-                </p>
-              </form>
-            </>
-          ) : (
-            <>
-              <h1
-                style={{
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: "#111",
-                  marginBottom: 6,
-                }}
-              >
-                Check your email
-              </h1>
-              <p style={{ fontSize: 14, color: "#888", marginBottom: 24 }}>
-                We sent a 6-digit code to{" "}
-                <strong style={{ color: "#111" }}>{email}</strong>
-              </p>
-              <form
-                ref={verifyFormRef}
-                onSubmit={handleVerifyOtp}
-                style={{ display: "flex", flexDirection: "column", gap: 16 }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: 13,
-                      fontWeight: 500,
-                      color: "#555",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Login code
-                  </label>
-                  <input
-                    type="text"
-                    value={otp}
-                    onChange={(e) =>
-                      setOtp(
-                        e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH),
-                      )
-                    }
-                    placeholder="000000"
-                    required
-                    autoFocus
-                    maxLength={OTP_LENGTH}
-                    disabled={loading}
-                    style={{
-                      width: "100%",
-                      boxSizing: "border-box",
-                      padding: "12px",
-                      borderRadius: 9,
-                      fontSize: 24,
-                      border: "1px solid #ddd",
-                      outline: "none",
-                      color: "#111",
-                      background: "#fafafa",
-                      textAlign: "center",
-                      letterSpacing: "0.4em",
-                      fontFamily: "monospace",
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = "#111")}
-                    onBlur={(e) => (e.target.style.borderColor = "#ddd")}
-                  />
-                </div>
-                {error && (
-                  <div style={{ fontSize: 13, color: "#ef4444" }}>
-                    <p style={{ margin: 0 }}>{error}</p>
-                    {noAccount && (
-                      <Link
-                        href="/signup"
-                        style={{
-                          display: "inline-block",
-                          marginTop: 10,
-                          padding: "8px 14px",
-                          borderRadius: 8,
-                          background: "#111",
-                          color: "#fff",
-                          fontWeight: 600,
-                          textDecoration: "none",
-                          fontSize: 13,
-                        }}
-                      >
-                        Create account
-                      </Link>
-                    )}
-                  </div>
-                )}
-                <button
-                  type="submit"
-                  disabled={loading || otp.length < OTP_LENGTH}
-                  style={{
-                    padding: "11px",
-                    borderRadius: 9,
-                    fontSize: 14,
-                    fontWeight: 500,
-                    background: "#111",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                    opacity: loading || otp.length < OTP_LENGTH ? 0.4 : 1,
-                  }}
-                >
-                  {loading ? "Signing you in…" : "Sign in →"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleResendOtp}
-                  disabled={!canResend || loading}
-                  style={{
-                    fontSize: 13,
-                    color: canResend ? "#555" : "#bbb",
-                    background: "none",
-                    border: "none",
-                    cursor: canResend && !loading ? "pointer" : "not-allowed",
-                  }}
-                >
-                  {canResend ? "Resend code" : `Resend code in ${cooldown}s`}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    verifyLock.current = false;
-                    setStep("email");
-                    setOtp("");
-                    setError("");
-                    setNoAccount(false);
-                  }}
-                  style={{
-                    fontSize: 13,
-                    color: "#888",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  ← Use a different email
-                </button>
-              </form>
-            </>
+          {error && (
+            <p style={{ fontSize: 13, color: "#ef4444", marginTop: 0 }}>
+              {error}
+            </p>
           )}
+
+          <OtpForm
+            intent="login"
+            initialEmail={emailPrefill}
+            autoFocusEmail={!IS_DEV_MODE}
+            hideEmailHeading={IS_DEV_MODE}
+            onVerified={handleVerified}
+          />
         </div>
 
         {!IS_DEV_MODE && (

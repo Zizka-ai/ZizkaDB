@@ -14,6 +14,10 @@ This file helps Cursor, Copilot, Claude Code, and other agents work on **this re
 
 Area-specific rules load automatically from `.cursor/rules/*.mdc` by file path.
 
+## Before starting
+
+`git fetch origin main` then `git checkout -B main origin/main`. Branch from that tip (or merge `origin/main` into an existing PR branch). Never start from a stale local `main` or a leftover topic branch. Never push to `main`.
+
 ## Critical invariants
 
 1. **Auth:** SDK routes → `get_tenant`; dashboard management → `require_dashboard_session`; per-agent routes → `assert_agent_allowed`.
@@ -40,4 +44,3 @@ For **using** ZizkaDB as a product (not hacking this repo), point users to:
 
 - [CONNECT.md](CONNECT.md)
 - [docs/integrate/any-agent.md](docs/integrate/any-agent.md)
-- [docs/integrations/livekit.md](docs/integrations/livekit.md) — LiveKit voice agents (`zizkadb-livekit`)
