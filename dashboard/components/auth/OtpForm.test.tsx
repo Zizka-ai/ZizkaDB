@@ -117,7 +117,7 @@ describe('OtpForm', () => {
       target: { value: '654321' },
     })
 
-    await waitFor(() => expect(onVerified).toHaveBeenCalled())
+    await waitFor(() => expect(onVerified).toHaveBeenCalledTimes(1))
     await waitFor(() =>
       expect(
         screen.getByRole('button', { name: /create account/i }),

@@ -44,6 +44,7 @@ export function OtpForm({
   const [noAccount, setNoAccount] = useState(false)
   const [alreadyRegistered, setAlreadyRegistered] = useState(false)
   const verifyLock = useRef(false)
+  const autoSubmitPaused = useRef(false)
   const verifyFormRef = useRef<HTMLFormElement>(null)
   const { cooldown, canResend, startCooldown } = useResendCooldown()
 
@@ -56,7 +57,8 @@ export function OtpForm({
       step !== 'otp' ||
       otp.length !== OTP_LENGTH ||
       loading ||
-      verifyLock.current
+      verifyLock.current ||
+      autoSubmitPaused.current
     ) {
       return
     }
@@ -117,6 +119,7 @@ export function OtpForm({
     try {
       const result = await onVerified({ email, otp })
       if (result === 'aborted') {
+        autoSubmitPaused.current = true
         verifyLock.current = false
         setLoading(false)
       }
@@ -130,6 +133,7 @@ export function OtpForm({
 
   function handleUseDifferentEmail() {
     verifyLock.current = false
+    autoSubmitPaused.current = false
     setStep('email')
     setOtp('')
     clearFlags()
@@ -220,9 +224,10 @@ export function OtpForm({
             id="otp-form-code"
             type="text"
             value={otp}
-            onChange={(e) =>
+            onChange={(e) => {
+              autoSubmitPaused.current = false
               setOtp(e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH))
-            }
+            }}
             placeholder="000000"
             required
             autoFocus
