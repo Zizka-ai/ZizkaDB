@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getEvents, searchEvents, type AgentEvent } from '@/lib/api'
 import { getToken } from '@/lib/auth'
 import { POLL_INTERVAL_MS } from '@/lib/constants'
+import { isDocumentVisible } from '@/lib/page-visible'
 import { normalizeSearchResults } from '@/lib/events'
 
 export const PAGE_SIZE = 50
@@ -114,18 +115,26 @@ export function useAgentEvents(agentId: string | null): AgentEventsState {
   }, [agentId, fetchEvents])
 
   // Live polling. Paused while search results are displayed so they survive.
+  // Interval ticks are skipped while the tab is hidden; a fetch runs when visible.
   useEffect(() => {
     if (!agentId || loading || searchResults) return
     let cancelled = false
 
-    const interval = setInterval(() => {
-      if (cancelled) return
+    const poll = () => {
+      if (cancelled || !isDocumentVisible()) return
       fetchEvents(1, false, filterType)
-    }, POLL_INTERVAL_MS)
+    }
+
+    const interval = setInterval(poll, POLL_INTERVAL_MS)
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') poll()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
 
     return () => {
       cancelled = true
       clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [agentId, loading, searchResults, filterType, fetchEvents])
 
