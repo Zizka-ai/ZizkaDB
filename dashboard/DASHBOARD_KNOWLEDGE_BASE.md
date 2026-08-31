@@ -345,7 +345,7 @@ All in `lib/api.ts` via `apiFetch` (except unauthenticated `fetch` calls for OTP
 
 **Error handling:** `formatApiError` flattens string / array / `{msg}` FastAPI detail shapes. `DashboardPage` special-cases `401`/"invalid token" → redirect to `/login` (`dashboard/page.tsx:54`).
 
-**Polling:** Shared agent list every 10s (`hooks/useAgents.ts`); `/health` every 30s via `useConnectionHealth` (header AccountMenu). Both skip ticks while `document.visibilityState === 'hidden'` and check again on `visibilitychange`. Event/stats pollers (`useAgentEvents`, `useAgentStats`) still run in background tabs. Billing status fetched once by `TenantPlanBanner` on mount; `useApiKeyQuota` refreshes on window focus. Hidden-tab health can stay stale `'ok'` until the tab is shown again.
+**Polling:** Shared agent list every 10s (`hooks/useAgents.ts`); `/health` every 30s via `useConnectionHealth` (header AccountMenu); activity events/stats every 10s (`useAgentEvents`, `useAgentStats`). All skip ticks while `document.visibilityState === 'hidden'` and fetch again on `visibilitychange`. Billing status fetched once by `TenantPlanBanner` on mount; `useApiKeyQuota` refreshes on window focus. Hidden-tab health can stay stale `'ok'` until the tab is shown again.
 
 ---
 
@@ -920,7 +920,7 @@ sits inside a `<Suspense>` boundary — required or the build fails on CSR bailo
 | `requireAuth()` | no token → `window.location.href='/login'`, throws |
 | Agents home | explicit `router.replace('/login')` on missing/invalid token |
 | Edge auth | middleware cookie check on `/dashboard/*` |
-| Polling | agents 10s (`useAgents`, hidden-tab pause), events/stats 10s (still run when hidden), health 30s (`useConnectionHealth`, hidden-tab pause) |
+| Polling | agents/events/stats 10s (hidden-tab pause), health 30s (`useConnectionHealth`, hidden-tab pause) |
 | `NEXT_PUBLIC_DEV_MODE=true` | dev login bypass; dev onboarding copy |
 
 ### 19.11 Signup email/OTP — `app/signup/page.tsx`
