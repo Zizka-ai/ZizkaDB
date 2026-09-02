@@ -1,6 +1,6 @@
 # Connect your agent (self-host / OSS)
 
-**Current PyPI releases:** `zizkadb-sdk` **0.2.7** · `zizkadb-mcp` **0.1.6** · `zizkadb-langchain` **0.1.2** · `zizkadb-crewai` **0.1.2** · `zizkadb-livekit` **0.1.0**
+**Current PyPI releases:** `zizkadb-sdk` **0.2.8** · `zizkadb-mcp` **0.1.7** · `zizkadb-langchain` **0.1.3** · `zizkadb-crewai` **0.1.3** · `zizkadb-livekit` **0.1.0**
 
 ## Start the stack (pick one)
 
@@ -28,7 +28,7 @@ Pick your stack below. Use the **same agent name** in code and dashboard.
 ## Python SDK
 
 ```bash
-pip install "zizkadb-sdk>=0.2.7"
+pip install "zizkadb-sdk>=0.2.8"
 ```
 
 ```python
@@ -91,7 +91,7 @@ await db.log({
 ## LangChain
 
 ```bash
-pip install "zizkadb-sdk>=0.2.7" "zizkadb-langchain>=0.1.2"
+pip install "zizkadb-sdk>=0.2.8" "zizkadb-langchain>=0.1.3"
 ```
 
 ```python
@@ -116,7 +116,7 @@ Or scaffold: `zizkadb init my-agent --template langchain`
 ## CrewAI
 
 ```bash
-pip install "zizkadb-sdk>=0.2.7" "zizkadb-crewai>=0.1.2"
+pip install "zizkadb-sdk>=0.2.8" "zizkadb-crewai>=0.1.3"
 ```
 
 ```python
@@ -183,7 +183,7 @@ Full sample: [examples/livekit-agent/](examples/livekit-agent/) · package docs:
 ## MCP (Cursor, Claude Desktop, Windsurf)
 
 ```bash
-pip install "zizkadb-mcp>=0.1.6"
+pip install "zizkadb-mcp>=0.1.7"
 # or: uvx zizkadb-mcp
 ```
 

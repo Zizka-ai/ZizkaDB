@@ -1,4 +1,4 @@
-zizkadb-sdk>=0.2.7
-zizkadb-crewai>=0.1.2
+zizkadb-sdk>=0.2.8
+zizkadb-crewai>=0.1.3
 crewai>=0.80.0
 langchain-openai>=0.2.0

@@ -51,7 +51,7 @@ body:
     attributes:
       label: Version
       description: GitHub release tag, or `pip show zizkadb-sdk`
-      placeholder: v0.2.7 / zizkadb-sdk 0.2.7
+      placeholder: v0.2.8 / zizkadb-sdk 0.2.8
 
   - type: textarea
     id: env
