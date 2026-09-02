@@ -4,11 +4,11 @@ Official adapters for agent frameworks. Each package is optional — core SDK is
 
 | Package | Registry | Install | Telemetry `sdk` | Use case |
 |---------|----------|---------|-------------------|----------|
-| `zizkadb-sdk` | PyPI **0.2.7** | `pip install zizkadb-sdk` | `python` | Core Python client |
+| `zizkadb-sdk` | PyPI **0.2.8** | `pip install zizkadb-sdk` | `python` | Core Python client |
 | [langchain](langchain/) | PyPI **0.1.3** | `pip install zizkadb-langchain` | `langchain` | LangChain callback handler |
 | [crewai](crewai/) | PyPI **0.1.3** | `pip install zizkadb-crewai` | `crewai` | CrewAI crew logger |
 | [livekit](livekit/) | PyPI **0.1.0** | `pip install zizkadb-livekit` | `livekit` | LiveKit voice → Sessions + Events |
-| [mcp](../mcp/) | PyPI **0.1.6** | `uvx zizkadb-mcp` | `mcp` | Cursor / Claude Desktop tools |
+| [mcp](../mcp/) | PyPI **0.1.7** | `uvx zizkadb-mcp` | `mcp` | Cursor / Claude Desktop tools |
 | TypeScript SDK | npm **0.2.7** | `npm install zizkadb-sdk` | `typescript` | Node / Bun / Deno client |
 | Docker OSS | — | `bash scripts/quickstart.sh` | `docker` | Self-hosted stack |
 

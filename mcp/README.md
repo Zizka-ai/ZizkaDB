@@ -1,6 +1,6 @@
 # zizkadb-mcp
 
-**PyPI:** [zizkadb-mcp 0.1.6](https://pypi.org/project/zizkadb-mcp/0.1.6/)
+**PyPI:** [zizkadb-mcp 0.1.7](https://pypi.org/project/zizkadb-mcp/0.1.7/)
 
 MCP server for [ZizkaDB](https://db.zizka.ai). Gives any MCP-compatible AI agent persistent memory, semantic search, causal debugging, and time travel.
 

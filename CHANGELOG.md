@@ -8,13 +8,26 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Integrations
 
-- **`zizkadb-livekit` 0.1.0** (PyPI) — LiveKit Agents voice calls → ZizkaDB Sessions + Events (transcript only, no audio stored). Depends on `zizkadb-sdk>=0.2.7` + `livekit-agents>=1.3.0`. Docs: [docs/integrations/livekit.md](docs/integrations/livekit.md), example: [examples/livekit-agent/](examples/livekit-agent/).
+- **`zizkadb-livekit` 0.1.0** (PyPI) — LiveKit Agents voice calls → ZizkaDB Sessions + Events (transcript only, no audio stored). Depends on `zizkadb-sdk>=0.2.8` + `livekit-agents>=1.3.0`. Docs: [docs/integrations/livekit.md](docs/integrations/livekit.md), example: [examples/livekit-agent/](examples/livekit-agent/).
 
-## [0.2.8] — 2026-08-27
+## [0.2.8] — 2026-09-02
+
+### Python SDK (`zizkadb-sdk` 0.2.8, PyPI)
+
+- Mark **Production/Stable** on PyPI with full package metadata (keywords, audit-trail description)
+
+### MCP (`zizkadb-mcp` 0.1.7)
+
+- Mark **Production/Stable** on PyPI; updated description and keywords
+
+### Integrations
+
+- `zizkadb-langchain` **0.1.3** — Production/Stable; requires `zizkadb-sdk>=0.2.8`
+- `zizkadb-crewai` **0.1.3** — Production/Stable; requires `zizkadb-sdk>=0.2.8`
 
 ### Install telemetry (OSS adoption)
 
-- **Python SDK 0.2.7**, **TypeScript SDK 0.2.7 (npm)**, **MCP 0.1.6**, **langchain 0.1.3**, **crewai 0.1.3**: count **installs** at import/client/server start (including self-hosted localhost), not on first API call
+- **Python SDK 0.2.8**, **MCP 0.1.7**, **langchain 0.1.3**, **crewai 0.1.3**: count **installs** at import/client/server start (including self-hosted localhost), not on first API call
 - Per-package telemetry keys: `python`, `langchain`, `crewai`, `livekit`, `mcp`, `typescript`, `docker`
 - **Docker quickstart**: anonymous install ping (`sdk=docker`, `mode=self-hosted`) after stack is healthy
 - **`sdk_telemetry`**: composite primary key `(install_id, sdk)` so Python + MCP + Docker on one machine each count separately
@@ -80,7 +93,8 @@ Production-hardening sprint merged to `main` (via stacked PRs #125–#139), incl
 
 See [GitHub releases](https://github.com/Zizka-ai/ZizkaDB/releases) for tagged artifacts.
 
-[Unreleased]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.2.7...HEAD
+[Unreleased]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.2.8...HEAD
+[0.2.8]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.2.7...v0.2.8
 [0.2.7]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.2.6...v0.2.7
 [0.2.6]: https://github.com/Zizka-ai/ZizkaDB/compare/v0.1.0...v0.2.6
 [0.1.0]: https://github.com/Zizka-ai/ZizkaDB/releases
