@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zizkadb-sdk"
-version = "0.2.9"
+version = "0.2.8"
 description = "Self-hosted audit trail for AI agents — prove why an agent did something with causal lineage (why()), time-travel state, and drift baselines."
 readme = "README.md"
 license = "AGPL-3.0-or-later"
@@ -23,7 +23,7 @@ keywords = [
     "observability",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

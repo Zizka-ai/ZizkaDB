@@ -8,7 +8,7 @@ Self-hosted audit trail for AI agents — one command or one dashboard click fro
 
 [![CI](https://github.com/Zizka-ai/ZizkaDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Zizka-ai/ZizkaDB/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![Release](https://img.shields.io/badge/release-v0.2.7-f97316)](https://github.com/Zizka-ai/ZizkaDB/releases)
+[![Release](https://img.shields.io/badge/release-v0.2.8-f97316)](https://github.com/Zizka-ai/ZizkaDB/releases)
 [![Python SDK](https://img.shields.io/pypi/v/zizkadb-sdk?label=Python%20SDK)](https://pypi.org/project/zizkadb-sdk/)
 [![LangChain](https://img.shields.io/pypi/v/zizkadb-langchain?label=LangChain)](https://pypi.org/project/zizkadb-langchain/)
 [![CrewAI](https://img.shields.io/pypi/v/zizkadb-crewai?label=CrewAI)](https://pypi.org/project/zizkadb-crewai/)

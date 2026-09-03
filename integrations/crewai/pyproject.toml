@@ -5,17 +5,35 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "zizkadb-crewai"
 version = "0.1.3"
-description = "CrewAI logging helpers for ZizkaDB causal agent memory"
+description = "CrewAI logging helpers for ZizkaDB — observability and causal debugging for multi-agent crews"
 readme = "README.md"
 license = "AGPL-3.0-or-later"
 requires-python = ">=3.10"
+authors = [{ name = "Zizka AI", email = "founder@zizka.ai" }]
+keywords = [
+    "crewai",
+    "ai-agents",
+    "causal-lineage",
+    "agent-audit",
+    "observability",
+    "zizkadb",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 dependencies = [
-    "zizkadb-sdk>=0.2.7",
+    "zizkadb-sdk>=0.2.8",
 ]
 
 [project.urls]
-Repository = "https://github.com/Zizka-ai/ZizkaDB"
+Homepage = "https://db.zizka.ai"
 Documentation = "https://db.zizka.ai/docs"
+Repository = "https://github.com/Zizka-ai/ZizkaDB"
+Issues = "https://github.com/Zizka-ai/ZizkaDB/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

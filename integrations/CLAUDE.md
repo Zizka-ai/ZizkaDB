@@ -10,16 +10,16 @@ Standalone adapter packages: **`zizkadb-langchain`**, **`zizkadb-crewai`**, **`z
 
 | Package | Directory | Class | PyPI (current) |
 |---|---|---|---|
-| `zizkadb-langchain` | `integrations/langchain/` | `ZizkaDBCallbackHandler` | `0.1.2` |
-| `zizkadb-crewai` | `integrations/crewai/` | `ZizkaDBCrewLogger` | `0.1.2` |
-| `zizkadb-livekit` | `integrations/livekit/` | `ZizkaDBLiveKitObserver` | `0.1.0` |
+| `zizkadb-langchain` | `integrations/langchain/` | `ZizkaDBCallbackHandler` | `0.1.3` |
+| `zizkadb-crewai` | `integrations/crewai/` | `ZizkaDBCrewLogger` | `0.1.3` |
+| `zizkadb-livekit` | `integrations/livekit/` | `ZizkaDBLiveKitObserver` | `0.2.0` |
 
 Install for users:
 ```bash
 pip install zizkadb-langchain    # or zizkadb-crewai / zizkadb-livekit
 ```
 
-Each package depends on `zizkadb-sdk>=0.2.7` — users install the framework package only.
+Each package depends on `zizkadb-sdk>=0.2.8` — users install the framework package only.
 
 ---
 

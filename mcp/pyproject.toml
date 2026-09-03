@@ -4,16 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zizkadb-mcp"
-version = "0.1.6"
-description = "MCP server for ZizkaDB — give any AI agent persistent memory and observability"
+version = "0.1.7"
+description = "MCP server for ZizkaDB — operational database and audit trail for AI agents in Cursor, Claude Desktop, and any MCP client"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{ name = "Zizka AI", email = "founder@zizka.ai" }]
-keywords = ["mcp", "ai", "agents", "memory", "observability", "zizkadb", "claude", "cursor"]
+keywords = ["mcp", "ai", "agents", "audit", "observability", "zizkadb", "claude", "cursor", "causal-lineage"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -34,6 +34,7 @@ zizkadb-mcp = "zizkadb_mcp.server:main"
 Homepage = "https://db.zizka.ai"
 Documentation = "https://db.zizka.ai/docs"
 Repository = "https://github.com/Zizka-ai/ZizkaDB"
+Issues = "https://github.com/Zizka-ai/ZizkaDB/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
