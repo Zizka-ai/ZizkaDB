@@ -21,7 +21,7 @@ Voice agents: **`pip install zizkadb-livekit`** — see [livekit-agent/](livekit
 | [openai-agent](openai-agent/) | AsyncOpenAI causal logging |
 | [langchain-agent](langchain-agent/) | LangChain callbacks |
 | [crewai-agent](crewai-agent/) | CrewAI kickoff + output |
-| [livekit-agent](livekit-agent/) | LiveKit voice call → Sessions + Events (transcript only) |
+| [livekit-agent](livekit-agent/) | LiveKit voice call → Sessions + Events; includes local browser UI (`web_server.py`) |
 | [mcp-cursor](mcp-cursor/) | MCP config for Cursor |
 
 ## Local API

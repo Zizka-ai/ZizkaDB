@@ -58,8 +58,17 @@ def _log_hints_enabled(base_url: str) -> bool:
     return _is_local_host(base_url)
 
 
+# The hint is a first-run nudge, not a per-event log line. Agents that flush a
+# whole session at once would otherwise print one line per event.
+_hint_emitted = False
+
+
 def _emit_log_hint(base_url: str, event_id: str) -> None:
+    global _hint_emitted
+    if _hint_emitted:
+        return
     if _log_hints_enabled(base_url):
+        _hint_emitted = True
         print(f"  → zizkadb why {event_id}", file=sys.stderr)
 
 

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZizkaDB Voice Agent</title>
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client@2.9.8/dist/livekit-client.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f1419;
+      color: #e7e9ea;
+    }
+    .card {
+      width: min(420px, 92vw);
+      padding: 2rem;
+      border-radius: 16px;
+      background: #1a2332;
+      border: 1px solid #2f3b4d;
+      text-align: center;
+    }
+    h1 { font-size: 1.35rem; margin: 0 0 0.5rem; }
+    p { color: #8b98a5; font-size: 0.9rem; margin: 0 0 1.5rem; line-height: 1.5; }
+    .status {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      background: #0f1419;
+      margin-bottom: 1.25rem;
+      font-size: 0.95rem;
+    }
+    .status.idle { color: #8b98a5; }
+    .status.connecting { color: #fbbf24; }
+    .status.in-call { color: #34d399; }
+    .status.ended { color: #8b98a5; }
+    .status.error { color: #f87171; }
+    .buttons { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+    button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    #startBtn { background: #3b82f6; color: #fff; }
+    #startBtn:hover:not(:disabled) { background: #2563eb; }
+    #endBtn { background: #374151; color: #e7e9ea; }
+    #endBtn:hover:not(:disabled) { background: #4b5563; }
+    a.dashboard {
+      display: inline-block;
+      margin-top: 1.5rem;
+      color: #60a5fa;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+    a.dashboard:hover { text-decoration: underline; }
+    #audioContainer { display: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Voice support agent</h1>
+    <p>Talk to the LiveKit agent. The call is logged to ZizkaDB when you end the session.</p>
+    <div id="status" class="status idle">Idle — click Start call</div>
+    <div class="buttons">
+      <button id="startBtn" type="button">Start call</button>
+      <button id="endBtn" type="button" disabled>End call</button>
+    </div>
+    <a id="dashboardLink" class="dashboard" href="#" target="_blank" rel="noopener">
+      Open ZizkaDB Activity
+    </a>
+    <div id="audioContainer"></div>
+  </div>
+
+  <script>
+    const { Room, RoomEvent, Track } = LivekitClient
+
+    const statusEl = document.getElementById('status')
+    const startBtn = document.getElementById('startBtn')
+    const endBtn = document.getElementById('endBtn')
+    const dashboardLink = document.getElementById('dashboardLink')
+    const audioContainer = document.getElementById('audioContainer')
+
+    let room = null
+
+    function setStatus(text, className) {
+      statusEl.textContent = text
+      statusEl.className = 'status ' + className
+    }
+
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/config')
+        if (res.ok) {
+          const cfg = await res.json()
+          dashboardLink.href = cfg.dashboard_url
+          dashboardLink.textContent = 'Open ZizkaDB Activity → ' + cfg.agent_name
+        }
+      } catch (_) {
+        dashboardLink.href = 'http://localhost:3001/dashboard/activity?agent=support-voice'
+      }
+    }
+
+    function attachAudio(track) {
+      const el = track.attach()
+      el.autoplay = true
+      audioContainer.appendChild(el)
+    }
+
+    async function startCall() {
+      startBtn.disabled = true
+      setStatus('Connecting…', 'connecting')
+
+      try {
+        const res = await fetch('/api/token', { method: 'POST' })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          throw new Error(err.detail || 'Failed to get token')
+        }
+        const { url, token, room: roomName } = await res.json()
+
+        room = new Room()
+        room.on(RoomEvent.TrackSubscribed, (track, _pub, participant) => {
+          if (track.kind === Track.Kind.Audio && !participant.isLocal) {
+            attachAudio(track)
+          }
+        })
+        room.on(RoomEvent.Disconnected, () => {
+          setStatus('Call ended', 'ended')
+          startBtn.disabled = false
+          endBtn.disabled = true
+        })
+
+        await room.connect(url, token)
+        await room.localParticipant.setMicrophoneEnabled(true)
+
+        setStatus('In call — speak now (room: ' + roomName + ')', 'in-call')
+        endBtn.disabled = false
+      } catch (err) {
+        setStatus('Error: ' + (err.message || String(err)), 'error')
+        startBtn.disabled = false
+        endBtn.disabled = true
+        room = null
+      }
+    }
+
+    async function endCall() {
+      endBtn.disabled = true
+      if (room) {
+        await room.disconnect()
+        room = null
+      }
+      audioContainer.innerHTML = ''
+      setStatus('Call ended — check ZizkaDB Activity', 'ended')
+      startBtn.disabled = false
+    }
+
+    startBtn.addEventListener('click', startCall)
+    endBtn.addEventListener('click', endCall)
+    loadConfig()
+  </script>
+</body>
+</html>

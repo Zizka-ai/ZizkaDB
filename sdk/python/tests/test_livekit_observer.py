@@ -65,11 +65,14 @@ class TestIngestReport:
 
         assert len(results) == 5
         events = [c.kwargs["event"] for c in db.log.call_args_list]
+        # Transcript turns and pipeline events are merged in timestamp order,
+        # so the tool result (t=1.5) sits between the two turns (t=1.0, t=2.0).
+        # function_tools_executed is a completion, hence tool_result.
         assert events == [
             "session_started",
             "user_message",
+            "tool_result",
             "assistant_response",
-            "tool_call",
             "session_ended",
         ]
 
@@ -91,11 +94,9 @@ class TestIngestReport:
         observer = ZizkaDBLiveKitObserver(db, agent="voice", session_id="call_x")
         await observer.ingest_report(SAMPLE_REPORT)
 
-        user_call = db.log.call_args_list[1]
-        assert user_call.kwargs["data"]["content"] == "I need a refund for order 12345"
-
-        assistant_call = db.log.call_args_list[2]
-        assert "delayed" in assistant_call.kwargs["data"]["content"]
+        by_event = {c.kwargs["event"]: c.kwargs["data"] for c in db.log.call_args_list}
+        assert by_event["user_message"]["content"] == "I need a refund for order 12345"
+        assert "delayed" in by_event["assistant_response"]["content"]
 
     @pytest.mark.asyncio
     async def test_dedupes_chat_items_on_second_ingest(self):
