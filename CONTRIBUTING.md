@@ -192,7 +192,24 @@ When your change affects documented behavior, update the matching KB, ADR, or ru
 
 ## Making a change
 
-### 1. Discuss first (for non-trivial work)
+### 1. Open or link a GitHub issue
+
+Every branch that becomes a PR should trace to an issue so work is trackable and **auto-closes on merge** when you use `Fixes #N` in the PR description.
+
+| Change type | Issue | Label(s) |
+|-------------|-------|----------|
+| Bug fix | Required | `bug` |
+| New feature / capability | Required | `enhancement` |
+| Docs / DX / CI | Required | `documentation` (add `enhancement` if CI or tooling changes) |
+| Security | Required | Report via [SECURITY.md](SECURITY.md) or `bug` |
+
+```bash
+gh issue create --title "Short description" --label documentation --body "Problem, solution, acceptance criteria"
+```
+
+For non-trivial work (new API, schema, auth), discuss in the issue before coding.
+
+### 2. Discuss first (for large changes)
 
 Open an issue or community post if your change:
 
@@ -202,33 +219,35 @@ Open an issue or community post if your change:
 - Removes or renames public SDK methods
 - Changes default retention, billing, or AGPL-covered network behavior
 
-Small fixes (typos, obvious bugs, test gaps) can go straight to a PR.
+### 3. Fork and branch
 
-### 2. Fork and branch
+Include the issue number in the branch name when possible:
 
 ```bash
-git checkout -b feat/short-description    # features
-git checkout -b fix/issue-123-description # bug fixes
-git checkout -b docs/what-you-changed     # documentation only
+git checkout -b fix/179-dashboard-ci-vitest   # bug / fix
+git checkout -b feat/180-short-description    # feature
+git checkout -b docs/181-what-you-changed     # documentation only
 ```
 
-### 3. Write focused commits
+### 4. Write focused commits
 
 - One logical change per commit when possible
 - Use clear messages: `fix(api): reject events without tenant scope`
-- Reference issues: `Fixes #123` in the PR description
+- Put `Fixes #123` in the **PR description** (GitHub closes the issue on merge)
 
-### 4. Open a pull request
+### 5. Open a pull request
 
 Target the `main` branch on [Zizka-ai/ZizkaDB](https://github.com/Zizka-ai/ZizkaDB).
 
-**PR description should include:**
+**PR description must include:**
 
-1. **What** changed and **why**
-2. **How to test** (commands, curl, screenshots for UI)
-3. **Areas touched** (API / schema / SDK / dashboard / MCP)
-4. **Breaking changes** (if any)
-5. Link to related issue(s)
+1. **`Fixes #<issue>`** (or `Closes #<issue>`) — auto-closes the issue when merged
+2. **What** changed and **why**
+3. **How to test** (commands, curl, screenshots for UI)
+4. **Areas touched** (API / schema / SDK / dashboard / MCP)
+5. **Breaking changes** (if any)
+
+**CI must pass** before merge (Python lint + tests, TS SDK tests, dashboard lint + vitest + build, doc drift).
 
 Keep PRs small and reviewable. Split large work into stacked PRs when you can.
 
