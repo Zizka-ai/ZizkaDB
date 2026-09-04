@@ -9,16 +9,17 @@ alwaysApply: true
 
 These ZizkaDB-specific rules apply to **every** change without needing to be named in the prompt. Area-specific guides load automatically via `.cursor/rules/*.mdc` globs and module `CLAUDE.md` files. Full map: [docs/ai/README.md](../../docs/ai/README.md).
 
-## Before starting any task
+## Before starting
 
-Multiple people land on `main`. Do this **first**, every time — new work and follow-up commits:
+Sync with `main` before a new branch:
 
 ```bash
 git fetch origin main
-git checkout -B main origin/main
+git checkout main && git pull origin main   # or: git merge origin/main on your branch
+git checkout -b <topic>
 ```
 
-Then create the feature branch from that tip (`git checkout -b <topic>`), or merge `origin/main` into an existing PR branch. Never start from a leftover local branch or a stale `main`. Never `git push` to `main`.
+**Maintainers** who reset local `main` often: see [docs/ai/MAINTAINER.md](../../docs/ai/MAINTAINER.md). Never `git push` to `main`.
 
 ## Read automatically by area
 
@@ -64,15 +65,10 @@ pytest core/tests/ -m "not integration" -v
 cd dashboard && npm run lint && npm test && npm run build
 ```
 
-See `.cursor/skills/zizkadb-test/SKILL.md` for the full matrix.
+See `.cursor/skills/zizkadb-test/SKILL.md` for the full matrix. **Pre-commit is optional** (`pre-commit install`) — CI runs the same checks on every PR.
 
-## Opening a GitHub PR
+## Opening a pull request
 
-Fill every sidebar field in the **same** `gh pr create` (not a later `gh pr edit`):
+Follow [CONTRIBUTING.md](../../CONTRIBUTING.md): clear summary, test plan, areas touched. Link issues with `Fixes #N` or `Related to #N` when applicable.
 
-- `--label` — `enhancement`, `bug`, and/or `documentation` (add `documentation` when KB/ADR/`CLAUDE.md` changed). Never `good first issue` on PRs.
-- `--assignee saadamjad`
-- `--reviewer Zizka-ai`
-- Body includes `Closes #N` when this PR completes the issue, or `Related to #N` when it must not auto-close.
-- Footer: **Made with [Cursor](https://cursor.com) and Saad**
-- Never `git push` to `main`. Never `gh pr merge`.
+**Maintainers only:** assignee, reviewer, labels, and `gh` flags — [docs/ai/MAINTAINER.md](../../docs/ai/MAINTAINER.md).

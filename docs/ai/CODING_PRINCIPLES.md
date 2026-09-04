@@ -41,4 +41,5 @@ Universal engineering standards for **any** change in this repo. Tool-specific Z
 ## Pull requests
 
 - One logical change per PR when possible; clear description with how to test.
-- Fill GitHub PR metadata in one `gh pr create` (labels, assignee, reviewer, issue link) — see `coding-standards.mdc`.
+- Link issues with `Fixes #N` or `Related to #N` when applicable.
+- **Maintainers** (repo write access): see [docs/ai/MAINTAINER.md](docs/ai/MAINTAINER.md) for assignee/reviewer labels.

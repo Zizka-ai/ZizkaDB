@@ -29,7 +29,7 @@ Each ADR has:
 ## Adding a new ADR
 
 1. Copy an existing ADR as a template
-2. Number it sequentially (`006-...`)
+2. Number it sequentially (`009-...` after ADR-008)
 3. Add it to the index above
 4. Keep it short — one page is ideal
 

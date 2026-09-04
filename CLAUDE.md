@@ -169,7 +169,7 @@ cd dashboard && npm run lint && npm test && npm run build
 |---|---|
 | AI-assisted development map | `docs/ai/README.md` |
 | Universal coding principles | `docs/ai/CODING_PRINCIPLES.md` |
-| Dashboard source of truth (897 lines) | `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` |
+| Dashboard source of truth (~1,100 lines) | `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` |
 | Architecture decisions (why) | `docs/adr/` |
 | Cursor rules (per-area conventions) | `.cursor/rules/` — **`coding-standards.mdc` and `ai-knowledge-base.mdc` always apply** |
 | Agent entry (all tools) | `AGENTS.md` |

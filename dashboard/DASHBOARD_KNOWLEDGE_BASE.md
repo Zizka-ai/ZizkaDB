@@ -4,7 +4,7 @@
 >
 > **Last verified:** 2026-08-30 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
 >
-> **OSS scope:** This repo ships the tenant dashboard and public marketing/community surfaces. The managed-cloud **operator admin console** (`/admin`, `/v1/admin/*`) is **not** in this tree — §16 / §20.5 admin sections are historical reference only.
+> **OSS scope:** This repo ships the tenant dashboard and public marketing/community surfaces. The managed-cloud **operator admin console** (`/admin`, `/v1/admin/*`, `core/api/admin.py`) is **not in this tree** — there is no `app/admin/` and no admin API routes here. Sections §16 (admin paragraph), §18.6, and §20.5 below are **managed-cloud reference only**; do not implement them in OSS.
 >
 > **Important finding:** There is **no "Pricing Modal"** in this codebase. Pricing is a static section on the landing page (`app/page.tsx`, `#pricing`). The only actual modal is the **Calendly "Book demo" modal** (`components/marketing/CalendlyBookModal.tsx`).
 >
@@ -481,7 +481,7 @@ A root-level `.env.example` exists (repo root, not `dashboard/`) and documents t
 
 ## 16. Admin Surface, Component Catalog & Key Types
 
-**Admin (`app/admin/`):** `layout.tsx` + `page.tsx` only. Separate auth via the `zizkadb_admin_token` cookie/localStorage (`lib/auth.ts` admin helpers; `adminRequestOtp`/`adminVerifyOtp` in `lib/api.ts`). Middleware permits the bare `/admin` (OTP login UI) but redirects `/admin/*` subpaths to `/admin` without a token. Backend locks admin to a single founder email.
+> **OSS — not implemented.** Operator admin (`app/admin/`, `zizkadb_admin_token`, `/v1/admin/*`) is managed-cloud only. See §20.5 for historical reference. **Do not add admin routes or UI in this repo.**
 
 **Reusable components (`components/`, 21 files, last swept for dead code 2026-07-08):**
 
@@ -740,9 +740,11 @@ The logic that drives every dashboard gate and funnel branch. Routers are thin; 
 - `agent_id` must match `^[a-zA-Z0-9][a-zA-Z0-9._-]{0,254}$` (`agents.py:18-28`); `POST /` returns a one-time API key (`{agent, api_key:{key,key_id,prefix}, message}`).
 - **Baseline / drift** (`agents.py:453-544`): splits sessions into recent N (default 50) vs older; computes event distribution, parent→child transitions, session shape, error rate; `drift_score = 0.5·L1(event_dist) + 0.5·L1(transitions)`; verdicts `stable | minor_drift | noticeable_drift | significant_drift`; status can be `insufficient_data`, `warming_up`, or `ok`.
 
-### 18.6 Admin (`core/api/admin.py`)
+### 18.6 Admin (`core/api/admin.py`) — managed-cloud only (not in OSS)
 
-Single allow-listed email (`ADMIN_EMAIL`, default `founder@zizka.ai`). Non-admin requests get **404** (not 403) to hide the panel's existence. Admin JWT is issued with `is_admin:true` and no tenant. Endpoints return telemetry (SDK installs) + managed-cloud analytics (subscribers, users, usage, demo requests).
+> **OSS:** `core/api/admin.py` does not exist in this repository. The following describes managed-cloud behavior for parity reference only.
+
+Single allow-listed email (`ADMIN_EMAIL`, default `founder@zizka.ai`). Non-admin requests get **404** (not 403). Admin JWT is issued with `is_admin:true` and no tenant. Endpoints return telemetry + managed-cloud analytics (subscribers, users, usage, demo requests).
 
 ### 18.7 End-to-end signup state machine
 
@@ -972,7 +974,9 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 
 - **Server Component** (static, SEO `metadata` set). 17 anchor sections (overview, architecture, data model, integrity, performance, security, API, deployment, comparison, licensing, limits, FAQ, contact, …). Desktop-only sticky sidebar (`@media min-width: 900px`). Links to `/docs`, `/swagger`, `/signup`, `/enterprise`, GitHub, `mailto:founder@zizka.ai`. Includes `MarketingFooter`; deployment/limits tables include Enterprise row; security section links to `/enterprise` for VPC review. No state/API.
 
-### 20.5 Admin console — `app/admin/page.tsx` (+ `layout.tsx`)
+### 20.5 Admin console — managed-cloud only (not in OSS)
+
+> **OSS:** `app/admin/` does not exist in this repository. Do not implement admin OTP, `zizkadb_admin_token`, or `admin*` helpers in `lib/api.ts`. Historical managed-cloud behavior below.
 
 - **Separate auth** via `zizkadb_admin_token` (localStorage + cookie; `setAdminToken`/`clearAdminToken`). `layout.tsx` sets `robots: noindex/nofollow`. Middleware allows bare `/admin` (login UI) but redirects `/admin/*` without the cookie.
 - **Three tiers:** `AdminPage` boot gate (reads `getAdminToken()`, shows Loading → Login → Dashboard) → `Login` (founder-only `ADMIN_EMAIL = 'founder@zizka.ai'`, OTP via `adminRequestOtp` with 30s `AbortSignal` + `adminVerifyOtp`) → `Dashboard`.
@@ -993,7 +997,7 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 
 ## 21. Data Model (backend)
 
-Schema sources: `core/db/schema.sql` (base DDL, Docker init) + `core/db/migrations/002-007` + **runtime idempotent DDL** in `core/db/connection.py` (production relies primarily on this). Extensions: `vector`, `uuid-ossp`. There is no migration `001`.
+Schema sources: `core/db/schema.sql` (base DDL, Docker init) + named migrations `002_user_billing.sql`, `004_tenant_embeddings.sql`, `005_agent_api_keys.sql` + **runtime idempotent DDL** in `core/db/connection.py` (production relies primarily on this). Extensions: `vector`, `uuid-ossp`. There is no migration `001` or `003` on disk.
 
 ### 21.1 Postgres tables (key columns)
 

@@ -44,4 +44,12 @@ if grep -q 'GET /v1/admin/demo-requests' .cursor/rules/backend-dashboard-contrac
   fail "backend-dashboard-contract.mdc must not reference OSS admin demo list endpoint"
 fi
 
+if grep -qE '897.line|897-line' CLAUDE.md dashboard/CLAUDE.md llms.txt 2>/dev/null; then
+  fail "stale KB line count (897) in CLAUDE.md, dashboard/CLAUDE.md, or llms.txt"
+fi
+
+if grep -q '002–007' core/CLAUDE.md 2>/dev/null || grep -q '002-007' .cursor/rules/core-backend.mdc 2>/dev/null; then
+  fail "stale migration range 002-007 — list actual files in core/db/migrations/"
+fi
+
 echo "check-doc-drift: OK (${ROUTER_COUNT} routers, AI docs present)"

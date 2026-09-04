@@ -13,6 +13,7 @@ Use this map to pick the **right** source of truth. Prefer these over guessing f
 |---|---|
 | `AGENTS.md` | Repo-root entry for all AI tools |
 | `docs/ai/CODING_PRINCIPLES.md` | Universal engineering standards (scope, reuse, tests) |
+| `docs/ai/MAINTAINER.md` | Maintainer-only PR metadata (not for external contributors) |
 | `docs/ai/README.md` | AI-assisted development map |
 | Root `CLAUDE.md` | Project-wide stack, invariants, test commands |
 | `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` | Dashboard flows, API contract, business rules, per-screen behavior |

@@ -1,6 +1,6 @@
 ---
 description: Enterprise marketing page — copy guardrails, lead capture, QA, and cross-links
-globs: dashboard/app/enterprise/**,dashboard/components/marketing/enterprise/**,dashboard/components/marketing/MarketingFooter.tsx,dashboard/components/marketing/MarketingPageStyles.tsx,dashboard/components/SiteNav.tsx,dashboard/lib/demo.ts,core/api/demo_requests.py,core/db/migrations/007_demo_requests_enterprise.sql,docs/enterprise-page-qa.md,docs/enterprise-product-overview.md
+globs: dashboard/app/enterprise/**,dashboard/components/marketing/enterprise/**,dashboard/components/marketing/MarketingFooter.tsx,dashboard/components/marketing/MarketingPageStyles.tsx,dashboard/components/SiteNav.tsx,dashboard/lib/demo.ts,core/api/demo_requests.py,docs/enterprise-page-qa.md,docs/enterprise-product-overview.md
 alwaysApply: false
 ---
 
@@ -21,7 +21,7 @@ Shared shell: `SiteNav active="enterprise"`, `MarketingPageStyles`, `CalendlyBoo
 - Honeypot field name: **`botcheck`** (not `website`); client silently drops if filled
 - Backend allowlist: `enterprise`, `landing`, `newsletter` — else **422**
 - Admin demo tab shows Role + Source; search includes both
-- DB: nullable `position VARCHAR(120)`, `source VARCHAR(64)` — migration `007_demo_requests_enterprise.sql` + runtime DDL in `connection.py`
+- DB: nullable `position VARCHAR(120)`, `source VARCHAR(64)` — runtime DDL in `core/db/connection.py::init_db()` (+ `schema.sql` on fresh install)
 
 ## Copy guardrails (must NOT claim on `/enterprise`)
 

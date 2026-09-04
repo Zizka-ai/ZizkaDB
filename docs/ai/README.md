@@ -24,12 +24,13 @@ Clone the repo and work inside it. These files load automatically (or are one `@
 
 | Tool | Entry file | Notes |
 |------|------------|-------|
+| **Any agent** | [`AGENTS.md`](../../AGENTS.md) | **Start here** — contributors |
+| **Maintainers** | [`docs/ai/MAINTAINER.md`](MAINTAINER.md) | Assignee, reviewer, `gh` flags |
 | **Cursor** | `.cursor/rules/*.mdc` | `alwaysApply: true` on standards + KB index |
 | **Claude Code** | `CLAUDE.md`, `AGENTS.md` | Module `CLAUDE.md` per directory |
 | **GitHub Copilot** | `.github/copilot-instructions.md` | Points to Layer 1 |
 | **Windsurf** | `.windsurfrules` | Pointer to `AGENTS.md` |
 | **Gemini (IDE)** | `GEMINI.md` | Pointer to `AGENTS.md` |
-| **Any agent** | `AGENTS.md` | Start here |
 
 ---
 
@@ -82,14 +83,23 @@ When you change…
 
 ---
 
+## Security (self-host)
+
+No real API keys belong in committed code. Dev placeholders (`zizkadb_dev_local`, `sk-...` in `.env.example`) are intentional for local use only.
+
+Before any internet-facing deploy: `ENV=production`, strong `JWT_SECRET`, unset `DEV_API_KEY`, `NEXT_PUBLIC_DEV_MODE=false`. Run `bash scripts/validate-selfhost-config.sh` when available.
+
+---
+
 ## Implementation status
 
 | Phase | Status |
 |-------|--------|
 | Canonical `docs/ai/` layer | Done |
-| Stale doc fixes (`core/README`, ADR index, OSS admin refs) | Done |
+| Stale doc fixes (`core/README`, ADR index, OSS admin KB fences, migration paths) | Done |
 | `examples/CLAUDE.md` | Done |
 | `CONTRIBUTING.md` AI section | Done |
 | `.editorconfig` | Done |
 | `pre-commit` hooks | Done — `.pre-commit-config.yaml` |
+| Contributor vs maintainer PR rules | Done — `docs/ai/MAINTAINER.md` |
 | CI doc drift checker | Done — `scripts/check-doc-drift.sh` in CI + pre-commit |

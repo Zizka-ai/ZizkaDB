@@ -17,7 +17,7 @@ ZizkaDB is open-source (AGPL-3.0, except MCP server which is MIT). It runs as a 
 ## Key context files
 
 - [CLAUDE.md](CLAUDE.md) — Full AI onboarding: stack, conventions, invariants, test commands
-- [Dashboard Knowledge Base](dashboard/DASHBOARD_KNOWLEDGE_BASE.md) — 897-line source of truth for the dashboard module
+- [Dashboard Knowledge Base](dashboard/DASHBOARD_KNOWLEDGE_BASE.md) — source of truth for the dashboard module (~1,100 lines)
 - [Architecture Decisions](docs/adr/) — Why key design decisions were made
 - [CONNECT.md](CONNECT.md) — How to connect any agent to ZizkaDB
 - [CONTRIBUTING.md](CONTRIBUTING.md) — Contribution guide

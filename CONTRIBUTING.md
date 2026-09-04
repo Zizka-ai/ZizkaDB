@@ -291,14 +291,19 @@ Rules:
 
 ## Testing expectations
 
-| Change type | Minimum bar |
-|-------------|-------------|
-| Bug fix | Test that reproduces the bug, or smoke test path |
-| API / auth | `pytest` in `core/tests/` |
-| Schema | Manual test: fresh install + migrate existing volume |
-| SDK | Unit test or extend `core/tests/test_smoke.py` |
-| Dashboard | `npm run build` passes; manual check described in PR |
+| Area | Minimum bar |
+|------|-------------|
+| Python lint | `ruff check core/ sdk/python/ mcp/ integrations/` |
+| Core API | `pytest core/tests/ -m "not integration" -v` |
+| Python SDK | `pytest sdk/python/tests/ -v` |
+| MCP | `pytest mcp/tests/ -v` |
+| TypeScript SDK | `cd sdk/typescript && npm test` |
+| Dashboard | `cd dashboard && npm run lint && npm test && npm run build` |
+| Doc / router drift | `bash scripts/check-doc-drift.sh` |
 | Docs only | Link check; no tests required |
+| Full stack | `bash scripts/smoke-test.sh` |
+
+**CI runs the Python + dashboard gates on every PR.** Match the row for the area you changed. `pre-commit install` is optional locally.
 
 ```bash
 bash scripts/smoke-test.sh

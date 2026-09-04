@@ -124,7 +124,7 @@ Never use SQLAlchemy, never open a direct `asyncpg.connect()` — always use the
 
 - **Fresh install**: `core/db/schema.sql` — mounted as Docker init script, runs once
 - **Running install**: `core/db/connection.py::init_db()` — `ALTER TABLE IF EXISTS` runs on every startup
-- **Named migrations**: `core/db/migrations/002–007_*.sql` — applied manually during deploys
+- **Named migrations**: `core/db/migrations/002_user_billing.sql`, `004_tenant_embeddings.sql`, `005_agent_api_keys.sql` — applied manually during deploys; additional schema in `connection.py::init_db()`
 - **Rule**: always write idempotent DDL (`CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`)
 
 ---

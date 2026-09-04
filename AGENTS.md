@@ -51,28 +51,16 @@ Workflow skills: [.cursor/skills/zizkadb-dev-setup/](.cursor/skills/zizkadb-dev-
 
 ---
 
-## Optional: pre-commit (recommended)
-
-Catch lint and doc drift before you push:
-
-```bash
-pip install -r core/requirements-dev.txt
-pre-commit install
-pre-commit run --all-files   # first-time verify
-```
-
-Hooks: ruff (Python), AI doc drift (`scripts/check-doc-drift.sh`), basic file hygiene.
-
----
-
 ## Before starting
 
 ```bash
 git fetch origin main
-git checkout -B main origin/main
+git merge origin/main    # on your feature branch — or pull main before branching
 ```
 
-Branch from that tip (`git checkout -b <topic>`), or merge `origin/main` into an existing PR branch. Never start from a stale local `main`. Never `git push` to `main`.
+Branch from current `main` (`git checkout -b <topic>`). Never `git push` to `main`.
+
+**Maintainers:** [docs/ai/MAINTAINER.md](docs/ai/MAINTAINER.md) — stricter branch reset and `gh pr create` metadata.
 
 ---
 
@@ -94,9 +82,20 @@ pytest core/tests/ -m "not integration" -v
 cd dashboard && npm run lint && npm test && npm run build
 ```
 
-When opening a PR, set **all** GitHub metadata in one `gh pr create`: `--label`, `--assignee saadamjad`, `--reviewer Zizka-ai`, `Closes #N` or `Related to #N`. Footer: **Made with [Cursor](https://cursor.com) and Saad**
+When opening a PR, include a clear summary and test plan. Link issues with `Fixes #N` or `Related to #N` when applicable.
+
+**Maintainers only:** assignee, reviewer, labels — [docs/ai/MAINTAINER.md](docs/ai/MAINTAINER.md).
 
 See [.cursor/skills/zizkadb-test/SKILL.md](.cursor/skills/zizkadb-test/SKILL.md) for the full matrix.
+
+## Optional: pre-commit
+
+```bash
+pip install -r core/requirements-dev.txt
+pre-commit install
+```
+
+Hooks are **optional locally** — CI enforces ruff, tests, and doc drift on every PR.
 
 ---
 

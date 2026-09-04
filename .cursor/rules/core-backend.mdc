@@ -47,7 +47,7 @@ Rate limiting is in-process (Python module-level dict). State resets on restart 
 
 - Fresh install: `core/db/schema.sql` (Docker init, runs once)
 - Running install: `core/db/connection.py::init_db()` (idempotent `ALTER TABLE IF EXISTS`, every startup)
-- Named migrations: `core/db/migrations/002-007_*.sql` (applied manually)
+- Named migrations: `core/db/migrations/002_user_billing.sql`, `004_tenant_embeddings.sql`, `005_agent_api_keys.sql` (applied manually)
 - Rule: always use `IF NOT EXISTS` / `IF EXISTS` — DDL runs on live databases
 
 ## Entitlements
