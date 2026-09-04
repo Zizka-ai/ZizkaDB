@@ -75,7 +75,7 @@ GET /v1/events/{event_id}/why?depth=10
 | GET | `/v1/auth/api-keys/usage` | Plan key quota `{plan, limit, used, unlimited, at_limit}` |
 | DELETE | `/v1/auth/api-keys/{id}` | Revoke key |
 
-**API key creation** requires a dashboard login session (JWT), not an API key. Active keys per tenant are limited by plan (Self-Hosted 1, Pro 2, Team 5, Enterprise 50; unknown/no plan unlimited); exceeding the limit returns `409` with `{detail:{code:"api_key_limit_reached", plan, limit, used}}`. Enforcement is gated by the `API_KEY_LIMITS_ENFORCED` server flag; self-hosted deployments resolve their plan via `DEPLOYMENT_MODE=self_hosted`, not the `users.plan` column.
+**API key creation** requires a dashboard login session (JWT), not an API key. Active keys per tenant are limited by plan (Self-Hosted 1, Pro 2, Team 5; unknown/no plan unlimited); exceeding the limit returns `409` with `{detail:{code:"api_key_limit_reached", plan, limit, used}}`. Enforcement is gated by the `API_KEY_LIMITS_ENFORCED` server flag; self-hosted deployments resolve their plan via `DEPLOYMENT_MODE=self_hosted`, not the `users.plan` column.
 
 ## Memory
 
@@ -119,7 +119,7 @@ GET /health
 
 ## Demo requests (public, no auth)
 
-Landing **Book demo** and Enterprise **Let's connect** forms.
+Landing **Book demo** form.
 
 ```http
 POST /v1/demo-requests
@@ -132,7 +132,7 @@ Content-Type: application/json
   "company_name": "Example Corp",
   "website": "https://example.com",
   "position": "Head of Platform",
-  "source": "enterprise",
+  "source": "landing",
   "botcheck": ""
 }
 ```
@@ -141,7 +141,7 @@ Content-Type: application/json
 |-------|----------|-------|
 | `first_name`, `last_name`, `email`, `company_name`, `website` | yes | Trimmed server-side |
 | `position` | no | Role/title (max 120 chars) |
-| `source` | no | Allowlist: `enterprise`, `landing`, `newsletter` — invalid → **422** |
+| `source` | no | Allowlist: `landing`, `newsletter` — invalid → **422** |
 | `botcheck` | no | Honeypot; non-empty → **400** |
 
 Response **201:** `{ "id": "<uuid>", "created_at": "<iso>" }`. Rate limit: 8 requests / hour / IP (**429**). Listing demo requests is a managed-cloud operator action — there is no `/v1/admin` router in this OSS repo.

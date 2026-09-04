@@ -234,7 +234,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Where is our data stored?",
-    a: "It depends on your deployment: self-hosted keeps everything in your own infrastructure, managed cloud runs on infrastructure operated by ZIZKA AI S.L. (an EU entity), and Enterprise VPC deploys single-tenant inside your own cloud account.",
+    a: "It depends on your deployment: self-hosted keeps everything in your own infrastructure; managed cloud runs on infrastructure operated by ZIZKA AI S.L. (an EU entity).",
   },
   {
     q: "How do we exercise erasure rights under GDPR?",
@@ -361,9 +361,9 @@ export default function EuAiActPage() {
             <a href="#compliance-mapping" style={primaryLinkBtn}>
               View article mapping
             </a>
-            <Link href="/enterprise#contact" style={outlineLinkBtn}>
+            <a href={`mailto:${FOUNDER_EMAIL}`} style={outlineLinkBtn}>
               Talk to us
-            </Link>
+            </a>
           </div>
 
           <Section id="overview" title="Overview" first>
@@ -479,14 +479,7 @@ export default function EuAiActPage() {
                   <li>Self-hosted SDKs — Python, npm, MCP, LangChain, CrewAI</li>
                   <li>Managed cloud — Pro and Team plans</li>
                   <li>Design partnerships for SMEs</li>
-                  <li>
-                    AGPL-3.0 license, with a commercial{" "}
-                    <Link href="/enterprise" style={link}>
-                      Enterprise
-                    </Link>{" "}
-                    license (VPC deployment + SLA) for organizations that
-                    need it
-                  </li>
+                  <li>Core stack under AGPL-3.0; MCP server under MIT</li>
                 </ul>
               </div>
             </div>
@@ -513,8 +506,7 @@ export default function EuAiActPage() {
               </li>
               <li>Marketing opt-out controls for contacts stored in ZizkaDB</li>
               <li>
-                Self-hosting and Enterprise VPC options for organizations with
-                data-residency requirements
+                Self-hosting for organizations with data-residency requirements
               </li>
             </ul>
           </Section>
@@ -576,7 +568,6 @@ export default function EuAiActPage() {
             <table style={table}>
               <tbody>
                 {[
-                  ["Enterprise & compliance", "/enterprise#contact"],
                   ["Privacy policy", "/privacy"],
                   ["Email", `mailto:${FOUNDER_EMAIL}`],
                 ].map(([k, v]) => (

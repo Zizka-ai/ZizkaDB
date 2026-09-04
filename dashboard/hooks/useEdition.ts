@@ -13,7 +13,7 @@ export interface EditionState {
 }
 
 /** Plans that mean "managed cloud" (multi-agent + fleet). */
-const MANAGED_PLANS = new Set(['pro', 'team', 'enterprise'])
+const MANAGED_PLANS = new Set(['pro', 'team'])
 
 /**
  * Resolve which product edition the dashboard is running as.

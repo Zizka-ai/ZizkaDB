@@ -134,7 +134,7 @@ Configure in `infra/.env`:
 - **Do not set** `DEV_API_KEY` in production
 - `DEPLOYMENT_MODE=self_hosted` — keep this set even in production. `ENV=production` alone doesn't distinguish a self-hosted install from managed cloud (both use it), so this separate flag is what makes plan-based entitlement checks (e.g. API key limits) resolve to the Self-Hosted plan instead of whatever is in `users.plan`.
 - `EMBEDDINGS_ENABLED=false` — default for self-host. Set to `true` only when you want semantic search / vector indexing; then configure `OPENAI_API_KEY` (or your provider key in Dashboard → Settings).
-- `API_KEY_LIMITS_ENFORCED=true` — enable per-plan API key caps (Self-Hosted: 1, Pro: 2, Team: 5, Enterprise: 50). Default `false`; self-hosted installs are uncapped unless you set this.
+- `API_KEY_LIMITS_ENFORCED=true` — enable per-plan API key caps (Self-Hosted: 1, Pro: 2, Team: 5). Default `false`; self-hosted installs are uncapped unless you set this.
 
 Validate production config before deploy:
 

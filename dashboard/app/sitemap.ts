@@ -9,7 +9,6 @@ const SITE_URL = process.env.DASHBOARD_URL || 'https://db.zizka.ai'
 const ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency']; priority: number }[] = [
   { path: '', changeFrequency: 'weekly', priority: 1 },
   { path: '/docs', changeFrequency: 'weekly', priority: 0.9 },
-  { path: '/enterprise', changeFrequency: 'monthly', priority: 0.8 },
   { path: '/eu-ai-act', changeFrequency: 'monthly', priority: 0.7 },
   { path: '/community', changeFrequency: 'daily', priority: 0.7 },
   { path: '/trust', changeFrequency: 'monthly', priority: 0.5 },

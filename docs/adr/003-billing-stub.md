@@ -7,7 +7,7 @@
 
 ## Context
 
-ZizkaDB has a billing model (Pro, Team, Enterprise plans, 30-day trials) and a dashboard that shows plan status, trial countdowns, and upgrade prompts. A real billing integration (Stripe) was evaluated early in development.
+ZizkaDB has a billing model (Pro, Team plans, 30-day trials) and a dashboard that shows plan status, trial countdowns, and upgrade prompts. A real billing integration (Stripe) was evaluated early in development.
 
 ---
 

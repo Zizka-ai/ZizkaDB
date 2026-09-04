@@ -49,7 +49,6 @@ How coding standards are encoded for **Cursor, Claude Code, Copilot, Windsurf, a
 | `sdk-integrations-mcp.mdc` | `sdk/**`, `integrations/**`, `mcp/**`, `examples/**` |
 | `testing.mdc` | tests |
 | `infra-deploy.mdc` | `infra/**`, `scripts/**`, `.github/**` |
-| `enterprise-page-knowledge-base.mdc` | Enterprise marketing |
 
 ---
 

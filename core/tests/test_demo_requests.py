@@ -50,14 +50,14 @@ class TestDemoRequests:
         assert "created_at" in body
 
     @patch("api.demo_requests.get_pool")
-    def test_create_with_enterprise_source_and_position(self, mock_get_pool):
+    def test_create_with_landing_source_and_position(self, mock_get_pool):
         mock_pool = _mock_pool_row()
         mock_get_pool.return_value = mock_pool
         response = client.post(
             "/v1/demo-requests",
             json={
                 **VALID_PAYLOAD,
-                "source": "enterprise",
+                "source": "landing",
                 "position": "Head of Platform",
             },
         )
@@ -65,12 +65,12 @@ class TestDemoRequests:
         call_args = mock_pool.fetchrow.call_args[0]
         # position is 6th positional arg ($6), source is 7th ($7)
         assert call_args[6] == "Head of Platform"
-        assert call_args[7] == "enterprise"
+        assert call_args[7] == "landing"
 
     @patch("api.demo_requests.get_pool")
     def test_valid_sources_accepted(self, mock_get_pool):
         mock_get_pool.return_value = _mock_pool_row()
-        for source in ("enterprise", "landing", "newsletter"):
+        for source in ("landing", "newsletter"):
             asyncio.run(demo_limiter.storage.clear())
             response = client.post(
                 "/v1/demo-requests",
@@ -124,7 +124,7 @@ class TestDemoRequests:
                 "company_name": "  Analytical Engines  ",
                 "website": "  https://example.com  ",
                 "position": "  CTO  ",
-                "source": "enterprise",
+                "source": "landing",
             },
         )
         assert response.status_code == 201
@@ -135,7 +135,7 @@ class TestDemoRequests:
         assert args[4] == "Analytical Engines"
         assert args[5] == "https://example.com"
         assert args[6] == "CTO"
-        assert args[7] == "enterprise"
+        assert args[7] == "landing"
 
     @patch("api.demo_requests.get_pool")
     def test_optional_position_omitted(self, mock_get_pool):

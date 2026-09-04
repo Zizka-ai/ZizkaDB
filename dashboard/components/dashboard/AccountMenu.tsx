@@ -11,7 +11,7 @@ import { colors, radii } from '@/lib/design-tokens'
 import { useConnectionHealth, type HealthState } from '@/hooks/useConnectionHealth'
 import { useEdition } from '@/hooks/useEdition'
 
-const PLAN_LABELS: Record<string, string> = { pro: 'Pro', team: 'Team', enterprise: 'Enterprise' }
+const PLAN_LABELS: Record<string, string> = { pro: 'Pro', team: 'Team' }
 
 const HEALTH_META: Record<HealthState, { color: string; label: string }> = {
   ok: { color: colors.success, label: 'API connected' },

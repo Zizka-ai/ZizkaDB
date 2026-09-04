@@ -7,7 +7,7 @@ export interface DemoRequestPayload {
   company_name: string
   website: string
   position?: string
-  source?: 'enterprise' | 'landing' | 'newsletter'
+  source?: 'landing' | 'newsletter'
 }
 
 export async function submitDemoRequest(payload: DemoRequestPayload) {

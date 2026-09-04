@@ -36,7 +36,6 @@ PLAN_ENTITLEMENTS: dict[str, PlanEntitlements] = {
     "self_hosted": PlanEntitlements(max_api_keys=1),
     "pro": PlanEntitlements(max_api_keys=2),
     "team": PlanEntitlements(max_api_keys=5),
-    "enterprise": PlanEntitlements(max_api_keys=50),
 }
 
 

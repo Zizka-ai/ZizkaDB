@@ -5,21 +5,14 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { BrandLogo } from "./BrandLogo";
 import { StartTrialButton } from "./marketing/StartTrialButton";
-import {
-  BRAND,
-  BRAND_DARK,
-  BRAND_LIGHT,
-  brandCtaStyle,
-  enterpriseNavLinkStyle,
-} from "./brand";
+import { BRAND, brandCtaStyle } from "./brand";
 
 export type SiteNavActive =
   | "docs"
   | "community"
   | "trust"
   | "explorer"
-  | "home"
-  | "enterprise";
+  | "home";
 
 type SiteNavProps = {
   active?: SiteNavActive;
@@ -45,7 +38,6 @@ const mobileLinkStyle = (on: boolean): CSSProperties => ({
 });
 
 export function SiteNav({ active, suffix }: SiteNavProps) {
-  const enterpriseActive = active === "enterprise";
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -58,15 +50,6 @@ export function SiteNav({ active, suffix }: SiteNavProps) {
   return (
     <>
       <style>{`
-        .site-nav-enterprise:not([data-active="true"]):hover {
-          border-color: ${BRAND_LIGHT} !important;
-          box-shadow: 0 2px 12px rgba(249,115,22,0.18) !important;
-          color: ${BRAND_DARK} !important;
-        }
-        .site-nav-enterprise:focus-visible {
-          outline: 2px solid ${BRAND};
-          outline-offset: 2px;
-        }
         .site-nav-menu-btn {
           align-items: center;
           justify-content: center;
@@ -98,7 +81,7 @@ export function SiteNav({ active, suffix }: SiteNavProps) {
           max-height: calc(100dvh - 56px);
           overflow-y: auto;
           background: rgba(6,6,16,0.98);
-          border-bottom: 1px solid rgba(255,255,255,0.1);
+          border-bottom: 1px solid rgba(255,255,255,0.08);
           padding: 8px 20px 24px;
           padding-bottom: calc(24px + env(safe-area-inset-bottom));
           z-index: 99;
@@ -138,14 +121,6 @@ export function SiteNav({ active, suffix }: SiteNavProps) {
           <a href="/swagger" style={linkStyle(active === "explorer")}>
             API Explorer
           </a>
-          <Link
-            href="/enterprise"
-            className="site-nav-enterprise"
-            data-active={enterpriseActive ? "true" : "false"}
-            style={enterpriseNavLinkStyle(enterpriseActive)}
-          >
-            Enterprise
-          </Link>
           <Link
             href="/login"
             style={{
@@ -202,13 +177,6 @@ export function SiteNav({ active, suffix }: SiteNavProps) {
             <a href="/swagger" style={mobileLinkStyle(active === "explorer")} onClick={() => setMenuOpen(false)}>
               API Explorer
             </a>
-            <Link
-              href="/enterprise"
-              style={mobileLinkStyle(enterpriseActive)}
-              onClick={() => setMenuOpen(false)}
-            >
-              Enterprise
-            </Link>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
               <Link
                 href="/login"

@@ -25,7 +25,7 @@ Authoritative list: `main.py` (`app.include_router`). There is **no** `admin.py`
 | `api/billing_checkout.py` | `/v1/billing` | Plan/trial status (stubbed — always `has_access: True`) |
 | `api/settings.py` | `/v1/settings` | Tenant settings, embedding config |
 | `api/account.py` | `/v1/account` | User profile, GDPR consent |
-| `api/demo_requests.py` | `/v1/demo-requests` | Enterprise demo request form (public) |
+| `api/demo_requests.py` | `/v1/demo-requests` | Public demo request form (landing newsletter / book demo) |
 | `api/community.py` | `/v1/community` | Public community board |
 | `api/marketing_subscriptions.py` | `/v1/marketing-subscriptions` | Email signup |
 

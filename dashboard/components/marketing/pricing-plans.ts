@@ -37,19 +37,4 @@ export const LANDING_PRICING_PLANS: readonly PricingPlan[] = [
     ctaPrimary: false,
   },
   ...managedPricing,
-  {
-    name: 'Enterprise',
-    price: 'Annual License',
-    sub: '1 Year',
-    features: [
-      'Single-tenant VPC deployment',
-      'Up to 50 agents',
-      'Fleet dashboard and ranking',
-      'Install + integration workshop',
-    ],
-    cta: "Let's Connect",
-    href: '/enterprise#contact',
-    highlight: false,
-    ctaPrimary: true,
-  },
 ]

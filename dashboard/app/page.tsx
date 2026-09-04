@@ -333,12 +333,12 @@ export default function LandingPage() {
               }
             />
             <FeatureCard
-              icon="🏢"
-              title="Enterprise & private cloud"
-              body="Single-tenant VPC deployment with Fleet dashboard, workshops, and dedicated support."
+              icon="🐳"
+              title="Self-host on your infrastructure"
+              body="Run the full stack with Docker Compose on your machine or VPC. AGPL core, your data stays yours."
               actions={
-                <Link href="/enterprise" style={{ ...outlineBtn, fontSize: 14, padding: "12px 22px" }}>
-                  Explore Enterprise
+                <Link href="/docs" style={{ ...outlineBtn, fontSize: 14, padding: "12px 22px" }}>
+                  Self-hosting guide
                 </Link>
               }
             />

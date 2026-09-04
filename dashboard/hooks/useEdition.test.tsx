@@ -51,7 +51,7 @@ describe('useEdition — plan fallback when env is unset', () => {
     delete process.env.NEXT_PUBLIC_DEPLOYMENT_MODE
   })
 
-  it.each(['pro', 'team', 'enterprise'])('plan %s → managed', async (plan) => {
+  it.each(['pro', 'team'])('plan %s → managed', async (plan) => {
     getApiKeyUsage.mockResolvedValue({ plan })
     const useEdition = await loadHook()
 
@@ -63,6 +63,16 @@ describe('useEdition — plan fallback when env is unset', () => {
 
   it('plan self_hosted → oss', async () => {
     getApiKeyUsage.mockResolvedValue({ plan: 'self_hosted' })
+    const useEdition = await loadHook()
+
+    const { result } = renderHook(() => useEdition())
+
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(result.current.edition).toBe('oss')
+  })
+
+  it('unknown plan → oss', async () => {
+    getApiKeyUsage.mockResolvedValue({ plan: 'enterprise' })
     const useEdition = await loadHook()
 
     const { result } = renderHook(() => useEdition())

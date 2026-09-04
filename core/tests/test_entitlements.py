@@ -32,15 +32,11 @@ class TestApiKeyLimitForPlan:
     def test_team_plan_capped_at_five(self):
         assert api_key_limit_for_plan("team") == 5
 
-    def test_enterprise_plan_capped_at_fifty(self):
-        assert api_key_limit_for_plan("enterprise") == 50
-
     def test_config_dict_matches_expected(self):
         assert {plan: e.max_api_keys for plan, e in PLAN_ENTITLEMENTS.items()} == {
             "self_hosted": 1,
             "pro": 2,
             "team": 5,
-            "enterprise": 50,
         }
 
     def test_plan_is_case_and_whitespace_insensitive(self):
@@ -254,15 +250,6 @@ async def test_guard_respects_env_override(enforce, monkeypatch):
         await api_keys.assert_and_reserve_api_key_slot(conn_full, tenant_id="t1")
     assert exc.value.detail["limit"] == 1
 
-
-async def test_guard_enterprise_limit_is_fifty(enforce):
-    conn_ok = FakeConn(plan="enterprise", count=49)
-    await api_keys.assert_and_reserve_api_key_slot(conn_ok, tenant_id="t1")
-
-    conn_full = FakeConn(plan="enterprise", count=50)
-    with pytest.raises(HTTPException) as exc:
-        await api_keys.assert_and_reserve_api_key_slot(conn_full, tenant_id="t1")
-    assert exc.value.detail["limit"] == 50
 
 
 async def test_guard_self_hosted_limit_is_one(enforce, monkeypatch):
