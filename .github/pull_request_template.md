@@ -40,6 +40,6 @@
 
 ## Related issue
 
-Fixes #<!-- number --> or Related to #<!-- number -->
+Fixes #<!-- number --> — use this keyword so GitHub **closes the issue automatically when the PR merges**. Use `Related to #<!-- number -->` only if the issue should stay open.
 
 <!-- Maintainers: docs/ai/MAINTAINER.md for labels and assignee -->

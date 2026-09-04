@@ -16,7 +16,7 @@ Full standards: [docs/ai/CODING_STANDARDS.md](../../docs/ai/CODING_STANDARDS.md)
 5. **Test** — run layer commands from [zizkadb-test skill](../skills/zizkadb-test/SKILL.md).
 6. **Document** — update canonical docs in the **same** PR when behavior changes.
 7. **Senior review** — review your own diff; fix before PR.
-8. **PR** — per [CONTRIBUTING.md](../../CONTRIBUTING.md); link issue when applicable.
+8. **PR** — per [CONTRIBUTING.md](../../CONTRIBUTING.md): open a GitHub issue with the right label (`bug`, `enhancement`, `documentation`) before the branch; PR body must include `Fixes #N` so the issue auto-closes on merge; CI must pass.
 
 ## Must not
 
