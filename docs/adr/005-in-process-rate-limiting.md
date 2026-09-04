@@ -11,7 +11,7 @@ Several public API routes need rate limiting to prevent abuse:
 - `POST /v1/community/posts` — community board
 - `POST /v1/community/replies` — community board
 - `POST /v1/community/upload` — file uploads
-- `POST /v1/demo-requests` — enterprise lead form
+- `POST /v1/demo-requests` — landing lead form
 - `POST /v1/marketing-subscriptions` — email signups
 - `POST /v1/auth/request-otp` — OTP login (brute-force protection) — **see critical note below**
 

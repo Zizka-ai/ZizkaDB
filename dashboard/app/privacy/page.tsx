@@ -50,7 +50,7 @@ export default function PrivacyPolicyPage() {
         <li style={S.li}><strong>Billing data</strong> — subscription plan, payment status; card details are processed by our payment provider (we do not store full card numbers)</li>
         <li style={S.li}><strong>Operational / agent data</strong> — events, agent names, session metadata, and payloads you log via the API or SDK (this may include personal data if you choose to log it)</li>
         <li style={S.li}><strong>Technical data</strong> — IP address, browser type, device information, API request logs, error reports</li>
-        <li style={S.li}><strong>Communications</strong> — messages you send via contact or enterprise forms</li>
+        <li style={S.li}><strong>Communications</strong> — messages you send via contact forms</li>
         <li style={S.li}><strong>Cookie / local storage data</strong> — consent preferences and session identifiers (see Section 9)</li>
         <li style={S.li}><strong>Optional telemetry</strong> — anonymous SDK install metrics (SDK type, version, OS, and coarse country derived from IP at ping time; we do not store raw IP in telemetry tables) if not disabled (<code style={{ fontFamily: 'monospace', fontSize: 13 }}>ZIZKADB_TELEMETRY=false</code>)</li>
         <li style={S.li}><strong>Optional product updates</strong> — if you choose to subscribe on the dashboard or via a future SDK prompt, we store your email solely to send release and security notices; you may unsubscribe at any time</li>
@@ -197,8 +197,7 @@ export default function PrivacyPolicyPage() {
       <h2 style={S.h2}>15. Contact</h2>
       <p style={S.p}>
         Data protection enquiries: <a href="mailto:privacy@zizka.ai" style={S.a}>privacy@zizka.ai</a><br />
-        General contact: <a href="mailto:founder@zizka.ai" style={S.a}>founder@zizka.ai</a><br />
-        Enterprise: <Link href="/enterprise#contact" style={S.a}>contact form</Link>
+        General contact: <a href="mailto:founder@zizka.ai" style={S.a}>founder@zizka.ai</a>
       </p>
     </LegalDocumentLayout>
   )

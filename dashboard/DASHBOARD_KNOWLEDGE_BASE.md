@@ -2,7 +2,7 @@
 
 > Single source of truth for the Dashboard module. Reverse-engineered directly from the codebase.
 >
-> **Last verified:** 2026-08-30 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
+> **Last verified:** 2026-09-04 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
 >
 > **OSS scope:** This repo ships the tenant dashboard and public marketing/community surfaces. The managed-cloud **operator admin console** (`/admin`, `/v1/admin/*`, `core/api/admin.py`) is **not in this tree** — there is no `app/admin/` and no admin API routes here. Sections §16 (admin paragraph), §18.6, and §20.5 below are **managed-cloud reference only**; do not implement them in OSS.
 >
@@ -223,14 +223,13 @@ OSS**. `/dashboard/fleet` redirects to Activity on OSS.
 | 4 | Landing **Pricing** Pro card | `app/page.tsx:189` | `/signup?plan=pro` |
 | 5 | Landing **Pricing** Team card | `app/page.tsx:195` | `/signup?plan=team` |
 | 6 | Landing Self-Hosted card "Setup guide" | `pricing-plans.ts` / `PricingCard` | `/docs` (not trial) |
-| 7 | Landing **Pricing** Enterprise card | `pricing-plans.ts` / `PricingCard` | `/enterprise#contact` |
-| 8 | Landing final CTA "Start free trial" | `app/page.tsx:259` | `/signup` |
-| 9 | Footer "Start free" | `app/page.tsx:286` | `/signup` |
-| 10 | `ThreeWaysConnectSection` "Sign up" | `ThreeWaysConnectSection.tsx:135` | `/signup` |
-| 11 | Login "Create one free" | `login/page.tsx:258` | `/signup` |
-| 12 | Docs sections (several) | `docs/sections.tsx` | `/signup` |
-| 13 | Trust page onboarding | `trust/page.tsx:386` | `/signup` |
-| 14 | **Retention trial** (settings, on delete) | `settings/page.tsx:404-431` | `grantRetentionTrial` (in-place) |
+| 7 | Landing final CTA "Start free trial" | `app/page.tsx:259` | `/signup` |
+| 8 | Footer "Start free" | `app/page.tsx:286` | `/signup` |
+| 9 | `ThreeWaysConnectSection` "Sign up" | `ThreeWaysConnectSection.tsx:135` | `/signup` |
+| 10 | Login "Create one free" | `login/page.tsx:258` | `/signup` |
+| 11 | Docs sections (several) | `docs/sections.tsx` | `/signup` |
+| 12 | Trust page onboarding | `trust/page.tsx:386` | `/signup` |
+| 13 | **Retention trial** (settings, on delete) | `settings/page.tsx:404-431` | `grantRetentionTrial` (in-place) |
 
 There is **no shared "StartTrialButton" component** — every CTA is an inline `<Link href="/signup...">`. Plan is passed only via the `?plan=` query param, persisted to `sessionStorage.signup_plan`.
 
@@ -316,7 +315,7 @@ There is a **separate** lead-capture path (`lib/demo.ts` → `submitDemoRequest`
 
 **Feature gating:** Self-host (`DEV_MODE`) enables dev-token login and changes onboarding copy; billing is not enforced anywhere.
 
-**API key plan limits:** the number of **active** (`revoked = FALSE`) API keys per tenant is capped by plan — Self-Hosted 1, Pro 2, Team 5, Enterprise 50; every other case (no/unknown plan) is **unlimited** when enforcement is off. The limit counts **all** keys (unassigned + agent-scoped), and because creating an agent auto-creates a key (`create_agent`), each agent consumes one slot on capped plans.
+**API key plan limits:** the number of **active** (`revoked = FALSE`) API keys per tenant is capped by plan — Self-Hosted 1, Pro 2, Team 5; every other case (no/unknown plan) is **unlimited** when enforcement is off.
 
 **One API key = one agent:** `POST /v1/auth/api-keys` creates an **unassigned** key (`agent_id` NULL). The first SDK/API request that includes an agent id atomically binds the key (`claim_unassigned_api_key`). Later requests from a different agent get 403. Per-agent keys (`POST /v1/agents/{id}/api-keys`) are bound at creation. JWT sessions and the local dev key are not bound. Enforcement is `await assert_agent_allowed` in `core/api/deps.py`.
 - **Single source of truth:** `core/services/entitlements.py` (`PLAN_ENTITLEMENTS`, `entitlements_for_plan(plan)`/`api_key_limit_for_plan(plan)`). Generalized beyond just API keys — adding a new capped resource (e.g. max agents) is a one-field change to `PlanEntitlements` plus a value per plan; adding a plan is a one-line dict entry.
@@ -326,7 +325,7 @@ There is a **separate** lead-capture path (`lib/demo.ts` → `submitDemoRequest`
 - **Creation is JWT-only:** all three creation routes use `require_dashboard_session` (a scoped API key can no longer mint keys). List/revoke unchanged.
 - **Usage:** `GET /v1/auth/api-keys/usage` → `{plan, limit, used, unlimited, at_limit}` (unlimited whenever enforcement is off / uncapped). Frontend hook `useApiKeyQuota` + `ApiKeyUsage` component; the UI reads limits from this endpoint (never hardcodes them) and disables create + the key-name input at the limit. Deleting a key **or an agent** (cascade via `fk_api_keys_agent ON DELETE CASCADE`) frees a slot immediately (live `COUNT(*)`, no caching).
 - **Error shape:** limit breach returns `409` with `detail={msg, code:"api_key_limit_reached", plan, limit, used}` (the `msg` key renders through `formatApiError`).
-- **Enterprise/self-hosted plan assignment:** `enterprise` is sales-assigned (manual `users.plan` update by an operator, matching the existing `/enterprise#contact` lead-capture flow — no self-serve signup); `self_hosted` is automatic via `DEPLOYMENT_MODE`. Neither goes through `select_plan`/`VALID_PLANS` (still `{"pro", "team"}`, self-serve only).
+- **Self-hosted plan assignment:** `self_hosted` is automatic via `DEPLOYMENT_MODE`. It does not go through `select_plan`/`VALID_PLANS` (still `{"pro", "team"}`, self-serve only).
 - **Out of scope (by design):** `subscription_status` (`trialing|active|past_due|canceled`) is not factored into entitlement decisions — no feature in this codebase gates on it today (`billing_status_payload` always returns `has_access: true`). A `past_due`/`canceled` user keeps their plan's key limit until real billing enforcement exists.
 
 ---
@@ -494,7 +493,6 @@ A root-level `.env.example` exists (repo root, not `dashboard/`) and documents t
 | `AgentApiKeys` | key create / reveal-once / revoke (uses `useApiKeyQuota`) |
 | `SiteNav`, `BrandLogo`, `brand.ts` | marketing nav + branding tokens |
 | `marketing/*` | `CalendlyBookModal`, `CompetitorCompare`, `ConversationCompare`, `PricingCard`, `pricing-plans.ts`, `ThreeWaysConnectSection`, `TrustBar`, `IntegrationStrip`, `MarketingFooter`, `MarketingPageStyles`, `marketing-theme.ts` |
-| `marketing/enterprise/*` | `EnterpriseConnectForm` (lead-capture form, live on `/enterprise`), `enterprise-copy.ts` (copy source) |
 
 **Key types (`lib/api.ts`) — the funnel branches on these:**
 - `BillingStatus` — `enforced`, `has_access`, `requires_plan_selection`, `requires_checkout`, `subscription_status`, `trial_ends_at`, `plan`, `trial_days?` (always access-granted today; fields kept for compatibility).
@@ -952,10 +950,10 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 
 ### 20.1 Landing — `app/page.tsx`
 
-- **Client Component**, static marketing. Sections: `SiteNav` → Hero (+ `CalendlyBookModal`, `IntegrationStrip`) → `ThreeWaysConnectSection` → `ConversationCompare` → engineering cards → `TrustBar` → **Pricing grid** (Self-Hosted / Pro / Team / Enterprise via `PricingCard` + `LANDING_PRICING_PLANS`) → `CompetitorCompare` → final CTA → footer.
+- **Client Component**, static marketing. Sections: `SiteNav` → Hero (+ `CalendlyBookModal`, `IntegrationStrip`) → `ThreeWaysConnectSection` → `ConversationCompare` → engineering cards → `TrustBar` → **Pricing grid** (Self-Hosted / Pro / Team via `PricingCard` + `LANDING_PRICING_PLANS`) → `CompetitorCompare` → final CTA → footer.
 - **State:** `copied` (which copy button, 2s reset) and `demoOpen` (Calendly modal). **No `useEffect`, no API calls.**
-- **CTAs / nav:** `/signup` (hero, cards, final, footer), `/signup?plan=pro`, `/signup?plan=team`, `/enterprise#contact` (Enterprise pricing card), `/docs`, `/trust`, `/login`, `#pricing`, GitHub. "Book demo" opens `CalendlyBookModal` (`demoOpen`); "Copy MCP config" copies `MCP_CONFIG` JSON.
-- **Rules:** `plan.highlight` → "POPULAR" badge; `ctaPrimary` → filled orange CTA (Pro, Enterprise). **Pro** €29/mo (50k events†, 2 active API keys); **Team** €69/mo (100k events†, 5 active API keys); both include 30-day free trial. †Event caps not enforced in API. Enterprise card: **Annual License / 1 Year**, four VPC features (Install + integration workshop; no audit/commercial bullets on landing). Pricing grid: 4-col desktop, 2-col tablet (≤1024px), 1-col mobile (≤768px); cards use flex column so CTAs align at bottom. `SiteNav` Enterprise link uses premium outlined style (`enterpriseNavLinkStyle` in `brand.ts`).
+- **CTAs / nav:** `/signup` (hero, cards, final, footer), `/signup?plan=pro`, `/signup?plan=team`, `/docs`, `/trust`, `/login`, `#pricing`, GitHub. "Book demo" opens `CalendlyBookModal` (`demoOpen`); "Copy MCP config" copies `MCP_CONFIG` JSON.
+- **Rules:** `plan.highlight` → "POPULAR" badge; `ctaPrimary` → filled orange CTA (Pro). **Pro** €29/mo (50k events†, 2 active API keys); **Team** €69/mo (100k events†, 5 active API keys); both include 30-day free trial. †Event caps not enforced in API. Pricing grid: 3-col desktop (Self-Hosted + managed), 2-col tablet (≤1024px), 1-col mobile (≤768px); cards use flex column so CTAs align at bottom.
 
 ### 20.2 Community — `app/community/page.tsx` + `app/community/[id]/page.tsx`
 
@@ -972,7 +970,7 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 
 ### 20.4 Trust — `app/trust/page.tsx`
 
-- **Server Component** (static, SEO `metadata` set). 17 anchor sections (overview, architecture, data model, integrity, performance, security, API, deployment, comparison, licensing, limits, FAQ, contact, …). Desktop-only sticky sidebar (`@media min-width: 900px`). Links to `/docs`, `/swagger`, `/signup`, `/enterprise`, GitHub, `mailto:founder@zizka.ai`. Includes `MarketingFooter`; deployment/limits tables include Enterprise row; security section links to `/enterprise` for VPC review. No state/API.
+- **Server Component** (static, SEO `metadata` set). 17 anchor sections (overview, architecture, data model, integrity, performance, security, API, deployment, comparison, licensing, limits, FAQ, contact, …). Desktop-only sticky sidebar (`@media min-width: 900px`). Links to `/docs`, `/swagger`, `/signup`, GitHub, `mailto:founder@zizka.ai`. Includes `MarketingFooter`. No state/API.
 
 ### 20.5 Admin console — managed-cloud only (not in OSS)
 
@@ -983,17 +981,6 @@ These live in the same Next app but are separate from the tenant `/dashboard/*` 
 - **Dashboard:** `OverviewRow` stats + 4 tabs — `subscribers` (`SubscribersSection`), `managed` (`ManagedSection`), `telemetry` (`TelemetrySection`), `demo_requests` (`DemoRequestsSection`). `adminOverview` polls every **10s**; **401/"Not Found" → auto `onLogout()`**.
 - **Data calls** (all admin JWT via `apiFetch`): `adminOverview`, `adminTelemetrySummary` + `adminTelemetryRecent(100)`, `adminManagedOverview`, `adminManagedSubscribers`, `adminManagedUsers`, `adminManagedUsage`, `adminDemoRequests({limit:200})`. Subscriber/managed/demo tabs also poll 10s.
 - **Behaviors:** most tab fetches `.catch(()=>…)` **silently**; **search reloads only on Enter/Refresh** (search text is not in effect deps); subscriber filters `trialing|active|past_due`; managed filters `all|active|keys|no_keys` (→ `has_keys`/`active_7d` query params); demo requests search includes name, email, company, website, **role** (`position`), **source**; empty subscribers message references migration `002_user_billing.sql`. No `NEXT_PUBLIC_DEV_MODE` bypass.
-
-### 20.6 Enterprise marketing — `app/enterprise/page.tsx`
-
-- **Client Component** monolithic page (637 lines). A modular `EnterprisePageClient` + 9 section components previously existed alongside this as an unused, never-wired-up alternate build — confirmed fully dead (zero live referrers) and removed 2026-07-08, along with the `ProductPreview` and `SessionReplayDemo` components that were only reachable through it. A future componentized rebuild of this page should start fresh against the copy/QA rules in `enterprise-page-knowledge-base.mdc` rather than resurrect the deleted files.
-- **Sections** (order): Hero → What is → Fleet → Capabilities → Why enterprises choose → Security → Deployment (28-day timeline) → Pricing → FAQ → **Contact form** (`#contact`) → Technical resources → footer.
-- **Lead capture:** `#contact` section renders `EnterpriseConnectForm` → `submitDemoRequest` (`lib/demo.ts`) → `POST /v1/demo-requests` with `source: 'enterprise'`, optional `position`; honeypot `botcheck`. Submissions appear in admin **Demo requests** tab (Role + Source columns).
-- **Shell:** `SiteNav active="enterprise"`, `MarketingPageStyles` (responsive form/pricing grids), `CalendlyBookModal` from hero and contact section.
-- **Cross-links:** landing `#pricing` Enterprise card → `/enterprise#contact`; trust `#deployment`, `#limits`, `#licensing` → `/enterprise`.
-- **QA:** `docs/enterprise-page-qa.md` · agent rule `.cursor/rules/enterprise-page-knowledge-base.mdc`.
-
----
 
 ## 21. Data Model (backend)
 
@@ -1012,7 +999,7 @@ Schema sources: `core/db/schema.sql` (base DDL, Docker init) + named migrations 
 | `usage_daily` | `(tenant_id, date)` (PK), `events_written`, `queries_run`, `searches_run` | Daily metering (only `events_written` is incremented today) |
 | `community_posts` | `post_id` (PK), `author_name`, `category`, `title`, `body`, `image_urls` (JSONB), `reply_count` | Public community board |
 | `community_replies` | `reply_id` (PK), `post_id` (FK cascade), `author_name`, `body` | Replies; bumps parent `reply_count` |
-| `demo_requests` | `request_id` (PK), `first_name`, `last_name`, `email`, `company_name`, `website`, `position`, `source`, `ip_address` | Landing Book demo + Enterprise Let's connect submissions |
+| `demo_requests` | `request_id` (PK), `first_name`, `last_name`, `email`, `company_name`, `website`, `position`, `source`, `ip_address` | Landing Book demo submissions |
 | `sdk_telemetry` | `install_id` (PK), `sdk`, `sdk_version`, `runtime`, `os`, `mode` (`cloud`/`self-hosted`), `ping_count` | Anonymous SDK install pings (runtime-only table, not in `schema.sql`) |
 
 **Cascade:** `agents`, `api_keys`, `events`, `usage_daily` cascade from `tenants`. Account deletion explicitly deletes `users`, `auth_otps`, `tenants` and purges Qdrant vectors.
@@ -1062,7 +1049,7 @@ erDiagram
 | **API key** | Credential used by SDKs/MCP to write events (`zizkadb_live_*`, stored hashed). Unassigned until first agent use, then **bound to one agent**. |
 | **JWT (session)** | Dashboard user's access token from OTP login; distinct from API keys. Resolved by `get_tenant`. |
 | **OTP** | One-time 6-digit code for passwordless email login/signup (`auth_otps`, 15-min expiry). |
-| **API key limit** | Self-Hosted = 1, Pro = 2, Team = 5, Enterprise = 50 active keys (unassigned + agent-scoped). Enforced when `API_KEY_LIMITS_ENFORCED=true`. |
+| **API key limit** | Self-Hosted = 1, Pro = 2, Team = 5 active keys (unassigned + agent-scoped). Enforced when `API_KEY_LIMITS_ENFORCED=true`. |
 | **Entitlements** | `core/services/entitlements.py` — per-plan capability config (`PlanEntitlements`); currently `max_api_keys`, designed to grow (max agents, storage, etc.) without touching call sites. |
 | **Deployment mode** | `DEPLOYMENT_MODE=self_hosted` env var — marks a backend instance as self-hosted so entitlement checks resolve plan `"self_hosted"` instead of trusting `users.plan`. |
 | **Retention trial** | One-time extra free month offered in the delete-account modal (`retention_trial_used`). |

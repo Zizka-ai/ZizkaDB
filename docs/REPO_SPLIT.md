@@ -9,4 +9,4 @@ Public clones and all GitHub / website “Star on GitHub” links must use **Ziz
 
 EC2 (`db.zizka.ai`) should deploy from **zizkadb-cloud**, not from the slim public tree.
 
-When merging OSS product changes into cloud, take only `/dashboard/*` product routes, core API/services, and tests. **Do not** replace cloud marketing pages (`/`, `/signup`, `/enterprise`, `/admin`), `infra/nginx.conf`, or `infra/deploy-dashboard.sh`.
+When merging OSS product changes into cloud, take only `/dashboard/*` product routes, core API/services, and tests. **Do not** replace cloud-only marketing pages (`/`, `/signup`, `/enterprise`, `/admin`), `infra/nginx.conf`, or `infra/deploy-dashboard.sh` — those live in the private **zizkadb-cloud** repo, not this OSS tree.

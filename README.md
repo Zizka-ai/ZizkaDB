@@ -109,7 +109,7 @@ Same **Why?** feature — hosted at [db.zizka.ai](https://db.zizka.ai). No Docke
 | Events / mo† | 50k | 100k |
 | API keys | 2 | 5 |
 
-[Sign up →](https://db.zizka.ai/signup/plan) · [Enterprise VPC →](https://db.zizka.ai/enterprise)
+[Sign up →](https://db.zizka.ai/signup/plan)
 
 † Plan targets on managed cloud; not enforced in API yet. See [docs/README.md](docs/README.md#plan-limits-honest).
 

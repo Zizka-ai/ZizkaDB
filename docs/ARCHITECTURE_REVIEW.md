@@ -1,6 +1,6 @@
 # ZizkaDB — High-Level Architecture Review
 
-**Date:** 2026-07-25 · **Branch:** `main` (pre-release, OSS + Enterprise) · **Type:** architecture &
+**Date:** 2026-07-25 · **Branch:** `main` (pre-release, OSS / self-host) · **Type:** architecture &
 production-readiness review (not a line-level code review).
 
 This review is grounded in fact — every claim carries a `file:line` reference. **Scope: assess the
@@ -24,8 +24,8 @@ The gaps are almost entirely **operational**:
 - There is **near-zero production observability** — no metrics, tracing, error tracking, or security
   audit log.
 
-**Verdict:** ship-ready for single-node open-source deployment today; **not** yet ready for Enterprise
-SLAs or horizontal scale without the Phase 1–2 items below. Crucially, **no redesign is required** —
+**Verdict:** ship-ready for single-node open-source / self-hosted deployment today; **not** yet ready for
+horizontal scale or formal compliance SLAs without the Phase 1–2 items below. Crucially, **no redesign is required** —
 the layering is sound and the fixes are additive (a queue tier, shared-state externalization, an
 observability baseline).
 
@@ -78,7 +78,7 @@ observability baseline).
 | R2 | **Not horizontally scalable** — in-process rate-limit/lock state multiplies across replicas and loses coordination; single-EC2, no LB | **Critical** | `core/api/agents.py:32-33`, `core/api/utils.py`; single-host compose |
 | R3 | **DB connection ceiling** — 4×20 = 80 connections vs PG default 100, no PgBouncer → adding workers/replicas exhausts Postgres | **High** | `core/db/connection.py` `max_size=20` |
 | R4 | **No production observability** — unstructured logs, no metrics/tracing/error tracking → prod incidents hard to detect or diagnose | **High** | `core/main.py:21` `basicConfig`; no Prometheus/OTel/Sentry |
-| R5 | **No security audit log** — key revoke, GDPR forget, auth events use plain app logs → Enterprise compliance blocker | **High** | grep "audit" in `core/` → 0 |
+| R5 | **No security audit log** — key revoke, GDPR forget, auth events use plain app logs → formal compliance blocker | **High** | grep "audit" in `core/` → 0 |
 | R6 | **Synchronous ingestion hot path** — every event write blocks on OpenAI embed + Qdrant upsert → ingestion latency coupled to two external services | **High** | `core/services/event_write.py:82-107` inline |
 | R7 | **CORS `allow_origins=["*"]` + `allow_credentials=True`** — browsers reject credentialed cross-origin requests, and it is an insecure default | **Medium** | `core/main.py:90-96` |
 | R8 | **`/health` always 200** (no dependency check) → LB/deploy sees "healthy" with Postgres down | **Medium** | `core/main.py:109-111` |
@@ -109,7 +109,7 @@ Each item: *current issue → why it matters → proposed solution → benefit.*
   *Benefit:* real readiness signal with zero script breakage. Separately, tighten CORS to an env-driven
   allowlist (R7).
 - **Observability baseline (R4, R5).** *Issue:* no structured logs/metrics/tracing/audit. *Why:* prod
-  incidents are hard to diagnose and Enterprise requires an audit trail. *Solution:* structured JSON
+  incidents are hard to diagnose and regulated deployments need an audit trail. *Solution:* structured JSON
   logging + request-id middleware, Prometheus (or OTel) metrics, Sentry, and a `security_audit_log`
   table written on key revoke / GDPR forget / auth. *Benefit:* diagnosability + compliance.
 - **Central typed config (R9).** *Issue:* 59 scattered getenv, no validation. *Why:* silent
@@ -128,13 +128,13 @@ Each item: *current issue → why it matters → proposed solution → benefit.*
   block; ingestion decoupled; removes the R1 self-DoS. *(See §7 — keep a synchronous single-node
   fallback.)*
 
-### P3 — HA & Enterprise (6–12 months)
+### P3 — HA & scale-out (6–12 months)
 
 - Managed/replicated datastores (RDS Postgres, Qdrant replication, Redis Sentinel/managed) (R11).
 - Horizontal API autoscaling behind a real LB once P1 makes the API stateless.
 - CD pipeline + commit prod `nginx.conf` / deploy scripts to the repo for reproducibility (R10).
-- Enterprise: feature-flag service, RBAC beyond agent-scoping, usage-metering → billing
-  productionization (billing is an intentional stub today — ADR-003 — but is wired into the dashboard).
+- Feature-flag service, RBAC beyond agent-scoping, usage-metering → billing productionization
+  (billing is an intentional stub today — ADR-003 — but is wired into the dashboard).
 
 ---
 
@@ -162,11 +162,10 @@ Each item: *current issue → why it matters → proposed solution → benefit.*
 ## 6. Future Roadmap (6–12 months)
 
 - **Phase 1 (0–3 mo) — Scale-ready & observable:** Redis-backed limits/locks, PgBouncer, observability
-  baseline + audit log, typed config, readiness/CORS. → enables multi-replica and satisfies Enterprise
-  audit.
+  baseline + audit log, typed config, readiness/CORS. → enables multi-replica deployments.
 - **Phase 2 (3–6 mo) — Async tier:** job queue + workers for AI and ingestion; Suggestions → job+poll.
   → removes worker-pool blocking; decouples ingestion latency.
-- **Phase 3 (6–12 mo) — HA & Enterprise:** replicated datastores, autoscaling behind a LB, CD + IaC,
+- **Phase 3 (6–12 mo) — HA & scale-out:** replicated datastores, autoscaling behind a LB, CD + IaC,
   feature flags, RBAC, billing productionization.
 
 ---

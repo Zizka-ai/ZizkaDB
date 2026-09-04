@@ -506,7 +506,7 @@ docker compose -f infra/docker-compose.yml up -d`}</Code>
 
           <Section id="security" title="Security (early stage)">
             <p style={p}>
-              ZizkaDB v1 is aimed at developers and small teams — not enterprise
+              ZizkaDB v1 is aimed at developers and small teams — not formal
               compliance certification yet. Here is what we do today:
             </p>
             <ul style={ul}>
@@ -541,11 +541,7 @@ docker compose -f infra/docker-compose.yml up -d`}</Code>
             </ul>
             <p style={p}>
               <strong>Not claimed today:</strong> SOC 2, HIPAA, or formal DPAs.
-              For enterprise security review and VPC deployment, see{" "}
-              <Link href="/enterprise" style={link}>
-                /enterprise
-              </Link>{" "}
-              or contact{" "}
+              For security questions, contact{" "}
               <a href={`mailto:${FOUNDER_EMAIL}`} style={link}>
                 {FOUNDER_EMAIL}
               </a>
@@ -728,7 +724,6 @@ chain = await db.why(tool.event_id)`}</Code>
                   ["Self-hosted", "Free (AGPL core)", "Your VPC / machine"],
                   ["Managed Pro", "€29/mo", "Zizka cloud"],
                   ["Managed Team", "€69/mo", "Zizka cloud + higher limits"],
-                  ["Enterprise", "Contact sales", "Customer VPC (Model A)"],
                 ].map(([m, c, d]) => (
                   <tr key={m}>
                     <td style={td}>{m}</td>
@@ -743,10 +738,10 @@ chain = await db.why(tool.event_id)`}</Code>
               <Link href="/signup" style={link}>
                 signup
               </Link>{" "}
-              → email OTP → Settings → API key → SDK or MCP env. For Enterprise
-              VPC deployment, see{" "}
-              <Link href="/enterprise" style={link}>
-                /enterprise
+              → email OTP → Settings → API key → SDK or MCP env. For self-hosted
+              deployment, see the{" "}
+              <Link href="/docs" style={link}>
+                setup guide
               </Link>
               .
             </p>
@@ -835,11 +830,6 @@ chain = await db.why(tool.event_id)`}</Code>
             <p style={p}>
               AGPL applies when you modify and distribute the server. MCP is MIT
               for IDE integration. Commercial embedding requires legal review.
-              Enterprise VPC deployments use a separate commercial license — see{" "}
-              <Link href="/enterprise" style={link}>
-                /enterprise
-              </Link>
-              .
             </p>
           </Section>
 
@@ -861,7 +851,6 @@ chain = await db.why(tool.event_id)`}</Code>
                   ],
                   ["Pro (€29/mo)", "50k", "90 days"],
                   ["Team (€69/mo)", "100k", "1 year"],
-                  ["Enterprise", "Contact sales", "Custom (VPC)"],
                 ].map(([plan, ev, ret]) => (
                   <tr key={plan}>
                     <td style={td}>{plan}</td>

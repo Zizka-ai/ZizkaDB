@@ -159,7 +159,6 @@ cd dashboard && npm run lint && npm test && npm run build
 | DB schema | `core/db/schema.sql` + `core/db/connection.py::init_db()` + KB §21 |
 | Plan entitlements | Only `core/services/entitlements.py::PLAN_ENTITLEMENTS` |
 | SDK version | Bump `sdk/python/pyproject.toml`, `sdk/typescript/package.json`, `mcp/pyproject.toml`, `core/main.py version=` together |
-| Enterprise page copy | Check copy guardrails in `.cursor/rules/enterprise-page-knowledge-base.mdc` |
 
 ---
 

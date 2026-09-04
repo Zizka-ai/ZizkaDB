@@ -18,7 +18,6 @@ export const ZIZKADB_FOOTER_COLUMNS: FooterColumn[] = [
     title: 'Product',
     links: [
       { label: 'Docs', href: '/docs' },
-      { label: 'Enterprise', href: '/enterprise' },
       { label: 'EU AI Act', href: '/eu-ai-act' },
       { label: 'Pricing', href: '/#pricing' },
       { label: 'Compare', href: '/#compare' },
@@ -41,7 +40,7 @@ export const ZIZKADB_FOOTER_COLUMNS: FooterColumn[] = [
       { label: 'Terms', href: `${ZIZKA_AI}/terms`, external: true },
       { label: 'Privacy', href: '/privacy' },
       { label: 'Security', href: '/trust#security' },
-      { label: 'Contact', href: '/enterprise#contact' },
+      { label: 'Contact', href: 'mailto:founder@zizka.ai', external: true },
       { label: 'Responsible disclosure', href: 'mailto:founder@zizka.ai?subject=Security%20disclosure', external: true },
     ],
   },

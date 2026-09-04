@@ -30,7 +30,7 @@ export const M = {
   previewBorder: 'rgba(255,255,255,0.12)',
   previewSurface: '#161c26',
 
-  /** Legacy aliases — dark sections (enterprise, compare panels). */
+  /** Legacy aliases — dark sections (compare panels). */
   wash: '#0b0f1a',
   blue: BRAND,
   bluePale: 'rgba(249,115,22,0.12)',

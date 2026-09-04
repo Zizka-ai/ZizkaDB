@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 
 RATE_WINDOW_SEC = 3600
 RATE_MAX = 8
-VALID_SOURCES = frozenset({"enterprise", "landing", "newsletter"})
+VALID_SOURCES = frozenset({"landing", "newsletter"})
 
 demo_limiter = RateLimiter(
     limit=RATE_MAX,
