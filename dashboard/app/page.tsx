@@ -27,7 +27,7 @@ import {
 import { GITHUB_URL } from "@/lib/constants";
 import { useCopyToClipboard } from "@/hooks/useCopyToClipboard";
 
-const HERO_TITLE = "Dont Observe - Audit your AI Agent";
+const HERO_TITLE = "Don't Observe — Audit your AI Agent";
 const HERO_VALUE =
   "When production agents drift, guesswork costs hours. ZizkaDB gives you replay, lineage, and drift alerts so you fix behavior before users notice.";
 

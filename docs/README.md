@@ -42,5 +42,5 @@ Start here if you are not sure which file to read.
 
 ## Plan limits (honest)
 
-- **Enforced today (when `API_KEY_LIMITS_ENFORCED=true`):** active API keys per plan (Self-Hosted 1, Pro 2, Team 5, Enterprise 50).
+- **Enforced today (when `API_KEY_LIMITS_ENFORCED=true`):** active API keys per plan (Self-Hosted 1, Pro 2, Team 5).
 - **Marketing targets, not enforced in API yet:** monthly event caps (50k / 100k on Pro/Team copy).

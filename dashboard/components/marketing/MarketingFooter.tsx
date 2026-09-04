@@ -49,7 +49,7 @@ export function MarketingFooter() {
             <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: -0.3 }}>ZizkaDB</span>
           </div>
           <p style={{ margin: '0 0 20px', fontSize: 14, lineHeight: 1.65, color: '#ffffff', maxWidth: 280 }}>
-            Dont Observe - Audit your AI Agent. Causal lineage, time travel, and drift for production agents.
+            Don't Observe — Audit your AI Agent. Causal lineage, time travel, and drift for production agents.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <a

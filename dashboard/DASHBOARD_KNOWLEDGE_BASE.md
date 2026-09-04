@@ -82,7 +82,7 @@ app/dashboard/layout.tsx
 
 ```
 dashboard/
-├── middleware.ts            # Edge auth guard for /dashboard and /admin
+├── middleware.ts            # Edge auth guard for /dashboard
 ├── app/
 │   ├── layout.tsx           # Root layout + global metadata
 │   ├── page.tsx             # Landing page (marketing + pricing SECTION)
@@ -107,7 +107,6 @@ dashboard/
 │   │   ├── agents/[id]/page.tsx  # redirect → /dashboard/activity?agent={id}
 │   │   ├── search/page.tsx  # redirect → /dashboard/activity (search is inline now)
 │   │   └── settings/page.tsx# API keys (tenant + per-agent), embeddings, account
-│   ├── admin/               # Operator console (separate auth)
 │   ├── community/           # Public community board
 │   ├── docs/                # Docs pages
 │   └── trust/page.tsx
@@ -166,7 +165,7 @@ DashboardLayout (app/dashboard/layout.tsx)
 
 ## 4. Navigation Diagram
 
-**Routing library:** Next.js App Router (`next/navigation`: `useRouter`, `usePathname`, `useSearchParams`; `next/link`). Guarding via `middleware.ts` (matcher `/dashboard*`, `/admin*`).
+**Routing library:** Next.js App Router (`next/navigation`: `useRouter`, `usePathname`, `useSearchParams`; `next/link`). Guarding via `middleware.ts` (matcher `/dashboard*` only in OSS).
 
 ```mermaid
 flowchart TD

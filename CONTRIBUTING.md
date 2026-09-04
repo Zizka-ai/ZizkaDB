@@ -11,6 +11,7 @@ This guide explains how to get started, what we expect in pull requests, and the
 | Repository | https://github.com/Zizka-ai/ZizkaDB |
 | OSS quickstart (no clone) | `curl -fsSL https://raw.githubusercontent.com/Zizka-ai/ZizkaDB/main/scripts/quickstart-remote.sh \| bash` |
 | Connect guide | [CONNECT.md](CONNECT.md) |
+| Development setup | [DEVELOPMENT.md](DEVELOPMENT.md) |
 | Docs | https://db.zizka.ai/docs |
 | Architecture / trust | https://db.zizka.ai/trust |
 | Wiki | https://github.com/Zizka-ai/ZizkaDB/wiki |
@@ -63,7 +64,7 @@ For significant contributions, we may ask you to confirm you have the right to s
 
 - **Docker** + Docker Compose v2
 - **Python 3.10+** (API tests, SDK, demos)
-- **Node.js 18+** (optional — only if you work on `dashboard/`)
+- **Node.js 20+** (optional — only if you work on `dashboard/`)
 - **Git**
 
 ### One-command local stack
@@ -131,8 +132,9 @@ Or run the dashboard alone for UI work:
 cd dashboard
 npm install
 npm run dev    # http://localhost:3000 — set NEXT_PUBLIC_API_URL=http://localhost:8000
-npm run build
 npm run lint
+npm test
+npm run build
 ```
 
 ### Reset local data (dev only)
