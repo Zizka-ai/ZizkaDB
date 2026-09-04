@@ -68,11 +68,12 @@ ZIZKADB_RUN_INTEGRATION=1 pytest core/tests/test_integration_selfhost.py -v
 
 Every PR runs via `.github/workflows/ci.yml`:
 1. `ruff check core sdk/python mcp integrations`
-2. `pytest core/tests/ -m "not integration"` (unit only)
-3. `pytest sdk/python/tests/`
-4. `pytest mcp/tests/`
-5. `npm test` (TypeScript SDK)
-6. `cd dashboard && npm run lint && npm test && npm run build`
+2. `bash scripts/check-doc-drift.sh` — router count + AI doc alignment
+3. `pytest core/tests/ -m "not integration"` (unit only)
+4. `pytest sdk/python/tests/`
+5. `pytest mcp/tests/`
+6. `npm test` (TypeScript SDK)
+7. `cd dashboard && npm run lint && npm test && npm run build`
 
 Optional (weekly / manual): `.github/workflows/integration.yml` — full stack integration with `ZIZKADB_RUN_INTEGRATION=1`.
 
@@ -84,3 +85,9 @@ Optional (weekly / manual): `.github/workflows/integration.yml` — full stack i
 - Mark integration tests: `@pytest.mark.integration`
 - TypeScript SDK: Vitest in `sdk/typescript/` (`npm test`)
 - MCP tests: pytest in `mcp/tests/test_server.py`
+
+## Definition of done (CODING_STANDARDS §26, §41, §44)
+
+Before PR: run commands for layers you touched; do not claim pass without output. Meaningful tests for auth, contracts, regressions — not coverage theater.
+
+**Docs-only PRs:** `bash scripts/check-doc-drift.sh` when AI/router docs changed.

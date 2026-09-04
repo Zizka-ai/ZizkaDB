@@ -1,32 +1,67 @@
 # AGENTS.md — guidance for AI coding tools
 
-This file helps Cursor, Copilot, Claude Code, and other agents work on **this repository**.
+Repo-root entry for Cursor, Claude Code, Copilot, Windsurf, Gemini, and other agents.
 
-## Start here
+**You do not need to paste coding standards into every prompt** — read the files below.
 
-| Resource | Use for |
-|----------|---------|
-| [CLAUDE.md](CLAUDE.md) | Project stack, invariants, test commands |
-| [.cursor/rules/coding-standards.mdc](.cursor/rules/coding-standards.mdc) | Always-on auth, entitlements, cross-cutting rules |
-| [.cursor/rules/ai-knowledge-base.mdc](.cursor/rules/ai-knowledge-base.mdc) | Doc index + OSS scope |
-| [docs/README.md](docs/README.md) | Human + agent documentation map |
-| [dashboard/DASHBOARD_KNOWLEDGE_BASE.md](dashboard/DASHBOARD_KNOWLEDGE_BASE.md) | Dashboard flows and API contract |
+---
 
-Area-specific rules load automatically from `.cursor/rules/*.mdc` by file path.
+## Read first (in order)
+
+| # | Resource | Role |
+|---|----------|------|
+| 1 | [docs/ai/CODING_STANDARDS.md](docs/ai/CODING_STANDARDS.md) | Full team standards (44 sections) |
+| 2 | [docs/ai/ZIZKADB_MAPPINGS.md](docs/ai/ZIZKADB_MAPPINGS.md) | How standards map to this repo |
+| 3 | [.cursor/rules/ai-workflow.mdc](.cursor/rules/ai-workflow.mdc) | Always-on AI lifecycle (Cursor) |
+| 4 | [.cursor/rules/coding-standards.mdc](.cursor/rules/coding-standards.mdc) | ZizkaDB invariants (Cursor) |
+| 5 | [CLAUDE.md](CLAUDE.md) | Stack and module map |
+
+Map: [docs/ai/README.md](docs/ai/README.md) · ADR: [docs/adr/008-ai-coding-assistant-architecture.md](docs/adr/008-ai-coding-assistant-architecture.md)
+
+---
+
+## Tool adapters
+
+| Tool | Entry |
+|------|-------|
+| Cursor | `.cursor/rules/*.mdc` (`alwaysApply` + globs) |
+| Claude Code | `CLAUDE.md` + this file |
+| GitHub Copilot | `.github/copilot-instructions.md` |
+| Windsurf | `.windsurfrules` |
+| Gemini | `GEMINI.md` |
+
+---
+
+## Module guides
+
+| Area | Read |
+|------|------|
+| `core/` | [core/CLAUDE.md](core/CLAUDE.md) |
+| `dashboard/` | [dashboard/CLAUDE.md](dashboard/CLAUDE.md) · [DASHBOARD_KNOWLEDGE_BASE.md](dashboard/DASHBOARD_KNOWLEDGE_BASE.md) |
+| `sdk/python/` | [sdk/python/CLAUDE.md](sdk/python/CLAUDE.md) |
+| `sdk/typescript/` | [sdk/typescript/CLAUDE.md](sdk/typescript/CLAUDE.md) |
+| `integrations/` | [integrations/CLAUDE.md](integrations/CLAUDE.md) |
+| `mcp/` | [mcp/CLAUDE.md](mcp/CLAUDE.md) |
+| `examples/` | [examples/CLAUDE.md](examples/CLAUDE.md) |
+| Tests | `.cursor/rules/testing.mdc` |
+
+Skills: [zizkadb-dev-setup](.cursor/skills/zizkadb-dev-setup/SKILL.md) · [zizkadb-test](.cursor/skills/zizkadb-test/SKILL.md) · [zizkadb-release](.cursor/skills/zizkadb-release/SKILL.md)
+
+---
 
 ## Before starting
 
-`git fetch origin main` then `git checkout -B main origin/main`. Branch from that tip (or merge `origin/main` into an existing PR branch). Never start from a stale local `main` or a leftover topic branch. Never push to `main`.
+```bash
+git fetch origin main
+git merge origin/main    # on your feature branch
+git checkout -b <topic>  # if new work
+```
 
-## Critical invariants
+Never `git push` to `main`. Maintainers: [docs/ai/MAINTAINER.md](docs/ai/MAINTAINER.md).
 
-1. **Auth:** SDK routes → `get_tenant`; dashboard management → `require_dashboard_session`; per-agent routes → `assert_agent_allowed`.
-2. **Never rename `/v1/` paths** without updating `dashboard/lib/api.ts`.
-3. **Plan caps:** only in `core/services/entitlements.py::PLAN_ENTITLEMENTS`.
-4. **Schema DDL:** idempotent only (`IF NOT EXISTS`).
-5. **No admin console in OSS** — do not add `/v1/admin` or `/admin` routes here.
+---
 
-## Tests before PR
+## Verify before PR
 
 ```bash
 ruff check core/ sdk/python/ mcp/ integrations/
@@ -34,13 +69,13 @@ pytest core/tests/ -m "not integration" -v
 cd dashboard && npm run lint && npm test && npm run build
 ```
 
-When opening a PR, set **all** GitHub links in the same `gh pr create`: `--label` (`enhancement` / `bug` / `documentation`), `--assignee saadamjad`, `--reviewer Zizka-ai`, and `Closes #N` (or `Related to #N` if the issue must stay open). Do not leave labels, assignee, reviewer, or issue linking for a follow-up edit.
+Optional: `pre-commit install`. CI enforces the same gates.
 
-See [.cursor/skills/zizkadb-test/SKILL.md](.cursor/skills/zizkadb-test/SKILL.md).
+PR: [CONTRIBUTING.md](CONTRIBUTING.md) (§39 template). Link `Fixes #N` when applicable.
 
-## Integrating ZizkaDB into user agents (product)
+---
 
-For **using** ZizkaDB as a product (not hacking this repo), point users to:
+## Product integration (not hacking this repo)
 
 - [CONNECT.md](CONNECT.md)
 - [docs/integrate/any-agent.md](docs/integrate/any-agent.md)

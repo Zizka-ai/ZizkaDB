@@ -37,4 +37,6 @@ async with ZizkaDB(host="http://localhost:8000") as db:
 - [examples/](examples/) — sample agents
 - [README.md](README.md) — full overview
 
+**Contributing / AI coding:** [AGENTS.md](AGENTS.md) · [docs/ai/](docs/ai/) — standards load automatically; no need to paste rules into every chat.
+
 **Managed cloud (optional):** [db.zizka.ai/signup](https://db.zizka.ai/signup)

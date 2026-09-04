@@ -87,7 +87,20 @@ Local dev uses `DEV_API_KEY=zizkadb_dev_local` (see `infra/.env`). The Python SD
 ```bash
 bash scripts/smoke-test.sh
 python scripts/demo-why.py
+bash scripts/check-doc-drift.sh
 ```
+
+### Pre-commit (recommended for contributors)
+
+Install hooks once — runs ruff and AI doc drift checks before each commit:
+
+```bash
+pip install -r core/requirements-dev.txt
+pre-commit install
+pre-commit run --all-files   # optional first-time check
+```
+
+See [docs/ai/README.md](docs/ai/README.md) for how AI coding standards are encoded in the repo.
 
 ### API unit & integration tests
 
@@ -146,12 +159,32 @@ ZizkaDB/
 ├── mcp/               # PyPI: zizkadb-mcp (MIT)
 ├── integrations/      # LangChain, CrewAI, etc.
 ├── examples/          # Runnable sample agents
+├── docs/ai/           # AI-assisted development (AGENTS.md companion)
 ├── infra/             # Docker Compose, deploy scripts
 ├── scripts/           # setup-local.sh, smoke-test.sh, demos
 └── wiki/              # GitHub wiki source (mirrored on GitHub)
 ```
 
 When changing behavior, update **all surfaces** that expose it: API route, OpenAPI/Swagger, SDK methods, MCP tools (if applicable), docs, and dashboard UI.
+
+---
+
+## AI-assisted development
+
+You do **not** need to paste “follow best practices” into every AI chat. Standards are encoded in the repo:
+
+| Read | Purpose |
+|------|---------|
+| [AGENTS.md](AGENTS.md) | Entry point for Cursor, Claude Code, Copilot, Windsurf, Gemini |
+| [docs/ai/CODING_STANDARDS.md](docs/ai/CODING_STANDARDS.md) | Full team engineering standards (44 sections) |
+| [docs/ai/ZIZKADB_MAPPINGS.md](docs/ai/ZIZKADB_MAPPINGS.md) | Repo-specific folder mapping |
+| [docs/ai/README.md](docs/ai/README.md) | Full AI architecture map |
+| [.cursor/rules/coding-standards.mdc](.cursor/rules/coding-standards.mdc) | ZizkaDB invariants (auto-loaded in Cursor) |
+| [CLAUDE.md](CLAUDE.md) | Stack and module guides |
+
+Rationale: [docs/adr/008-ai-coding-assistant-architecture.md](docs/adr/008-ai-coding-assistant-architecture.md).
+
+When your change affects documented behavior, update the matching KB, ADR, or rule file in the **same PR**.
 
 ---
 
@@ -259,14 +292,19 @@ Rules:
 
 ## Testing expectations
 
-| Change type | Minimum bar |
-|-------------|-------------|
-| Bug fix | Test that reproduces the bug, or smoke test path |
-| API / auth | `pytest` in `core/tests/` |
-| Schema | Manual test: fresh install + migrate existing volume |
-| SDK | Unit test or extend `core/tests/test_smoke.py` |
-| Dashboard | `npm run build` passes; manual check described in PR |
+| Area | Minimum bar |
+|------|-------------|
+| Python lint | `ruff check core/ sdk/python/ mcp/ integrations/` |
+| Core API | `pytest core/tests/ -m "not integration" -v` |
+| Python SDK | `pytest sdk/python/tests/ -v` |
+| MCP | `pytest mcp/tests/ -v` |
+| TypeScript SDK | `cd sdk/typescript && npm test` |
+| Dashboard | `cd dashboard && npm run lint && npm test && npm run build` |
+| Doc / router drift | `bash scripts/check-doc-drift.sh` |
 | Docs only | Link check; no tests required |
+| Full stack | `bash scripts/smoke-test.sh` |
+
+**CI runs the Python + dashboard gates on every PR.** Match the row for the area you changed. `pre-commit install` is optional locally.
 
 ```bash
 bash scripts/smoke-test.sh

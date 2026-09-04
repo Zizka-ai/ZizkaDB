@@ -1,31 +1,34 @@
 ---
-description: ZizkaDB dashboard context, conventions, and gotchas for future work
+description: ZizkaDB dashboard — React/Next conventions (CODING_STANDARDS §5-14)
 globs: dashboard/**
 alwaysApply: false
 ---
 
 # ZizkaDB Dashboard — Agent Guide
 
-**Read first:** `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` is the source of truth (has a Table of Contents). Consult it before implementing features, fixing bugs, or reasoning about flows. Section map: architecture (§1-3), funnel (§5), business rules (§7), API layer (§8), touch points (§17), backend state machine (§18), per-screen behavior (§19), marketing/community/docs/admin surfaces (§20), data model / DB schema (§21), glossary (§22).
+**Read first:** `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` · `docs/ai/ZIZKADB_MAPPINGS.md` (feature → folder map) · `docs/ai/CODING_STANDARDS.md` §5–14, §20–22.
 
-## Conventions (match these)
-- Next.js 14 App Router. Interactive pages are Client Components (`'use client'`). TS `strict`, `@/*` alias. No Prettier — match surrounding style (2-space, single quotes, no semicolons).
-- **All API calls go through `lib/api.ts`** (`apiFetch`: 30s timeout, auth injection, 401 redirect, normalized errors). No React Query/SWR/Redux/Zustand/Context — local `useState`/`useEffect` only.
-- **Plan metadata:** `lib/plans.ts` is the single source for Pro/Team signup/pricing copy (key caps must match `PLAN_ENTITLEMENTS`).
-- Guard every async effect with a `let cancelled = false` flag; check it before `setState` (see `signup/page.tsx`, `TenantPlanBanner`).
-- Redirect guards: render the page's `*Fallback` loader while a redirect is pending; never render real UI before guard checks resolve (see the `checked` gate in `signup/page.tsx`).
-- Wrap `useSearchParams` pages in `<Suspense>` (Next CSR bailout).
-- Errors: `apiFetch` throws a normalized `Error`; catch and render into a local `error` string.
+## Architecture (Component → Hook → apiFetch)
 
-## Critical gotchas (do not break)
-- **No payment gate.** Signup: plan → consent → OTP → `/dashboard`. After OTP verify the user always lands on `/dashboard` — there is no checkout step.
-- **Auth split:** middleware reads the access-token cookie; client code reads `localStorage`. The refresh token is an HttpOnly cookie (backend). Keep both cookie + localStorage in sync via `setToken`/`clearToken`.
-- **Funnel state** lives in `sessionStorage` (`signup_plan`, `signup_consent_gdpr`, `signup_consent_marketing`); cleared after OTP verify.
-- Self-host `NEXT_PUBLIC_DEV_MODE=true` enables dev-token login and changes onboarding copy.
-- **API key limits (§7):** active keys per tenant are capped by plan (Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50; else unlimited) when `API_KEY_LIMITS_ENFORCED=true`. UI reads `useApiKeyQuota` — never hardcode limits.
+- Next.js 14 App Router; `'use client'` for interactive pages. TS `strict`, `@/*` alias. 2-space, single quotes, no semicolons.
+- **All HTTP via `lib/api.ts::apiFetch`** — never raw `fetch` in components (§13).
+- **No** React Query/SWR/Zustand/Context — local `useState`/`useEffect`; `useAgents()` pub/sub only (§9).
+- Extract hooks for reusable behavior; components compose UI (§6–8, §11).
+- Prefer derived state during render over unnecessary `useEffect` (§10). Guard effects with `cancelled` flags.
+- Handle loading, error, and empty states (§20). No `any`; avoid `@ts-ignore` (§12).
 
-## Testing / safety
-- Frontend tests: `cd dashboard && npm test` (vitest). CI runs `lint`, `test`, and `build`. Prefer adding tests for pure helpers (funnel guards, `lib/plans.ts`) when touching them.
+## Critical gotchas
 
-## Keep the KB in sync
-If you change billing/auth/the signup funnel, `lib/api.ts`, routes, a backend endpoint the dashboard calls, or the DB schema, **update `dashboard/DASHBOARD_KNOWLEDGE_BASE.md`** (esp. §7, §8, §17.3, §18, §19-21) in the same change.
+- **No payment gate.** Signup: plan → consent → OTP → `/dashboard`.
+- **Auth split:** middleware cookie + `localStorage`; sync via `setToken`/`clearToken`.
+- **Plan copy:** `lib/plans.ts` must match `PLAN_ENTITLEMENTS`.
+- **API key limits:** `useApiKeyQuota` — never hardcode caps.
+- Reports + Suggestions tabs: agent-scoped (`?agent=`); see `dashboard/CLAUDE.md`.
+
+## Testing
+
+`cd dashboard && npm run lint && npm test && npm run build` (§26, §41).
+
+## Keep KB in sync
+
+Update `DASHBOARD_KNOWLEDGE_BASE.md` (§7, §8, §17.3, §18–21) when changing flows, `lib/api.ts`, or backend contracts.

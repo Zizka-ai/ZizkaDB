@@ -160,6 +160,7 @@ Start the stack: `curl -fsSL …/quickstart-remote.sh | bash` or `bash scripts/s
 | Integrate any agent | [docs/integrate/](docs/integrate/) |
 | Issues · Discussions | [Issues](https://github.com/Zizka-ai/ZizkaDB/issues) · [Discussions](https://github.com/Zizka-ai/ZizkaDB/discussions) |
 | Contributing · Security | [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) |
+| AI-assisted development | [AGENTS.md](AGENTS.md) · [docs/ai/CODING_STANDARDS.md](docs/ai/CODING_STANDARDS.md) |
 
 </details>
 

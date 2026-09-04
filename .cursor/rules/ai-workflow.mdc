@@ -1,0 +1,31 @@
+---
+description: AI implementation workflow — inspect, verify, senior review before PR
+alwaysApply: true
+---
+
+# AI workflow (always apply)
+
+Full standards: [docs/ai/CODING_STANDARDS.md](../../docs/ai/CODING_STANDARDS.md) · Repo map: [docs/ai/ZIZKADB_MAPPINGS.md](../../docs/ai/ZIZKADB_MAPPINGS.md)
+
+## Lifecycle (every meaningful task)
+
+1. **Understand** — requirement, acceptance criteria, edge cases.
+2. **Inspect** — read relevant code, tests, KB/ADR, `lib/api.ts`, schema; search for reuse.
+3. **Impact** — list consumers, API contracts, DB, cache, auth, docs that could break.
+4. **Implement** — smallest clean diff; match [ZIZKADB_MAPPINGS.md](../../docs/ai/ZIZKADB_MAPPINGS.md).
+5. **Test** — run layer commands from [zizkadb-test skill](../skills/zizkadb-test/SKILL.md).
+6. **Document** — update canonical docs in the **same** PR when behavior changes.
+7. **Senior review** — review your own diff; fix before PR.
+8. **PR** — per [CONTRIBUTING.md](../../CONTRIBUTING.md); link issue when applicable.
+
+## Must not
+
+- Guess when the repo can be read; blindly overwrite files.
+- Claim tests/lint/build passed without running them.
+- Commit secrets; log API keys or tokens.
+- Modify unrelated files; speculative refactors.
+- Skip server-side authorization; trust client-supplied tenant IDs.
+
+## Definition of done
+
+Code works **and** is testable, scoped, and documented if contracts changed. See CODING_STANDARDS.md §44.

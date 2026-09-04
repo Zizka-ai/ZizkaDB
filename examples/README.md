@@ -1,6 +1,6 @@
 # ZizkaDB examples
 
-Runnable reference implementations. Fastest path: **`zizkadb init`** (ships with the SDK).
+Runnable reference implementations. Module guide: **[CLAUDE.md](CLAUDE.md)**. Fastest path: **`zizkadb init`** (ships with the SDK).
 
 ```bash
 pip install zizkadb-sdk

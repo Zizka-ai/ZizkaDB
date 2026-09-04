@@ -46,7 +46,7 @@ Full list in `.env.example`. Most important:
 |---|---|
 | `DEPLOYMENT_MODE` | `managed` (default) or `self_hosted` |
 | `PUBLIC_API_URL` | Used by `core/api/community.py` for image URLs — NOT `API_URL` |
-| `FOUNDER_EMAIL` / `ADMIN_EMAIL` | Controls `/v1/admin` panel access |
+| `FOUNDER_EMAIL` / `ADMIN_EMAIL` | Managed-cloud operator notifications (no `/v1/admin` router in OSS) |
 | `API_KEY_LIMITS_ENFORCED` | Kill switch for plan caps — defaults `false` |
 | `JWT_SECRET` | Must be changed from default — generate with `openssl rand -hex 32` |
 
@@ -72,6 +72,7 @@ There is no AWS pipeline, no CodeDeploy, no ECS task definition.
 | `scripts/publish-integrations.sh` | Publish `zizkadb-langchain`, `zizkadb-crewai`, `zizkadb-livekit` to PyPI |
 | `scripts/reset-local-db.sh` | Wipe local Docker volumes — LOCAL DEV ONLY, refuses in production |
 | `scripts/smoke-test.sh` | Smoke test against a running stack |
+| `scripts/check-doc-drift.sh` | Verify router count + AI doc files stay aligned (CI + pre-commit) |
 | `scripts/seed-support-bot-events.py` | Seed 50+ sessions for drift/baseline testing |
 | `scripts/github-setup.sh` | One-time repo init — already applied, kept for reference |
 

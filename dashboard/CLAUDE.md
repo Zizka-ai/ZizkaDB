@@ -2,7 +2,7 @@
 
 See root [`CLAUDE.md`](../CLAUDE.md) for full project context.
 
-**Before touching any dashboard code, read [`DASHBOARD_KNOWLEDGE_BASE.md`](DASHBOARD_KNOWLEDGE_BASE.md) first.** It is the 897-line source of truth with a full Table of Contents covering architecture, every screen's behaviour, the API contract, auth model, business rules, and the DB schema from the dashboard's perspective.
+**Before touching any dashboard code, read [`DASHBOARD_KNOWLEDGE_BASE.md`](DASHBOARD_KNOWLEDGE_BASE.md) first.** It is the source of truth (~1,100 lines) with a full Table of Contents covering architecture, every screen's behaviour, the API contract, auth model, business rules, and the DB schema from the dashboard's perspective.
 
 ---
 

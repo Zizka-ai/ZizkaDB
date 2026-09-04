@@ -38,6 +38,9 @@ jobs:
       - name: Ruff lint
         run: ruff check core sdk/python mcp integrations
 
+      - name: AI doc drift check
+        run: bash scripts/check-doc-drift.sh
+
       - name: Core unit tests
         run: pytest core/tests/ -m "not integration" -v
 

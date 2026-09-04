@@ -30,13 +30,13 @@ ZizkaDB is a causal event database for AI agents. It lets you log every agent ac
 | `dashboard/` | Next.js 14 marketing + authenticated dashboard. Source of truth: `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` |
 | `sdk/python/` | Async Python client + `zizkadb init` CLI |
 | `sdk/typescript/` | TypeScript/JS HTTP client |
-| `integrations/` | Standalone LangChain + CrewAI adapter packages |
+| `integrations/` | Standalone LangChain, CrewAI, and LiveKit adapter packages |
 | `mcp/` | MCP server (MIT license — not AGPL) |
 | `infra/` | Docker Compose files, nginx, deploy scripts |
 | `scripts/` | Dev setup, release, smoke test, DB seed scripts |
 | `docs/adr/` | Architecture Decision Records — explains *why* key decisions were made |
 | `wiki/` | GitHub wiki source (14 pages, pushed separately) |
-| `examples/` | 5 self-contained runnable example agents |
+| `examples/` | 6 self-contained runnable example agents (+ `examples/CLAUDE.md`) |
 | `worked/` | Worked debugging demos |
 
 ---
@@ -167,9 +167,13 @@ cd dashboard && npm run lint && npm test && npm run build
 
 | Resource | Location |
 |---|---|
-| Dashboard source of truth (897 lines) | `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` |
+| AI-assisted development map | `docs/ai/README.md` |
+| Team coding standards (44 sections) | `docs/ai/CODING_STANDARDS.md` |
+| Repo mapping for AI | `docs/ai/ZIZKADB_MAPPINGS.md` |
+| Dashboard source of truth (~1,100 lines) | `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` |
 | Architecture decisions (why) | `docs/adr/` |
 | Cursor rules (per-area conventions) | `.cursor/rules/` — **`coding-standards.mdc` and `ai-knowledge-base.mdc` always apply** |
+| Agent entry (all tools) | `AGENTS.md` |
 | Release workflow | `.cursor/skills/zizkadb-release/SKILL.md` |
 | Wiki (14 pages) | `wiki/` or https://github.com/Zizka-ai/ZizkaDB/wiki |
 | REST API explorer | http://localhost:8000/swagger |

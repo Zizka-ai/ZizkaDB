@@ -9,24 +9,25 @@ The FastAPI backend. Handles all event ingestion, causal chain queries, semantic
 - **Qdrant** (vector semantic search — collection `agent_events`, 1536-dim cosine)
 - **Redis 7** (embedding cache, 24 h TTL)
 
-## Routers (14 total, all at `/v1/`)
+## Routers (13 total, all at `/v1/`)
+
+Authoritative list: `main.py` (`app.include_router`). There is **no** `admin.py` or `stats.py` router in this OSS tree.
 
 | File | Prefix | Purpose |
 |---|---|---|
+| `api/auth.py` | `/v1/auth` | OTP login, JWT tokens, API key management |
 | `api/events.py` | `/v1/events` | Log events, query events, time-travel (`db.at()`) |
-| `api/agents.py` | `/v1/agents` | Agent stats, sessions, causal lineage (`db.why()`), baseline |
+| `api/agents.py` | `/v1/agents` | Agent stats, sessions, causal lineage (`db.why()`), baseline, API keys |
+| `api/a2a.py` | `/v1/a2a` | Agent-to-agent messages (scoped API keys) |
 | `api/search.py` | `/v1/search` | Semantic search (`db.search()`) |
 | `api/memory.py` | `/v1/memory` | Memory injection (`db.context_for()`, `db.memory_diff()`) |
-| `api/auth.py` | `/v1/auth` | OTP login, JWT tokens, API key management |
-| `api/billing_checkout.py` | `/v1/billing` | Plan/trial status (stubbed — always `has_access: True`) |
-| `api/account.py` | `/v1/account` | User profile, GDPR consent |
-| `api/settings.py` | `/v1/settings` | Tenant settings, embedding config |
-| `api/stats.py` | `/v1/stats` | Aggregate usage stats |
 | `api/telemetry.py` | `/v1/telemetry` | Anonymous SDK install pings |
+| `api/billing_checkout.py` | `/v1/billing` | Plan/trial status (stubbed — always `has_access: True`) |
+| `api/settings.py` | `/v1/settings` | Tenant settings, embedding config |
+| `api/account.py` | `/v1/account` | User profile, GDPR consent |
+| `api/demo_requests.py` | `/v1/demo-requests` | Enterprise demo request form (public) |
 | `api/community.py` | `/v1/community` | Public community board |
-| `api/demo_requests.py` | `/v1/demo-requests` | Enterprise demo request form |
 | `api/marketing_subscriptions.py` | `/v1/marketing-subscriptions` | Email signup |
-| `api/admin.py` | `/v1/admin` | Admin-only panel (hidden from OpenAPI schema) |
 
 Swagger UI: `http://localhost:8000/swagger`
 

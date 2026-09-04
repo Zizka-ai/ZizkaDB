@@ -41,13 +41,13 @@ pytest mcp/tests/ -v
 cd sdk/typescript && npm test
 ```
 
-## 6. Dashboard (lint + build)
+## 6. Dashboard (lint + test + build)
 
 ```bash
-cd dashboard && npm run lint && npm run build
+cd dashboard && npm run lint && npm test && npm run build
 ```
 
-There are no dashboard unit tests — the build is the gate. Warnings are OK; errors are not.
+Aligns with CODING_STANDARDS.md §41 verification. Aligns with CODING_STANDARDS.md §41 verification. Vitest covers hooks, helpers, and key components.
 
 ---
 

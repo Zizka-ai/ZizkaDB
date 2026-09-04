@@ -13,6 +13,9 @@ ADRs are the highest-leverage documentation for long-term maintainability. They 
 | [003](003-billing-stub.md) | Billing is intentionally stubbed — always `has_access: True` |
 | [004](004-auth-dependency-split.md) | `get_tenant` vs `require_dashboard_session` auth dependency split |
 | [005](005-in-process-rate-limiting.md) | In-process Python dict rate limiting |
+| [006](006-token-usage-jsonb-convention.md) | Token usage stored in `events.data.token_usage` JSONB |
+| [007](007-deterministic-token-optimization.md) | Deterministic (no-LLM) token optimization detectors |
+| [008](008-ai-coding-assistant-architecture.md) | Repo-encoded AI coding standards (layers + tool adapters) |
 
 ## Format
 
@@ -26,7 +29,7 @@ Each ADR has:
 ## Adding a new ADR
 
 1. Copy an existing ADR as a template
-2. Number it sequentially (`006-...`)
+2. Number it sequentially (`009-...` after ADR-008)
 3. Add it to the index above
 4. Keep it short — one page is ideal
 
