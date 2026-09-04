@@ -1,33 +1,45 @@
 ## Summary
 
-<!-- What changed and why (1–3 bullets). -->
+<!-- What changed? (CODING_STANDARDS §39) -->
+
+## Why
+
+<!-- Why was this necessary? -->
+
+## Implementation
+
+<!-- How was it implemented? Keep it brief. -->
 
 ## Test plan
 
-- [ ] `ruff check core/ sdk/python/ mcp/ integrations/` (if Python touched)
+- [ ] `ruff check …` (if Python touched)
 - [ ] `pytest core/tests/ -m "not integration"` (if core touched)
 - [ ] `cd dashboard && npm run lint && npm test && npm run build` (if dashboard touched)
-- [ ] `bash scripts/check-doc-drift.sh` (if routers, `AGENTS.md`, or `docs/ai/` touched)
+- [ ] `bash scripts/check-doc-drift.sh` (if routers / `docs/ai/` / rules touched)
 - [ ] Manual: <!-- steps or "docs only" -->
 
-## Areas touched
+## Edge cases
 
-- [ ] API / schema
-- [ ] SDK (Python / TypeScript)
-- [ ] Dashboard
-- [ ] MCP / integrations
-- [ ] Docs / AI rules (`AGENTS.md`, `docs/ai/`, `.cursor/rules/`)
-- [ ] Infra / CI
+<!-- Empty, error, loading, auth, concurrency — §20 -->
 
-## Docs & AI standards
+## Security
 
-- [ ] Updated canonical docs if behavior changed (KB, ADR, `lib/api.ts`, module `CLAUDE.md`)
-- [ ] `bash scripts/check-doc-drift.sh` passes when router or AI doc files changed
+<!-- Secrets, auth, input validation — §23–24; "N/A" for docs-only -->
+
+## Performance
+
+<!-- DB queries, renders, cache — §19; "N/A" if not relevant -->
+
+## Documentation
+
+<!-- KB, ADR, CODING_STANDARDS, lib/api.ts — §34 -->
 
 ## Breaking changes
 
-<!-- None, or describe migration. -->
+<!-- None, or describe migration — §31 -->
 
-Fixes #<!-- issue number if applicable -->
+## Related issue
 
-<!-- Maintainers: see docs/ai/MAINTAINER.md for assignee, reviewer, and label conventions. -->
+Fixes #<!-- number --> or Related to #<!-- number -->
+
+<!-- Maintainers: docs/ai/MAINTAINER.md for labels and assignee -->

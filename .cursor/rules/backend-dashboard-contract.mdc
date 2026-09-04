@@ -1,25 +1,27 @@
 ---
-description: Backend contract the ZizkaDB dashboard depends on — invariants to preserve and KB to keep in sync
+description: Backend ↔ dashboard API contracts (CODING_STANDARDS §14, §31)
 globs: core/api/**,core/services/**,core/db/**
 alwaysApply: false
 ---
 
 # Backend ↔ Dashboard Contract
 
-The dashboard (`dashboard/`) is a client of this FastAPI backend. Before changing these files, check how the dashboard consumes them: `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` — endpoint map (§17.3), auth model (§17.2), backend state machine (§18), data model (§21).
+Full endpoint map: `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` §17.3. Breaking changes: identify all consumers, update `dashboard/lib/api.ts`, tests, and KB in one PR (§31).
 
-## Contracts the dashboard relies on (do not break silently)
-- **`verify-otp` response shape** (`core/api/auth.py`): `{access_token, token_type, requires_plan_selection, requires_checkout, has_access, plan}`. Signup/login always get `has_access: true`, `requires_checkout: false` (no payment gate).
-- **`billing_status_payload` shape** (`core/services/billing.py`): `{enforced, has_access, requires_plan_selection, requires_checkout, subscription_status, trial_ends_at, plan, trial_days?}`. Consumed by `TenantPlanBanner`. Always returns `has_access: true`, `enforced: false`.
-- **Trial activation** (`core/services/auth.py`): on OTP verify, users get `plan=pro` (if unset), `subscription_status=trialing`, `trial_ends_at=+30d`. Startup backfill converts legacy `pending_checkout` → `trialing`.
-- **Auth resolution** (`core/api/deps.py::get_tenant`): JWT vs API key vs dev key; `assert_agent_allowed` (403) for agent-scoped keys; account routes are JWT-only (`require_dashboard_session`). `get_tenant` does NOT check subscription status.
-- **Event schema** (`core/api/events.py`, `event_write.py`): `POST /v1/events` is written by SDKs/MCP/integrations AND read back by the dashboard. Field renames affect both sides.
-- **Route paths/prefixes** (`core/main.py`): the dashboard calls fixed `/v1/...` paths via `dashboard/lib/api.ts`. Renaming a route breaks the client.
-- **API key plan limits** (`core/services/entitlements.py` = single source of truth for all plan entitlements, currently just `max_api_keys`; `core/services/api_keys.py::assert_and_reserve_api_key_slot`): active keys per tenant capped by plan (Self-Hosted 1 / Pro 2 / Team 5 / Enterprise 50; else unlimited). Guard runs in a per-tenant advisory-locked txn before insert, against `services.billing.fetch_effective_plan` (not `fetch_tenant_plan` directly). Behind kill switch `API_KEY_LIMITS_ENFORCED` (default OFF). Usage: `GET /v1/auth/api-keys/usage` → `{plan, limit, used, unlimited, at_limit}`. Self-hosted deployments resolve to plan `"self_hosted"` via the `DEPLOYMENT_MODE=self_hosted` env var, not `users.plan` (which self-host installs never set, and which the startup NULL→`'pro'` backfill in `connection.py` would otherwise clobber). To change a limit: edit `PLAN_ENTITLEMENTS` in `entitlements.py`, or set `API_KEY_LIMIT_<PLAN>` env var for a no-deploy override — never hardcode a number anywhere else. Unassigned keys (`agent_id` NULL) bind to the first agent that uses them (`claim_unassigned_api_key` + `assert_agent_allowed`); one key cannot be reused by another agent.
-- **Demo requests** (`core/api/demo_requests.py`): public `POST /v1/demo-requests` — no auth; optional `position`, allowlisted `source` (`enterprise`|`landing`|`newsletter`, else 422); honeypot `botcheck` → 400; 8/hr/IP in-memory rate limit. **OSS:** no admin list endpoint — managed-cloud operator console is not in this repo. Dashboard: `lib/demo.ts`, Enterprise form sends `source: 'enterprise'`.
+## Contracts (do not break silently)
+
+- **OTP verify** (`auth.py`): `{access_token, token_type, requires_plan_selection, requires_checkout, has_access, plan}` — always `has_access: true`, no checkout gate.
+- **Billing status** (`billing.py`): shape consumed by `TenantPlanBanner`; `has_access: true`, `enforced: false`.
+- **Auth** (`deps.py`): JWT vs API key vs dev key; `assert_agent_allowed` for scoped keys; dashboard routes JWT-only.
+- **Events** (`events.py`, `event_write.py`): SDK writes + dashboard reads — field renames hit both sides.
+- **Route paths** (`main.py`): fixed `/v1/...` in `lib/api.ts`.
+- **API key limits** (`entitlements.py` only): caps via `PLAN_ENTITLEMENTS`; kill switch `API_KEY_LIMITS_ENFORCED`.
+- **Demo requests** (`demo_requests.py`): public POST; honeypot + rate limit; **no OSS admin list endpoint**.
 
 ## Data model
-Schema in `core/db/schema.sql` + migrations `002`, `004`, `005` + runtime DDL in `core/db/connection.py`. Plan/trial state lives on `users` (`stripe_*` columns retained but unused). Qdrant `agent_events` is 1536-dim COSINE; embeddings are dual-written to Postgres `events.embedding` + Qdrant. See §21.
 
-## Keep the KB in sync
-If you change any contract above, a route, the billing/auth logic, or the DB schema, update `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` (§17.3, §18, §21) in the same change — and the matching `dashboard/lib/api.ts` types/callers if the response shape changed.
+`schema.sql` + migrations `002`, `004`, `005` + `init_db()`. See KB §21.
+
+## Sync rule
+
+Contract or schema change → update KB §17.3, §18, §21 and `lib/api.ts` types in the same PR.

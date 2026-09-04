@@ -1,6 +1,6 @@
 # examples/ — Runnable reference agents
 
-See root [`CLAUDE.md`](../CLAUDE.md) and [`docs/ai/CODING_PRINCIPLES.md`](../docs/ai/CODING_PRINCIPLES.md).
+See root [`CLAUDE.md`](../CLAUDE.md), [`docs/ai/CODING_STANDARDS.md`](../docs/ai/CODING_STANDARDS.md), and [`docs/ai/ZIZKADB_MAPPINGS.md`](../docs/ai/ZIZKADB_MAPPINGS.md).
 
 These are **end-user integration demos**, not core product code. Keep them minimal, copy-paste friendly, and aligned with published PyPI packages.
 

@@ -35,3 +35,17 @@ gh pr create \
 - Optional footer for team PRs: **Made with [Cursor](https://cursor.com) and Saad**
 
 Fork contributors: a normal PR title + description + test plan is enough. Maintainers will assign reviewers.
+
+---
+
+## GitHub issues (CODING_STANDARDS §37–38)
+
+| Work type | Issue required? |
+|-----------|-----------------|
+| Non-trivial feature, API, schema, auth | Yes — open or link before PR |
+| Typos, obvious bugs, docs-only | Optional |
+| Maintainer releases | Yes — track in GitHub |
+
+Apply labels: `enhancement`, `bug`, `documentation`, `security`, etc. (not `good first issue` on PRs).
+
+PR descriptions should follow §39 in [CODING_STANDARDS.md](CODING_STANDARDS.md) and [.github/pull_request_template.md](../../.github/pull_request_template.md).

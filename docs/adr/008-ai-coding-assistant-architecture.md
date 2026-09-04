@@ -22,7 +22,7 @@ We need a **tool-agnostic** architecture with **thin adapters per IDE** and **ha
 ### Four layers
 
 1. **Discovery** — `AGENTS.md` at repo root (industry convention for AI tools).
-2. **Always-on rules** — `docs/ai/CODING_PRINCIPLES.md` (generic quality) + `.cursor/rules/coding-standards.mdc` (ZizkaDB invariants) + `ai-knowledge-base.mdc` (doc index).
+2. **Always-on rules** — `docs/ai/CODING_STANDARDS.md` (full team standards) + `docs/ai/ZIZKADB_MAPPINGS.md` (repo map) + `.cursor/rules/ai-workflow.mdc` + `coding-standards.mdc` (invariants) + `ai-knowledge-base.mdc` (index).
 3. **Path-scoped rules** — `.cursor/rules/*.mdc` with `globs` for `core/`, `dashboard/`, `sdk/`, etc.
 4. **Deep reference** — module `CLAUDE.md` files, `DASHBOARD_KNOWLEDGE_BASE.md`, `docs/adr/`.
 
@@ -57,7 +57,7 @@ Rules state explicitly: this tree has **no** operator admin console (`/admin`, `
 
 - New contributors get consistent AI behavior without custom prompts.
 - Investors and reviewers see intentional documentation architecture (ADR + `docs/ai/`).
-- Single place to update universal principles (`CODING_PRINCIPLES.md`).
+- Single place to update team standards (`CODING_STANDARDS.md`).
 
 ### Harder
 

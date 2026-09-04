@@ -47,7 +47,7 @@ cd sdk/typescript && npm test
 cd dashboard && npm run lint && npm test && npm run build
 ```
 
-Vitest covers hooks, helpers (`lib/plans.ts`, `lib/api.ts`), and key components. Warnings in build are OK; errors are not.
+Aligns with CODING_STANDARDS.md §41 verification. Aligns with CODING_STANDARDS.md §41 verification. Vitest covers hooks, helpers, and key components.
 
 ---
 

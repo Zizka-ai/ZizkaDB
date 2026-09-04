@@ -176,7 +176,8 @@ You do **not** need to paste “follow best practices” into every AI chat. Sta
 | Read | Purpose |
 |------|---------|
 | [AGENTS.md](AGENTS.md) | Entry point for Cursor, Claude Code, Copilot, Windsurf, Gemini |
-| [docs/ai/CODING_PRINCIPLES.md](docs/ai/CODING_PRINCIPLES.md) | Universal quality bar (scope, reuse, tests) |
+| [docs/ai/CODING_STANDARDS.md](docs/ai/CODING_STANDARDS.md) | Full team engineering standards (44 sections) |
+| [docs/ai/ZIZKADB_MAPPINGS.md](docs/ai/ZIZKADB_MAPPINGS.md) | Repo-specific folder mapping |
 | [docs/ai/README.md](docs/ai/README.md) | Full AI architecture map |
 | [.cursor/rules/coding-standards.mdc](.cursor/rules/coding-standards.mdc) | ZizkaDB invariants (auto-loaded in Cursor) |
 | [CLAUDE.md](CLAUDE.md) | Stack and module guides |

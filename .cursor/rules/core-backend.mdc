@@ -1,69 +1,44 @@
 ---
-description: ZizkaDB FastAPI backend — conventions, auth dependency rules, asyncpg pattern, and testing for core/
+description: ZizkaDB FastAPI backend — Python/DB/Redis/security (CODING_STANDARDS §15-24)
 globs: core/**
 alwaysApply: false
 ---
 
 # ZizkaDB Core Backend — Agent Guide
 
-**Read first:** `core/CLAUDE.md` has the router map, auth decision tree, services map, and test commands. Universal principles: `docs/ai/CODING_PRINCIPLES.md`. `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` §17–21 covers the backend–dashboard contract. `docs/adr/` explains key architectural decisions.
+**Read first:** `core/CLAUDE.md` · `docs/ai/ZIZKADB_MAPPINGS.md` · `docs/ai/CODING_STANDARDS.md` §15–24.
 
-## Auth dependency decision tree
+## Auth dependency tree
 
-| Route type | Dependency | Reason |
-|---|---|---|
-| SDK-callable (log events, search, memory, stats) | `Depends(get_tenant)` | Accepts API keys + JWTs |
-| Dashboard-only (billing, API key management, settings, account, agent delete) | `Depends(require_dashboard_session)` | JWT only — API keys must not manage keys or access user_id |
-| Per-agent analytics (stats, sessions, baseline, behavior-change, time-travel, report, token-usage, token-optimization, suggestions) | `Depends(get_tenant)` + `assert_agent_allowed(tenant, agent_id)` first line | Scoped-key isolation |
+| Route type | Dependency |
+|---|---|
+| SDK-callable (events, search, memory, telemetry) | `Depends(get_tenant)` |
+| Dashboard-only (keys, billing, settings, account, delete) | `Depends(require_dashboard_session)` |
+| Per-agent analytics + scoped SDK reads (`why`, `memory/context`, `memory/diff`, stats, sessions, baseline, report, token-*, suggestions) | `get_tenant` + `assert_agent_allowed` first line |
+| A2A `POST /v1/a2a/messages` | `get_tenant`; **scoped API key required** (tenant-wide/JWT → 403) |
 
-## Database — asyncpg pattern
+Never trust client-supplied tenant IDs (§24).
 
-```python
-from db.connection import get_pool
+## Layering (§15)
 
-pool = get_pool()  # always use the pool; never asyncpg.connect() directly
+Route → validation → `core/services/*` → asyncpg `get_pool()` → PostgreSQL/Redis/Qdrant. No SQLAlchemy. No business logic blobs in routes.
 
-# Simple query
-row = await pool.fetchrow("SELECT ... WHERE id = $1", id)
+## Database (§16–17)
 
-# Multi-statement transaction (atomic ops like delete_agent)
-async with pool.acquire() as conn:
-    async with conn.transaction():
-        await conn.execute("UPDATE ...")
-        await conn.execute("DELETE ...")
-```
+- Idempotent DDL: `schema.sql` + `init_db()`; named files `002`, `004`, `005`.
+- Parameterized queries only; avoid N+1; paginate in SQL.
 
-Never use SQLAlchemy ORM. Never open a direct connection.
+## Redis (§18)
 
-## Shared utilities
+Embedding cache + optional OTP rate limit. See `core/services/embeddings.py`.
 
-`core/api/utils.py` — use these, never duplicate:
-- `client_ip(request)` — real IP extraction (handles `X-Forwarded-For`)
-- `check_rate(key, store, limit, window_seconds)` — in-process rate limiter
+## Event pipeline
 
-Rate limiting is in-process (Python module-level dict). State resets on restart and doesn't scale across uvicorn workers. See `docs/adr/005-in-process-rate-limiting.md`.
+`event_write.py`: Postgres (required) → Qdrant (best-effort).
 
-## Schema migrations
-
-- Fresh install: `core/db/schema.sql` (Docker init, runs once)
-- Running install: `core/db/connection.py::init_db()` (idempotent `ALTER TABLE IF EXISTS`, every startup)
-- Named migrations: `core/db/migrations/002_user_billing.sql`, `004_tenant_embeddings.sql`, `005_agent_api_keys.sql` (applied manually)
-- Rule: always use `IF NOT EXISTS` / `IF EXISTS` — DDL runs on live databases
-
-## Entitlements
-
-`core/services/entitlements.py::PLAN_ENTITLEMENTS` is the **only** place that defines plan caps. Never hardcode plan limits in any other file. To override at runtime without a deploy: set `API_KEY_LIMIT_<PLAN>=N` env var and restart.
-
-## Event ingestion pipeline
-
-`core/services/event_write.py`:
-1. Postgres insert — must succeed (primary write)
-2. Qdrant upsert — non-fatal (logged and swallowed if Qdrant is down)
-
-## Lint and test
+## Lint / test
 
 ```bash
 ruff check core/
 pytest core/tests/ -m "not integration" -v
-ZIZKADB_RUN_INTEGRATION=1 pytest core/tests/ -m integration -v  # needs running stack
 ```

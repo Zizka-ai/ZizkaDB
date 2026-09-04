@@ -6,7 +6,7 @@ alwaysApply: false
 
 # ZizkaDB SDK, Integrations & MCP — Agent Guide
 
-**Read first:** [docs/ai/CODING_PRINCIPLES.md](../../docs/ai/CODING_PRINCIPLES.md) · [examples/CLAUDE.md](../../examples/CLAUDE.md) for runnable demos.
+**Read first:** [docs/ai/CODING_STANDARDS.md](../../docs/ai/CODING_STANDARDS.md) · [examples/CLAUDE.md](../../examples/CLAUDE.md) for runnable demos.
 
 ## Python SDK (`sdk/python/`)
 
