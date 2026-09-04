@@ -1,5 +1,9 @@
-# LiveKit Agents + ZizkaDB (transcript-only)
-zizkadb-livekit>=0.1.0
-# Pin your STT/LLM/TTS plugins as needed, e.g.:
-# livekit-plugins-openai
-# livekit-plugins-deepgram
+# LiveKit Agents + ZizkaDB (transcript-only) + local browser UI
+# Monorepo: regular install (not -e) — Python 3.14 skips editable .pth hooks
+../../sdk/python
+../../integrations/livekit
+livekit-plugins-openai>=0.10
+livekit-api>=0.8
+fastapi>=0.111
+uvicorn>=0.30
+python-dotenv>=1.0
