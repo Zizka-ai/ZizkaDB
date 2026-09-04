@@ -31,7 +31,7 @@ gh pr create \
 ```
 
 - Labels: `enhancement`, `bug`, and/or `documentation` (add `documentation` when KB/ADR/`CLAUDE.md` changed). Do **not** use `good first issue` on PRs.
-- Body: `Closes #N` when the PR completes the issue, or `Related to #N` when it must stay open.
+- PR description **must start with** `Fixes #N` or `Closes #N` (issue title on the next line helps reviewers). Use `Related to #N` only when the issue must stay open.
 - Optional footer for team PRs: **Made with [Cursor](https://cursor.com) and Saad**
 
 Fork contributors: a normal PR title + description + test plan is enough. Maintainers will assign reviewers.

@@ -57,7 +57,7 @@ Docker Compose serves the dashboard on **3001**; `npm run dev` uses **3000**.
 2. **Open a GitHub issue** with the right label (`bug`, `enhancement`, `documentation`, …) — see CONTRIBUTING §Pull request workflow.
 3. Branch from `main`: `git checkout -b fix/179-short-description` (include issue number when possible).
 4. Run the gates for the area you touched (see [Baseline](#baseline) below).
-5. Open a PR with **`Fixes #<issue>`** in the description so the issue closes on merge. CI must pass before merge.
+5. Open a PR — **first line of the description must be `Fixes #<issue>`** (issue title on the next line is helpful). CI must pass before merge.
 
 **Module guides:** [core/CLAUDE.md](core/CLAUDE.md) · [dashboard/CLAUDE.md](dashboard/CLAUDE.md) · [dashboard/DASHBOARD_KNOWLEDGE_BASE.md](dashboard/DASHBOARD_KNOWLEDGE_BASE.md)
 

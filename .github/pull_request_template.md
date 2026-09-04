@@ -1,3 +1,15 @@
+## Related issue
+
+<!-- REQUIRED — put this at the top of every PR description -->
+
+Fixes #<!-- number -->
+
+Link the GitHub issue this PR completes. Use **`Fixes #123`** (or `Closes #123`) so GitHub auto-closes the issue on merge. Use `Related to #123` only if the issue must stay open.
+
+Issue: <!-- paste issue title for reviewers, e.g. "Run dashboard vitest in CI (#179)" -->
+
+---
+
 ## Summary
 
 <!-- What changed? (CODING_STANDARDS §39) -->
@@ -37,9 +49,3 @@
 ## Breaking changes
 
 <!-- None, or describe migration — §31 -->
-
-## Related issue
-
-Fixes #<!-- number --> — use this keyword so GitHub **closes the issue automatically when the PR merges**. Use `Related to #<!-- number -->` only if the issue should stay open.
-
-<!-- Maintainers: docs/ai/MAINTAINER.md for labels and assignee -->
