@@ -68,7 +68,8 @@ ZIZKADB_RUN_INTEGRATION=1 pytest core/tests/test_integration_selfhost.py -v
 
 Every PR runs via `.github/workflows/ci.yml`:
 1. `ruff check core sdk/python mcp integrations`
-2. `pytest core/tests/ -m "not integration"` (unit only)
+2. `bash scripts/check-doc-drift.sh` — router count + AI doc alignment
+3. `pytest core/tests/ -m "not integration"` (unit only)
 3. `pytest sdk/python/tests/`
 4. `pytest mcp/tests/`
 5. `npm test` (TypeScript SDK)

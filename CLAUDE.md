@@ -36,7 +36,7 @@ ZizkaDB is a causal event database for AI agents. It lets you log every agent ac
 | `scripts/` | Dev setup, release, smoke test, DB seed scripts |
 | `docs/adr/` | Architecture Decision Records — explains *why* key decisions were made |
 | `wiki/` | GitHub wiki source (14 pages, pushed separately) |
-| `examples/` | 5 self-contained runnable example agents |
+| `examples/` | 6 self-contained runnable example agents (+ `examples/CLAUDE.md`) |
 | `worked/` | Worked debugging demos |
 
 ---
@@ -167,9 +167,12 @@ cd dashboard && npm run lint && npm test && npm run build
 
 | Resource | Location |
 |---|---|
+| AI-assisted development map | `docs/ai/README.md` |
+| Universal coding principles | `docs/ai/CODING_PRINCIPLES.md` |
 | Dashboard source of truth (897 lines) | `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` |
 | Architecture decisions (why) | `docs/adr/` |
 | Cursor rules (per-area conventions) | `.cursor/rules/` — **`coding-standards.mdc` and `ai-knowledge-base.mdc` always apply** |
+| Agent entry (all tools) | `AGENTS.md` |
 | Release workflow | `.cursor/skills/zizkadb-release/SKILL.md` |
 | Wiki (14 pages) | `wiki/` or https://github.com/Zizka-ai/ZizkaDB/wiki |
 | REST API explorer | http://localhost:8000/swagger |

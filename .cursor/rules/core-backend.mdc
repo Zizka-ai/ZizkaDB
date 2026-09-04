@@ -6,7 +6,7 @@ alwaysApply: false
 
 # ZizkaDB Core Backend — Agent Guide
 
-**Read first:** `core/CLAUDE.md` has the router map, auth decision tree, services map, and test commands. `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` §17–21 covers the backend–dashboard contract. `docs/adr/` explains key architectural decisions.
+**Read first:** `core/CLAUDE.md` has the router map, auth decision tree, services map, and test commands. Universal principles: `docs/ai/CODING_PRINCIPLES.md`. `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` §17–21 covers the backend–dashboard contract. `docs/adr/` explains key architectural decisions.
 
 ## Auth dependency decision tree
 

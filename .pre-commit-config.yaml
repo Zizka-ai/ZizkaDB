@@ -1,0 +1,29 @@
+# Install: pip install pre-commit && pre-commit install
+# Run all: pre-commit run --all-files
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.10
+    hooks:
+      - id: ruff
+        name: ruff (core, sdk, mcp, integrations)
+        files: ^(core|sdk/python|mcp|integrations)/
+
+  - repo: local
+    hooks:
+      - id: check-doc-drift
+        name: AI doc drift check
+        entry: bash scripts/check-doc-drift.sh
+        language: system
+        pass_filenames: false
+        files: ^(core/main\.py|core/README\.md|docs/adr/|docs/ai/|AGENTS\.md|\.cursor/rules/)

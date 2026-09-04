@@ -5,7 +5,9 @@ alwaysApply: true
 
 # ZizkaDB — Coding Standards (always apply)
 
-These rules apply to **every** change without needing to be named in the prompt. Area-specific guides load automatically via `.cursor/rules/*.mdc` globs and module `CLAUDE.md` files.
+**Read first:** [docs/ai/CODING_PRINCIPLES.md](../../docs/ai/CODING_PRINCIPLES.md) — universal scope, reuse, tests, security.
+
+These ZizkaDB-specific rules apply to **every** change without needing to be named in the prompt. Area-specific guides load automatically via `.cursor/rules/*.mdc` globs and module `CLAUDE.md` files. Full map: [docs/ai/README.md](../../docs/ai/README.md).
 
 ## Before starting any task
 
@@ -24,7 +26,7 @@ Then create the feature branch from that tip (`git checkout -b <topic>`), or mer
 |---|---|
 | `core/` | `core/CLAUDE.md` · `.cursor/rules/core-backend.mdc` · `.cursor/rules/backend-dashboard-contract.mdc` |
 | `dashboard/` | `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` · `dashboard/CLAUDE.md` · `.cursor/rules/dashboard.mdc` |
-| `sdk/`, `integrations/`, `mcp/`, `examples/` | Module `CLAUDE.md` · `.cursor/rules/sdk-integrations-mcp.mdc` |
+| `sdk/`, `integrations/`, `mcp/`, `examples/` | Module `CLAUDE.md` · `examples/CLAUDE.md` · `.cursor/rules/sdk-integrations-mcp.mdc` |
 | `infra/`, `scripts/`, `.github/` | `.cursor/rules/infra-deploy.mdc` |
 | Tests | `.cursor/rules/testing.mdc` |
 | Architecture / why | `docs/adr/` · root `CLAUDE.md` |

@@ -13,6 +13,9 @@ ADRs are the highest-leverage documentation for long-term maintainability. They 
 | [003](003-billing-stub.md) | Billing is intentionally stubbed — always `has_access: True` |
 | [004](004-auth-dependency-split.md) | `get_tenant` vs `require_dashboard_session` auth dependency split |
 | [005](005-in-process-rate-limiting.md) | In-process Python dict rate limiting |
+| [006](006-token-usage-jsonb-convention.md) | Token usage stored in `events.data.token_usage` JSONB |
+| [007](007-deterministic-token-optimization.md) | Deterministic (no-LLM) token optimization detectors |
+| [008](008-ai-coding-assistant-architecture.md) | Repo-encoded AI coding standards (layers + tool adapters) |
 
 ## Format
 

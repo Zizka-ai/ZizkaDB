@@ -38,7 +38,7 @@ Start here if you are not sure which file to read.
 | Dashboard behavior | `dashboard/DASHBOARD_KNOWLEDGE_BASE.md` |
 | Plan API key caps | `core/services/entitlements.py` |
 | Auth rules | `docs/adr/004-auth-dependency-split.md` |
-| AI coding in this repo | [AGENTS.md](../AGENTS.md) · `.cursor/rules/` |
+| AI coding in this repo | [AGENTS.md](../AGENTS.md) · [docs/ai/README.md](ai/README.md) · `.cursor/rules/` |
 
 ## Plan limits (honest)
 

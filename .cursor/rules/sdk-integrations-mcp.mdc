@@ -6,6 +6,8 @@ alwaysApply: false
 
 # ZizkaDB SDK, Integrations & MCP — Agent Guide
 
+**Read first:** [docs/ai/CODING_PRINCIPLES.md](../../docs/ai/CODING_PRINCIPLES.md) · [examples/CLAUDE.md](../../examples/CLAUDE.md) for runnable demos.
+
 ## Python SDK (`sdk/python/`)
 
 **Package:** `zizkadb-sdk` on PyPI. Always async — `async with ZizkaDB(...) as db:`. No sync constructor.
@@ -65,7 +67,7 @@ Cursor/Claude Desktop config: `.cursor/mcp.json.example`.
 
 ## Examples (`examples/`)
 
-5 self-contained example agents, each with `.env.example`, `agent.py`, `requirements.txt`, `README.md`:
+See [`examples/CLAUDE.md`](../../examples/CLAUDE.md). Six self-contained examples, each with `.env.example`, entrypoint, `requirements.txt`, `README.md`:
 - `minimal-python/` — bare-minimum Python
 - `openai-agent/` — OpenAI function calling
 - `langchain-agent/` — LangChain with `ZizkaDBCallbackHandler`
