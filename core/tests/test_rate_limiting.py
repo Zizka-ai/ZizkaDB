@@ -12,6 +12,17 @@ import pytest
 from fastapi.testclient import TestClient
 from main import app
 from api.auth import otp_limiter, verify_otp_limiter, _otp_storage, _OTP_RATE_MAX, _OTP_RATE_WINDOW_SEC, _VERIFY_OTP_RATE_MAX
+from api.agents import (
+    suggestions_rate_limiter,
+    suggestions_rate_fallback,
+    suggestions_refresh_limiter,
+    suggestions_refresh_fallback,
+    _suggestions_storage,
+    _SUGGESTIONS_RATE_MAX,
+    _SUGGESTIONS_RATE_WINDOW_SEC,
+    _SUGGESTIONS_REFRESH_MAX,
+)
+from api.deps import get_tenant
 from services.rate_limiter import (
     InMemoryStorage,
     RedisStorage,
@@ -289,4 +300,92 @@ class TestVerifyOTPRateLimiting:
             )
             assert response.status_code == 429
             assert "Too many verification attempts" in response.json()["detail"]
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Suggestions Rate Limiting Tests
+# ──────────────────────────────────────────────────────────────────────────────
+
+_TEST_TENANT = {"tenant_id": "suggestions-rate-test-tenant"}
+
+
+def _override_tenant():
+    return _TEST_TENANT
+
+
+class TestSuggestionsRateLimiting:
+    def setup_method(self):
+        suggestions_rate_limiter.storage = InMemoryStorage()
+        suggestions_refresh_limiter.storage = InMemoryStorage()
+        suggestions_rate_fallback.storage = InMemoryStorage()
+        suggestions_refresh_fallback.storage = InMemoryStorage()
+        asyncio.run(suggestions_rate_limiter.storage.clear())
+        asyncio.run(suggestions_refresh_limiter.storage.clear())
+        asyncio.run(suggestions_rate_fallback.storage.clear())
+        asyncio.run(suggestions_refresh_fallback.storage.clear())
+        app.dependency_overrides[get_tenant] = _override_tenant
+
+    def teardown_method(self):
+        app.dependency_overrides.pop(get_tenant, None)
+
+    @patch("services.ai.config.ai_configured", return_value=False)
+    def test_suggestions_requests_exceed_limit(self, _mock_ai):
+        start_time = 1000000.0
+        with patch("time.time", return_value=start_time):
+            for _ in range(_SUGGESTIONS_RATE_MAX):
+                response = client.get("/v1/agents/test-agent/suggestions")
+                assert response.status_code == 200
+
+            response = client.get("/v1/agents/test-agent/suggestions")
+            assert response.status_code == 429
+            assert "Too many suggestion requests" in response.json()["detail"]
+
+    @patch("services.ai.config.ai_configured", return_value=False)
+    def test_suggestions_refresh_exceed_limit(self, _mock_ai):
+        start_time = 1000000.0
+        with patch("time.time", return_value=start_time):
+            for _ in range(_SUGGESTIONS_REFRESH_MAX):
+                response = client.get(
+                    "/v1/agents/test-agent/suggestions?refresh=true"
+                )
+                assert response.status_code == 200
+
+            response = client.get(
+                "/v1/agents/test-agent/suggestions?refresh=true"
+            )
+            assert response.status_code == 429
+            assert "Suggestion regeneration limit" in response.json()["detail"]
+
+    @patch("services.ai.config.ai_configured", return_value=False)
+    def test_suggestions_fail_open_on_redis_error(self, _mock_ai):
+        suggestions_rate_limiter.storage = MagicMock()
+        suggestions_rate_limiter.storage.get_hits = AsyncMock(
+            side_effect=RuntimeError("redis down")
+        )
+        suggestions_rate_limiter.storage.record_hit = AsyncMock()
+
+        start_time = 1000000.0
+        with patch("time.time", return_value=start_time):
+            response = client.get("/v1/agents/test-agent/suggestions")
+            assert response.status_code == 200
+
+
+class TestSuggestionsStorageSelection:
+    def test_explicit_redis(self, monkeypatch):
+        monkeypatch.setenv("SUGGESTIONS_RATE_LIMIT_STORAGE", "redis")
+        assert isinstance(_suggestions_storage(), RedisStorage)
+
+    def test_explicit_memory(self, monkeypatch):
+        monkeypatch.setenv("SUGGESTIONS_RATE_LIMIT_STORAGE", "memory")
+        assert isinstance(_suggestions_storage(), InMemoryStorage)
+
+    def test_production_defaults_to_redis(self, monkeypatch):
+        monkeypatch.delenv("SUGGESTIONS_RATE_LIMIT_STORAGE", raising=False)
+        monkeypatch.setenv("ENV", "production")
+        assert isinstance(_suggestions_storage(), RedisStorage)
+
+    def test_development_defaults_to_memory(self, monkeypatch):
+        monkeypatch.delenv("SUGGESTIONS_RATE_LIMIT_STORAGE", raising=False)
+        monkeypatch.setenv("ENV", "development")
+        assert isinstance(_suggestions_storage(), InMemoryStorage)
 

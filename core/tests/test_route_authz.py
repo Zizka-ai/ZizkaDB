@@ -182,9 +182,10 @@ def test_key_management_routes_require_dashboard_session():
 
 
 def test_suggestions_route_is_rate_limited():
-    """The expensive AI endpoint declares per-tenant throttle stores."""
-    assert hasattr(agents_api, "_SUGGESTIONS_REFRESH_RATE")
-    assert hasattr(agents_api, "_SUGGESTIONS_RATE")
+    """The expensive AI endpoint uses shared RateLimiter instances."""
+    assert hasattr(agents_api, "suggestions_refresh_limiter")
+    assert hasattr(agents_api, "suggestions_rate_limiter")
+    assert hasattr(agents_api, "_check_suggestions_rate")
 
 
 # ── per-agent analytics routes: get_tenant + assert_agent_allowed ────────────

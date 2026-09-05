@@ -4,13 +4,19 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from services.exceptions import bad_request, conflict, not_found, service_unavailable
 from pydantic import BaseModel, Field
 
 from api.deps import assert_agent_allowed, get_tenant, require_dashboard_session
-from api.utils import check_rate
 from db.connection import get_pool, get_redis, get_qdrant, QDRANT_COLLECTION
+from services.rate_limiter import (
+    InMemoryStorage,
+    RateLimiter,
+    RateLimitStorage,
+    RedisStorage,
+    SlidingWindowStrategy,
+)
 from services import reports, token_optimization, token_usage
 from services import token_optimization_config
 from services.ai import config as ai_config
@@ -32,9 +38,85 @@ _AGENT_ID_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,254}$")
 # Per-tenant throttle for the AI suggestions endpoint. Cache + Redis lock already
 # coalesce repeat reads, but `refresh=true` bypasses both and triggers a live
 # (paid, ~20s) Claude call, so cap how often a tenant can force regeneration.
-# In-process dict — same per-worker semantics as the other limiters in this app.
-_SUGGESTIONS_REFRESH_RATE: dict[str, list[float]] = {}
-_SUGGESTIONS_RATE: dict[str, list[float]] = {}
+_SUGGESTIONS_REFRESH_WINDOW_SEC = 3600
+_SUGGESTIONS_REFRESH_MAX = 20
+_SUGGESTIONS_RATE_WINDOW_SEC = 60
+_SUGGESTIONS_RATE_MAX = 30
+
+_suggestions_fallback_storage = InMemoryStorage()
+
+
+def _suggestions_storage() -> RateLimitStorage:
+    """
+    Choose suggestions rate-limit storage.
+
+    SUGGESTIONS_RATE_LIMIT_STORAGE=redis|memory overrides the default.
+    Default: redis when ENV=production (shared across uvicorn workers),
+    memory otherwise (local dev + unit tests).
+    """
+    choice = (os.getenv("SUGGESTIONS_RATE_LIMIT_STORAGE") or "").strip().lower()
+    if not choice:
+        choice = (
+            "redis" if os.getenv("ENV", "development") == "production" else "memory"
+        )
+    if choice == "redis":
+        return RedisStorage(key_prefix="suggestions")
+    if choice == "memory":
+        return InMemoryStorage()
+    log.warning(
+        "Unknown SUGGESTIONS_RATE_LIMIT_STORAGE=%r; falling back to memory",
+        choice,
+    )
+    return InMemoryStorage()
+
+
+suggestions_refresh_limiter = RateLimiter(
+    limit=_SUGGESTIONS_REFRESH_MAX,
+    window_sec=_SUGGESTIONS_REFRESH_WINDOW_SEC,
+    storage=_suggestions_storage(),
+    strategy=SlidingWindowStrategy(),
+    detail="Suggestion regeneration limit reached. Try again later.",
+)
+
+suggestions_rate_limiter = RateLimiter(
+    limit=_SUGGESTIONS_RATE_MAX,
+    window_sec=_SUGGESTIONS_RATE_WINDOW_SEC,
+    storage=_suggestions_storage(),
+    strategy=SlidingWindowStrategy(),
+    detail="Too many suggestion requests. Try again shortly.",
+)
+
+suggestions_refresh_fallback = RateLimiter(
+    limit=_SUGGESTIONS_REFRESH_MAX,
+    window_sec=_SUGGESTIONS_REFRESH_WINDOW_SEC,
+    storage=_suggestions_fallback_storage,
+    strategy=SlidingWindowStrategy(),
+    detail="Suggestion regeneration limit reached. Try again later.",
+)
+
+suggestions_rate_fallback = RateLimiter(
+    limit=_SUGGESTIONS_RATE_MAX,
+    window_sec=_SUGGESTIONS_RATE_WINDOW_SEC,
+    storage=_suggestions_fallback_storage,
+    strategy=SlidingWindowStrategy(),
+    detail="Too many suggestion requests. Try again shortly.",
+)
+
+
+async def _check_suggestions_rate(
+    limiter: RateLimiter, fallback: RateLimiter, key: str
+) -> None:
+    """Check tenant throttle; fail-open to per-worker memory when Redis is down."""
+    try:
+        await limiter.check(key)
+    except HTTPException:
+        raise
+    except Exception:
+        log.warning(
+            "Suggestions rate limit backend unavailable; using in-memory fallback",
+            exc_info=True,
+        )
+        await fallback.check(key)
 
 
 def _validate_agent_id(agent_id: str) -> str:
@@ -492,13 +574,11 @@ async def agent_suggestions(
     # and forces a live Claude call, so it gets a much tighter cap.
     tenant_key = tenant["tenant_id"]
     if refresh:
-        check_rate(
-            _SUGGESTIONS_REFRESH_RATE, tenant_key, window_sec=3600, max_hits=20,
-            detail="Suggestion regeneration limit reached. Try again later.",
+        await _check_suggestions_rate(
+            suggestions_refresh_limiter, suggestions_refresh_fallback, tenant_key
         )
-    check_rate(
-        _SUGGESTIONS_RATE, tenant_key, window_sec=60, max_hits=30,
-        detail="Too many suggestion requests. Try again shortly.",
+    await _check_suggestions_rate(
+        suggestions_rate_limiter, suggestions_rate_fallback, tenant_key
     )
 
     # Default to the last 30 days when the caller omits an explicit window.

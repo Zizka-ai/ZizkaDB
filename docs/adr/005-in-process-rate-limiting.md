@@ -1,6 +1,6 @@
 # ADR-005: In-Process Python Dict Rate Limiting
 
-**Status**: Accepted (with known limitations); **OTP path updated 2026** — `POST /v1/auth/request-otp` uses Redis via `OTP_RATE_LIMIT_STORAGE` / `ENV=production` default (see `core/api/auth.py`). Other in-process limiters may still apply where those routes exist.  
+**Status**: Accepted (with known limitations); **OTP path updated 2026** — `POST /v1/auth/request-otp` uses Redis via `OTP_RATE_LIMIT_STORAGE` / `ENV=production` default (see `core/api/auth.py`). **Suggestions path updated 2026** — `GET /v1/agents/{id}/suggestions` uses Redis via `SUGGESTIONS_RATE_LIMIT_STORAGE` / `ENV=production` default with fail-open in-memory fallback (see `core/api/agents.py`). Other in-process limiters may still apply where those routes exist.  
 **Date**: 2024 (OTP Redis note: 2026)
 
 ---
@@ -63,6 +63,8 @@ The marketing and community routes are low-traffic surfaces; burst requests slip
 **The OTP route is different.** `POST /v1/auth/request-otp` uses Redis when `ENV=production` or `OTP_RATE_LIMIT_STORAGE=redis` (see `core/api/auth.py`). Community, demo, and other `check_rate()` stores remain in-process and still multiply by uvicorn `--workers` (4× in production compose).
 
 **Current state (2026-08):** OTP brute-force protection is Redis-backed in production. Do not assume every limiter is Redis — in-process `check_rate()` is unchanged.
+
+**Current state (2026-09):** Suggestions throttle (`GET /v1/agents/{id}/suggestions`) is Redis-backed in production with fail-open fallback to per-worker in-memory limits when Redis is unavailable. OTP fails closed on Redis outage; suggestions fail open so the endpoint stays available at reduced coordination.
 
 ---
 
