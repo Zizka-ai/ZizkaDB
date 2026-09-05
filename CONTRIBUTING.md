@@ -239,13 +239,14 @@ git checkout -b docs/181-what-you-changed     # documentation only
 
 Target the `main` branch on [Zizka-ai/ZizkaDB](https://github.com/Zizka-ai/ZizkaDB).
 
-**PR description must include:**
+**The PR description must start with the linked issue** — first line: `Fixes #<number>` (or `Closes #<number>`). Optionally repeat the issue title on the next line for reviewers. GitHub closes the issue when the PR merges.
 
-1. **`Fixes #<issue>`** (or `Closes #<issue>`) — auto-closes the issue when merged
-2. **What** changed and **why**
-3. **How to test** (commands, curl, screenshots for UI)
-4. **Areas touched** (API / schema / SDK / dashboard / MCP)
-5. **Breaking changes** (if any)
+**PR description must also include:**
+
+1. **What** changed and **why**
+2. **How to test** (commands, curl, screenshots for UI)
+3. **Areas touched** (API / schema / SDK / dashboard / MCP)
+4. **Breaking changes** (if any)
 
 **CI must pass** before merge (Python lint + tests, TS SDK tests, dashboard lint + vitest + build, doc drift).
 
