@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
-from api.demo_requests import demo_limiter
+from api.demo_requests import demo_limiter, demo_limiter_fallback
 from main import app
 from services.rate_limiter import InMemoryStorage
 
@@ -38,7 +38,9 @@ def _mock_pool_row():
 class TestDemoRequests:
     def setup_method(self):
         demo_limiter.storage = InMemoryStorage()
+        demo_limiter_fallback.storage = InMemoryStorage()
         asyncio.run(demo_limiter.storage.clear())
+        asyncio.run(demo_limiter_fallback.storage.clear())
 
     @patch("api.demo_requests.get_pool")
     def test_create_minimal_fields(self, mock_get_pool):
@@ -154,3 +156,12 @@ class TestDemoRequests:
         del payload["company_name"]
         response = client.post("/v1/demo-requests", json=payload)
         assert response.status_code == 422
+
+    @patch("api.demo_requests.get_pool")
+    def test_fail_open_when_redis_unavailable(self, mock_get_pool):
+        mock_get_pool.return_value = _mock_pool_row()
+        demo_limiter.storage = MagicMock()
+        demo_limiter.storage.get_hits = AsyncMock(side_effect=RuntimeError("redis down"))
+        demo_limiter.storage.record_hit = AsyncMock()
+        response = client.post("/v1/demo-requests", json=VALID_PAYLOAD)
+        assert response.status_code == 201

@@ -18,7 +18,13 @@ from pydantic import BaseModel, Field
 
 from api.utils import client_ip
 from db.connection import get_pool
-from services.rate_limiter import RateLimiter, RedisStorage, SlidingWindowStrategy
+from services.rate_limiter import (
+    InMemoryStorage,
+    RateLimiter,
+    RedisStorage,
+    SlidingWindowStrategy,
+    check_rate_fail_open,
+)
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -39,6 +45,25 @@ community_limiter = RateLimiter(
     strategy=SlidingWindowStrategy(),
     detail="Too many posts. Try again later."
 )
+
+_community_fallback_storage = InMemoryStorage()
+
+community_limiter_fallback = RateLimiter(
+    limit=RATE_MAX_POSTS,
+    window_sec=RATE_WINDOW_SEC,
+    storage=_community_fallback_storage,
+    strategy=SlidingWindowStrategy(),
+    detail="Too many posts. Try again later.",
+)
+
+
+async def _check_community_rate(key: str) -> None:
+    await check_rate_fail_open(
+        community_limiter,
+        community_limiter_fallback,
+        key,
+        context="community rate limit",
+    )
 
 
 class CreatePostBody(BaseModel):
@@ -165,7 +190,7 @@ async def create_post(body: CreatePostBody, request: Request):
         raise bad_request("Invalid submission")
     if body.category not in CATEGORIES:
         raise bad_request("Invalid category")
-    await community_limiter.check(client_ip(request))
+    await _check_community_rate(client_ip(request))
     pool = get_pool()
     urls = [u for u in body.image_urls if isinstance(u, str) and u.startswith("/v1/community/media/")][:6]
 
@@ -191,7 +216,7 @@ async def create_post(body: CreatePostBody, request: Request):
 async def create_reply(post_id: str, body: CreateReplyBody, request: Request):
     if body.website:
         raise bad_request("Invalid submission")
-    await community_limiter.check(client_ip(request))
+    await _check_community_rate(client_ip(request))
     pool = get_pool()
     try:
         pid = uuid.UUID(post_id)
@@ -228,7 +253,7 @@ async def create_reply(post_id: str, body: CreateReplyBody, request: Request):
 
 @router.post("/upload")
 async def upload_image(request: Request, file: UploadFile = File(...)):
-    await community_limiter.check(client_ip(request) + ":upload")
+    await _check_community_rate(client_ip(request) + ":upload")
 
     if not file.filename:
         raise bad_request("No file")

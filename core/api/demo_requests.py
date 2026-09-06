@@ -11,7 +11,13 @@ from pydantic import BaseModel, EmailStr, Field
 
 from api.utils import client_ip
 from db.connection import get_pool
-from services.rate_limiter import RateLimiter, RedisStorage, SlidingWindowStrategy
+from services.rate_limiter import (
+    InMemoryStorage,
+    RateLimiter,
+    RedisStorage,
+    SlidingWindowStrategy,
+    check_rate_fail_open,
+)
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -27,6 +33,16 @@ demo_limiter = RateLimiter(
     storage=RedisStorage(key_prefix="ratelimit:demo-requests"),
     strategy=SlidingWindowStrategy(),
     detail="Too many requests. Try again later."
+)
+
+_demo_fallback_storage = InMemoryStorage()
+
+demo_limiter_fallback = RateLimiter(
+    limit=RATE_MAX,
+    window_sec=RATE_WINDOW_SEC,
+    storage=_demo_fallback_storage,
+    strategy=SlidingWindowStrategy(),
+    detail="Too many requests. Try again later.",
 )
 
 
@@ -50,7 +66,9 @@ async def create_demo_request(body: CreateDemoRequestBody, request: Request):
         raise bad_request("Invalid submission")
 
     ip = client_ip(request)
-    await demo_limiter.check(ip)
+    await check_rate_fail_open(
+        demo_limiter, demo_limiter_fallback, ip, context="demo request rate limit"
+    )
 
     source = (body.source.strip() or None) if body.source else None
     if source and source not in VALID_SOURCES:

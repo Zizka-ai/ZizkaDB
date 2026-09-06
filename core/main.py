@@ -26,6 +26,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+def warn_if_production_cors_wildcard(cors_allowed_origins: list[str]) -> None:
+    """Log when production runs with default wildcard CORS."""
+    if not cors_allowed_origins:
+        logger.warning(
+            "CORS_ALLOWED_ORIGINS is unset in production — allowing all origins (*). "
+            "Set CORS_ALLOWED_ORIGINS to your dashboard origin(s) for browser security."
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     env = os.getenv("ENV", "development")
@@ -49,6 +58,8 @@ async def lifespan(app: FastAPI):
                 "API_KEY_LIMITS_ENFORCED is false in production — per-plan API key "
                 "caps are not enforced until you enable the kill switch."
             )
+        if not _cors_allowed_origins:
+            warn_if_production_cors_wildcard(_cors_allowed_origins)
     await init_db()
     # Seed dev tenant for local self-host (ENV=development) or when DEV_API_KEY is set.
     if os.getenv("ENV", "development") == "development" or os.getenv("DEV_API_KEY"):
