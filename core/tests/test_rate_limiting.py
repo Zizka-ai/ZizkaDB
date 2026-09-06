@@ -27,7 +27,8 @@ from services.rate_limiter import (
     InMemoryStorage,
     RedisStorage,
     FixedWindowStrategy,
-    RateLimiter
+    RateLimiter,
+    check_rate_fail_open,
 )
 
 try:
@@ -388,4 +389,41 @@ class TestSuggestionsStorageSelection:
         monkeypatch.delenv("SUGGESTIONS_RATE_LIMIT_STORAGE", raising=False)
         monkeypatch.setenv("ENV", "development")
         assert isinstance(_suggestions_storage(), InMemoryStorage)
+
+
+class TestCheckRateFailOpen:
+    def test_passes_through_429(self):
+        primary = RateLimiter(
+            limit=1,
+            window_sec=60,
+            storage=InMemoryStorage(),
+            strategy=FixedWindowStrategy(),
+        )
+        fallback = RateLimiter(
+            limit=10,
+            window_sec=60,
+            storage=InMemoryStorage(),
+            strategy=FixedWindowStrategy(),
+        )
+        asyncio.run(primary.check("key"))
+        from fastapi import HTTPException
+        with pytest.raises(HTTPException) as exc:
+            asyncio.run(check_rate_fail_open(primary, fallback, "key"))
+        assert exc.value.status_code == 429
+
+    def test_uses_fallback_on_backend_error(self):
+        primary = RateLimiter(
+            limit=1,
+            window_sec=60,
+            storage=MagicMock(),
+            strategy=FixedWindowStrategy(),
+        )
+        primary.storage.get_hits = AsyncMock(side_effect=RuntimeError("redis down"))
+        fallback = RateLimiter(
+            limit=10,
+            window_sec=60,
+            storage=InMemoryStorage(),
+            strategy=FixedWindowStrategy(),
+        )
+        asyncio.run(check_rate_fail_open(primary, fallback, "key"))
 

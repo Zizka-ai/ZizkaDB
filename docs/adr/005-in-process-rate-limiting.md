@@ -66,6 +66,8 @@ The marketing and community routes are low-traffic surfaces; burst requests slip
 
 **Current state (2026-09):** Suggestions throttle (`GET /v1/agents/{id}/suggestions`) is Redis-backed in production with fail-open fallback to per-worker in-memory limits when Redis is unavailable. OTP fails closed on Redis outage; suggestions fail open so the endpoint stays available at reduced coordination.
 
+**Current state (2026-09):** Public demo-request and community rate limits use Redis with the same fail-open in-memory fallback. Marketing subscriptions still use Redis-only (no fallback yet).
+
 ---
 
 ## Future path

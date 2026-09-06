@@ -15,6 +15,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Dashboard CI runs `npm test` (vitest) alongside lint and build
 - Suggestions endpoint rate limit uses Redis in production (`SUGGESTIONS_RATE_LIMIT_STORAGE`) with fail-open in-memory fallback when Redis is unavailable
+- Public demo-request and community rate limits fail-open to per-worker memory when Redis is unavailable
+- Production startup logs a warning when `CORS_ALLOWED_ORIGINS` is unset (wildcard `*` allowed)
 
 ### Integrations
 

@@ -7,6 +7,9 @@ import logging
 import threading
 import uuid
 from abc import ABC, abstractmethod
+
+from fastapi import HTTPException
+
 from services.exceptions import rate_limit_exceeded
 from db.connection import get_redis
 
@@ -316,3 +319,24 @@ class RateLimiter:
         Raises HTTPException 429 if the limit is exceeded.
         """
         await self.strategy.check(key, self.limit, self.window_sec, self.storage, self.detail)
+
+
+async def check_rate_fail_open(
+    limiter: RateLimiter,
+    fallback: RateLimiter,
+    key: str,
+    *,
+    context: str = "rate limit",
+) -> None:
+    """Check limiter; on backend errors, fall back to per-worker in-memory limits."""
+    try:
+        await limiter.check(key)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.warning(
+            "%s backend unavailable; using in-memory fallback",
+            context,
+            exc_info=True,
+        )
+        await fallback.check(key)

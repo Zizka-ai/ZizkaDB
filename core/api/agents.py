@@ -4,7 +4,7 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from services.exceptions import bad_request, conflict, not_found, service_unavailable
 from pydantic import BaseModel, Field
 
@@ -16,6 +16,7 @@ from services.rate_limiter import (
     RateLimitStorage,
     RedisStorage,
     SlidingWindowStrategy,
+    check_rate_fail_open,
 )
 from services import reports, token_optimization, token_usage
 from services import token_optimization_config
@@ -107,16 +108,9 @@ async def _check_suggestions_rate(
     limiter: RateLimiter, fallback: RateLimiter, key: str
 ) -> None:
     """Check tenant throttle; fail-open to per-worker memory when Redis is down."""
-    try:
-        await limiter.check(key)
-    except HTTPException:
-        raise
-    except Exception:
-        log.warning(
-            "Suggestions rate limit backend unavailable; using in-memory fallback",
-            exc_info=True,
-        )
-        await fallback.check(key)
+    await check_rate_fail_open(
+        limiter, fallback, key, context="suggestions rate limit"
+    )
 
 
 def _validate_agent_id(agent_id: str) -> str:
