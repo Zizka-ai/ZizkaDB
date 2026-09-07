@@ -61,4 +61,23 @@ if [[ "$MDC_LINES" -gt 55 ]]; then
   fail "coding-standards.mdc has $MDC_LINES lines (max 55) — move detail to CODING_STANDARDS.md"
 fi
 
-echo "check-doc-drift: OK (${ROUTER_COUNT} routers, AI docs present)"
+PY_SDK_VER="$(grep '^version' sdk/python/pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')"
+TS_SDK_VER="$(grep '"version"' sdk/typescript/package.json | head -1 | sed 's/.*"\([0-9][0-9.]*\)".*/\1/')"
+API_VER="$(grep '^API_VERSION' core/main.py | sed 's/.*"\(.*\)".*/\1/')"
+
+[[ -n "$PY_SDK_VER" ]] || fail "could not read Python SDK version"
+[[ -n "$TS_SDK_VER" ]] || fail "could not read TypeScript SDK version"
+[[ -n "$API_VER" ]] || fail "could not read API_VERSION from core/main.py"
+
+if [[ "$PY_SDK_VER" != "$TS_SDK_VER" ]]; then
+  fail "Python SDK ($PY_SDK_VER) != TypeScript SDK ($TS_SDK_VER)"
+fi
+if [[ "$PY_SDK_VER" != "$API_VER" ]]; then
+  fail "Python SDK ($PY_SDK_VER) != API display version ($API_VER)"
+fi
+
+if grep -q "SDK_VERSION = '" sdk/typescript/src/index.ts 2>/dev/null; then
+  fail "sdk/typescript/src/index.ts must not hardcode SDK_VERSION — import from package.json"
+fi
+
+echo "check-doc-drift: OK (${ROUTER_COUNT} routers, AI docs present, release line ${PY_SDK_VER})"

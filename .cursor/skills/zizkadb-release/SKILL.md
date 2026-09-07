@@ -11,7 +11,7 @@ description: Bumps versions, runs pre-push verification, and publishes ZizkaDB S
 | Python SDK | `sdk/python/pyproject.toml` |
 | TypeScript SDK | `sdk/typescript/package.json` |
 | MCP | `mcp/pyproject.toml` |
-| API (display) | `core/main.py` `version=` |
+| API (display) | `core/main.py` `API_VERSION` |
 
 Keep SDK versions aligned when possible.
 
