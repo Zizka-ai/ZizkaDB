@@ -25,6 +25,9 @@ from api.marketing_subscriptions import router as marketing_subscriptions_router
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Display/API release line — keep in sync with zizkadb-sdk (see scripts/check-doc-drift.sh).
+API_VERSION = "0.2.8"
+
 
 def warn_if_production_cors_wildcard(cors_allowed_origins: list[str]) -> None:
     """Log when production runs with default wildcard CORS."""
@@ -73,7 +76,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="ZizkaDB",
     description="The operational database for AI agents",
-    version="0.1.0",
+    version=API_VERSION,
     lifespan=lifespan,
     docs_url=None,
     redoc_url=None,
@@ -154,7 +157,7 @@ app.include_router(marketing_subscriptions_router, prefix="/v1/marketing-subscri
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": API_VERSION}
 
 
 @app.get("/health/deep")

@@ -381,3 +381,15 @@ describe('at()', () => {
     expect(state.eventCount).toBe(3)
   })
 })
+
+// ─────────────────────────────────────────
+// Version
+// ─────────────────────────────────────────
+
+describe('SDK version', () => {
+  it('SDK_VERSION matches package.json', async () => {
+    const { SDK_VERSION } = await import('../index')
+    const packageJson = await import('../../package.json')
+    expect(SDK_VERSION).toBe(packageJson.version)
+  })
+})

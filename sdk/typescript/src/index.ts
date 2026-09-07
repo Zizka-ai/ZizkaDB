@@ -35,12 +35,13 @@ import type {
   SearchOptions,
 } from './types'
 import { ZizkaDBError, AuthError, NotFoundError, AgentScopeError, RateLimitError } from './types'
+import packageJson from '../package.json'
 
 export * from './types'
 
 const CLOUD_HOST = 'https://db.zizka.ai'
 const TELEMETRY_URL = 'https://db.zizka.ai/v1/telemetry'
-const SDK_VERSION = '0.2.6'
+export const SDK_VERSION = packageJson.version
 const DEFAULT_DEV_API_KEY = 'zizkadb_dev_local'
 
 function isLocalHost(host: string): boolean {
