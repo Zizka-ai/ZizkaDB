@@ -32,6 +32,8 @@ Dev login: http://localhost:3001/login → **Open my dashboard** (no email when 
 
 Dev API key: `zizkadb_dev_local` (accepted when `ENV=development`).
 
+**Troubleshooting:** [wiki/Troubleshooting.md](wiki/Troubleshooting.md)
+
 Verify the stack:
 
 ```bash
