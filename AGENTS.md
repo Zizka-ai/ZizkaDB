@@ -37,7 +37,7 @@ Map: [docs/ai/README.md](docs/ai/README.md) · ADR: [docs/adr/008-ai-coding-assi
 | Area | Read |
 |------|------|
 | `core/` | [core/CLAUDE.md](core/CLAUDE.md) |
-| `dashboard/` | [dashboard/CLAUDE.md](dashboard/CLAUDE.md) · [DASHBOARD_KNOWLEDGE_BASE.md](dashboard/DASHBOARD_KNOWLEDGE_BASE.md) |
+| `dashboard/` | [dashboard/README.md](dashboard/README.md) · [dashboard/CLAUDE.md](dashboard/CLAUDE.md) · [DASHBOARD_KNOWLEDGE_BASE.md](dashboard/DASHBOARD_KNOWLEDGE_BASE.md) |
 | `sdk/python/` | [sdk/python/CLAUDE.md](sdk/python/CLAUDE.md) |
 | `sdk/typescript/` | [sdk/typescript/CLAUDE.md](sdk/typescript/CLAUDE.md) |
 | `integrations/` | [integrations/CLAUDE.md](integrations/CLAUDE.md) |

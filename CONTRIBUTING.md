@@ -60,6 +60,8 @@ For significant contributions, we may ask you to confirm you have the right to s
 
 ## Development setup
 
+**Start here:** [DEVELOPMENT.md](DEVELOPMENT.md) — self-host quickstart, contributor workflow, test matrix, and port reference (dashboard **3001** via Docker, **3000** via `npm run dev`).
+
 ### Prerequisites
 
 - **Docker** + Docker Compose v2
@@ -87,6 +89,7 @@ Local dev uses `DEV_API_KEY=zizkadb_dev_local` (see `infra/.env`). The Python SD
 
 ```bash
 bash scripts/smoke-test.sh
+bash scripts/smoke-example.sh   # optional: minimal Python log → why()
 python scripts/demo-why.py
 bash scripts/check-doc-drift.sh
 ```
@@ -119,6 +122,13 @@ pytest
 
 ### Dashboard (optional)
 
+See [dashboard/README.md](dashboard/README.md) for the full dashboard dev guide.
+
+| Mode | URL | When to use |
+|------|-----|-------------|
+| Docker Compose (`setup-local.sh`) | http://localhost:3001 | Default — full stack, matches production layout |
+| `npm run dev` | http://localhost:3000 | UI-only work; set `NEXT_PUBLIC_API_URL=http://localhost:8000` |
+
 Prefer the one-command stack (port **3001**):
 
 ```bash
@@ -131,7 +141,8 @@ Or run the dashboard alone for UI work:
 ```bash
 cd dashboard
 npm install
-npm run dev    # http://localhost:3000 — set NEXT_PUBLIC_API_URL=http://localhost:8000
+export NEXT_PUBLIC_API_URL=http://localhost:8000
+npm run dev    # http://localhost:3000
 npm run lint
 npm test
 npm run build
@@ -155,7 +166,7 @@ ZizkaDB/
 │   ├── api/           # HTTP routes
 │   ├── db/            # schema.sql, connection pool, idempotent migrations
 │   └── tests/
-├── dashboard/         # Next.js app (db.zizka.ai UI)
+├── dashboard/         # Next.js app (db.zizka.ai UI) — see dashboard/README.md
 ├── sdk/python/        # PyPI: zizkadb-sdk
 ├── sdk/typescript/    # npm: zizkadb-sdk
 ├── mcp/               # PyPI: zizkadb-mcp (MIT)

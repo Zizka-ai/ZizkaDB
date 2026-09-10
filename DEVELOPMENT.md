@@ -36,7 +36,34 @@ Verify the stack:
 
 ```bash
 bash scripts/smoke-test.sh
+bash scripts/smoke-example.sh   # minimal Python agent: log → why()
 ```
+
+### First SDK call (Python)
+
+With the stack running (`ENV=development`, API on :8000):
+
+```python
+import asyncio
+from zizkadb import ZizkaDB
+
+async def main():
+    async with ZizkaDB(host="http://localhost:8000") as db:
+        msg = await db.log(agent="my-agent", event="user_message", data={"text": "hello"})
+        tool = await db.log(
+            agent="my-agent",
+            event="tool_call",
+            data={"tool": "search"},
+            parent_id=msg.event_id,
+        )
+        (await db.why(tool.event_id)).print()
+
+asyncio.run(main())
+```
+
+The dev key `zizkadb_dev_local` is auto-injected for `localhost`. See [`examples/minimal-python/`](examples/minimal-python/) or run `bash scripts/smoke-example.sh`.
+
+Check the dashboard: http://localhost:3001/dashboard/activity?agent=my-agent
 
 ### Dashboard UI only (port 3000)
 
@@ -56,10 +83,12 @@ Docker Compose serves the dashboard on **3001**; `npm run dev` uses **3000**.
 1. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
 2. **Open a GitHub issue** with the right label (`bug`, `enhancement`, `documentation`, …) — see CONTRIBUTING §Pull request workflow.
 3. Branch from `main`: `git checkout -b fix/179-short-description` (include issue number when possible).
-4. Run the gates for the area you touched (see [Baseline](#baseline) below).
+4. Run the gates for the area you touched — use [.cursor/skills/zizkadb-test/SKILL.md](.cursor/skills/zizkadb-test/SKILL.md) for the full matrix.
 5. Open a PR — **first line of the description must be `Fixes #<issue>`** (issue title on the next line is helpful). CI must pass before merge.
 
-**Module guides:** [core/CLAUDE.md](core/CLAUDE.md) · [dashboard/CLAUDE.md](dashboard/CLAUDE.md) · [dashboard/DASHBOARD_KNOWLEDGE_BASE.md](dashboard/DASHBOARD_KNOWLEDGE_BASE.md)
+**Dashboard work:** [dashboard/README.md](dashboard/README.md) · [dashboard/CLAUDE.md](dashboard/CLAUDE.md) · [dashboard/DASHBOARD_KNOWLEDGE_BASE.md](dashboard/DASHBOARD_KNOWLEDGE_BASE.md)
+
+**Other module guides:** [core/CLAUDE.md](core/CLAUDE.md)
 
 **Troubleshooting:** [wiki/Troubleshooting.md](wiki/Troubleshooting.md)
 
