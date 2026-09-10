@@ -15,7 +15,7 @@ Self-hosted audit trail for AI agents — one command or one dashboard click fro
 [![LiveKit](https://img.shields.io/pypi/v/zizkadb-livekit?label=LiveKit)](https://pypi.org/project/zizkadb-livekit/)
 [![MCP](https://img.shields.io/pypi/v/zizkadb-mcp?label=MCP)](https://pypi.org/project/zizkadb-mcp/)
 
-**[Try it ↓](#try-it-60-seconds)** · **[START_HERE.md](START_HERE.md)** · **[CONNECT.md](CONNECT.md)** · **[Cloud →](https://db.zizka.ai/signup)**
+**[Try it ↓](#try-it-60-seconds)** · **[DEVELOPMENT.md](DEVELOPMENT.md)** · **[CONNECT.md](CONNECT.md)** · **[Contributing](CONTRIBUTING.md)**
 
 </div>
 
@@ -42,6 +42,21 @@ tool_call · lookup_order · ORD-8842
 ```
 
 Run again anytime: `pip install zizkadb-sdk && zizkadb demo`
+
+### Self-host from a clone
+
+```bash
+git clone https://github.com/Zizka-ai/ZizkaDB.git && cd ZizkaDB
+bash scripts/setup-local.sh
+```
+
+| Service | URL |
+|---------|-----|
+| API | http://localhost:8000 |
+| Dashboard | http://localhost:3001/login |
+| Swagger | http://localhost:8000/swagger |
+
+Full guide: **[DEVELOPMENT.md](DEVELOPMENT.md)** · Troubleshooting: [wiki/Troubleshooting.md](wiki/Troubleshooting.md)
 
 ---
 
@@ -103,6 +118,8 @@ One LiveKit call → one **Session** in Activity (transcript only, no audio in Z
 
 Same **Why?** feature — hosted at [db.zizka.ai](https://db.zizka.ai). No Docker to maintain.
 
+The operator admin console, VPC deploy, and cloud-only marketing routes live in the private **[zizkadb-cloud](https://github.com/Zizka-ai/zizkadb-cloud)** repo — see [docs/REPO_SPLIT.md](docs/REPO_SPLIT.md).
+
 | | **Pro** | **Team** |
 | --- | --- | --- |
 | Price | €29 / mo | €69 / mo |
@@ -156,7 +173,8 @@ Start the stack: `curl -fsSL …/quickstart-remote.sh | bash` or `bash scripts/s
 | Worked example | [worked/01-support-order-delay](worked/01-support-order-delay/) |
 | Examples | [examples/](examples/) — includes [LiveKit voice agent](examples/livekit-agent/) |
 | LiveKit integration | [docs/integrations/livekit.md](docs/integrations/livekit.md) |
-| Self-hosting | [wiki/Self-Hosting](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) |
+| Self-hosting | [DEVELOPMENT.md](DEVELOPMENT.md) · [wiki/Self-Hosting](https://github.com/Zizka-ai/ZizkaDB/wiki/Self-Hosting) |
+| Troubleshooting | [wiki/Troubleshooting.md](wiki/Troubleshooting.md) |
 | Integrate any agent | [docs/integrate/](docs/integrate/) |
 | Issues · Discussions | [Issues](https://github.com/Zizka-ai/ZizkaDB/issues) · [Discussions](https://github.com/Zizka-ai/ZizkaDB/discussions) |
 | Contributing · Security | [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) |

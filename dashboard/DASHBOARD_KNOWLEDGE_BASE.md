@@ -2,7 +2,7 @@
 
 > Single source of truth for the Dashboard module. Reverse-engineered directly from the codebase.
 >
-> **Last verified:** 2026-09-04 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
+> **Last verified:** 2026-09-10 · API key limits: Self-Hosted 1 / Pro 2 / Team 5 (enforcement via `API_KEY_LIMITS_ENFORCED`, default OFF; self-hosted resolved via `DEPLOYMENT_MODE`, not `users.plan`). Self-host embeddings off unless `EMBEDDINGS_ENABLED=true`.
 >
 > **OSS scope:** This repo ships the tenant dashboard and public marketing/community surfaces. The managed-cloud **operator admin console** (`/admin`, `/v1/admin/*`, `core/api/admin.py`) is **not in this tree** — there is no `app/admin/` and no admin API routes here. Sections §16 (admin paragraph), §18.6, and §20.5 below are **managed-cloud reference only**; do not implement them in OSS.
 >
@@ -82,7 +82,7 @@ app/dashboard/layout.tsx
 
 ```
 dashboard/
-├── middleware.ts            # Edge auth guard for /dashboard
+├── middleware.ts            # Edge auth guard — matcher: /dashboard, /dashboard/:path* (no /admin* in OSS)
 ├── app/
 │   ├── layout.tsx           # Root layout + global metadata
 │   ├── page.tsx             # Landing page (marketing + pricing SECTION)
@@ -205,7 +205,7 @@ back with a visible notice when it names an agent that no longer exists.
 OSS**. `/dashboard/fleet` redirects to Activity on OSS.
 
 **Route guards / redirects:**
-- **Edge (`middleware.ts`):** `/dashboard*` without `zizkadb_token` cookie → `/login?next=<path>` (all responses `X-Robots-Tag: noindex`). Matcher is `/dashboard` only — no `/admin` routes in OSS.
+- **Edge (`middleware.ts`):** `/dashboard` and `/dashboard/*` without `zizkadb_token` cookie → `/login?next=<path>` (all responses `X-Robots-Tag: noindex`). Matcher is `['/dashboard', '/dashboard/:path*']` only — **no `/admin*` routes in OSS** (admin is managed-cloud only; see [docs/REPO_SPLIT.md](../docs/REPO_SPLIT.md)).
 - **Client fallback:** `getToken()` reads localStorage, then falls back to the `zizkadb_token` cookie when localStorage is empty.
 
 ---
@@ -405,7 +405,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 ## 12. Technical Notes
 
 - Suspense wrappers are mandatory around `useSearchParams` pages (Next 14 CSR bailout).
-- `middleware` adds `noindex` to all dashboard/admin responses; `dashboard/layout` also sets `robots:false` metadata.
+- `middleware` adds `noindex` to all `/dashboard*` responses; `dashboard/layout` also sets `robots:false` metadata.
 - `postAuthRedirect` always returns `/dashboard` — reuse it after OTP verify for consistency.
 - Styling is inconsistent: dashboard uses Tailwind; marketing/signup use inline styles + a raw `<style>` block for responsive breakpoints (`page.tsx:44-63`).
 - Plans are duplicated: landing (`page.tsx`), `/signup/plan` (`PLANS`), and backend `PLAN_CATALOG` in `billing.py` all define plan data independently.
@@ -435,7 +435,7 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 5. **No analytics/telemetry** on funnel steps → hard to measure drop-off.
 6. **No React Query/SWR** → manual polling + no dedupe/caching; billing status fetched on mount by `TenantPlanBanner`.
 7. **Inconsistent styling systems** (Tailwind vs inline).
-8. ~~**No frontend tests**~~ — **partial:** vitest (`npm test`) runs in CI alongside lint and build. Coverage includes hooks, report/suggestions helpers, and `apiFetch` auth/timeout behavior. Still expand funnel guards and billing helpers.
+8. ~~**No frontend tests**~~ — **CI done (2026-09):** vitest (`npm test`) runs in `.github/workflows/ci.yml` on every PR alongside lint and build. Coverage includes hooks, report/suggestions helpers, and `apiFetch` auth/timeout behavior. **Still expand:** funnel guards and billing helpers.
 9. ~~**`apiFetch` is effectively untyped**~~ — **done 2026-07-08:** `apiFetch<T>()` is now generic (defaults to `any` only where a call site's shape is intentionally left flexible, e.g. `searchEvents`'s dual array/`{results}` response) and every endpoint has an explicit interface (`Agent`, `ApiKey`, `AgentEvent`, `AgentStats`, `WhyChain`, `AgentSession`, `AgentBaseline`, the admin analytics types, etc. — see `lib/api.ts`). Compile-time only; no runtime behavior changed. **Follow-up done the same day:** the page-level local duplicates of these types in `app/dashboard/page.tsx` (`Agent`), `app/dashboard/settings/page.tsx` + `components/AgentApiKeys.tsx` (`ApiKey`/`AgentApiKey`), and all 9 in `app/admin/page.tsx` were removed and replaced with `import { type X } from '@/lib/api'` — a code-review pass flagged these as hand-copied duplicates that would silently drift, and each was confirmed structurally identical before consolidating (verified via a clean `npm run build` with unchanged route/bundle sizes). **Deliberately left alone:** `app/dashboard/agents/[id]/page.tsx`'s local `Event`/`Session`/`Stats`/`WhyChain`/`BaselineWindow`/`BaselineChange`/`BaselineResponse` cluster (→ `AgentEvent`/`AgentSession`/`AgentStats`/`WhyChain`/`AgentBaseline` in `lib/api.ts`) is the same kind of duplicate but sits in the single largest, most stateful file in the app (1,361 lines) where a bare `Event` rename touches many call sites and risks colliding with the global DOM `Event` type — treat as a separate, explicitly-approved change, not a drive-by.
 
 ---
@@ -457,7 +457,9 @@ Landing → (Pricing: Pro) → `/signup?plan=pro` → `/signup/start` (consent) 
 
 ## 15. Local Development, Build & Environment
 
-**Scripts (`package.json`):** `dev` (`next dev`), `build` (`next build`), `start` (`next start`), `lint` (`next lint`), `test` (`vitest run`), `test:watch` (`vitest`). CI runs lint + vitest + build.
+**Scripts (`package.json`):** `dev` (`next dev`), `build` (`next build`), `start` (`next start`), `lint` (`next lint`), `test` (`vitest run`), `test:watch` (`vitest`). **CI** (`.github/workflows/ci.yml` dashboard job): `npm run lint` → `npm test` (vitest) → `npm run build` on every PR to `main`.
+
+**Ports:** Docker Compose (`scripts/setup-local.sh`) serves the dashboard on **3001**. `npm run dev` alone uses **3000** — set `NEXT_PUBLIC_API_URL=http://localhost:8000` when the API runs separately.
 
 **Build output:** `output: 'standalone'` (`next.config.mjs`) for containerized deploy.
 
