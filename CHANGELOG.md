@@ -18,12 +18,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Public demo-request and community rate limits fail-open to per-worker memory when Redis is unavailable
 - Production startup logs a warning when `CORS_ALLOWED_ORIGINS` is unset (wildcard `*` allowed)
 - TypeScript SDK 0.2.8; API `/health` and OpenAPI version aligned with Python SDK release line; `check-doc-drift.sh` enforces version sync
+- API responses include `X-Request-ID`; request start/end logged for operator tracing
 
 ### Documentation
 
 - Expanded [DEVELOPMENT.md](DEVELOPMENT.md) with first SDK call and `scripts/smoke-example.sh`
 - Added [dashboard/README.md](dashboard/README.md); CONTRIBUTING cross-links and clarifies dashboard ports 3000 vs 3001
 - README self-host first with REPO_SPLIT link; dashboard KB middleware matcher and vitest-in-CI accuracy (§4, §13, §15)
+- [DEVELOPMENT.md](DEVELOPMENT.md) operator section: `/health` liveness vs `/health/deep` readiness, `X-Request-ID` tracing
 
 ### Integrations
 

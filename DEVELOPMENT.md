@@ -80,6 +80,23 @@ Docker Compose serves the dashboard on **3001**; `npm run dev` uses **3000**.
 
 ---
 
+## Operators (self-host / production)
+
+### Health probes
+
+| Endpoint | Use | Behavior |
+|----------|-----|----------|
+| `GET /health` | **Liveness** — is the API process responding? | Always `200` with `{"status":"ok","version":"..."}` when uvicorn is up. Does not check Postgres/Redis/Qdrant. |
+| `GET /health/deep` | **Readiness** — can the stack serve real traffic? | `status: ok` when Postgres, Redis, and Qdrant all pass; `degraded` otherwise (still `200` — inspect `checks`). |
+
+Use `/health` for load-balancer or container **liveness** probes. Use `/health/deep` after deploy, for monitoring, or before sending user traffic — `scripts/smoke-test.sh` hits both by default (`SKIP_DEEP_HEALTH=1` to skip deep).
+
+### Request tracing
+
+Every response includes an **`X-Request-ID`** header. Pass the same value on retries to correlate API logs (`request start` / `request end` lines in the API container). If the client omits the header, the server generates a UUID.
+
+---
+
 ## Contributor path (change code and open a PR)
 
 1. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
