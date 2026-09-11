@@ -21,6 +21,7 @@ from api.account import router as account_router
 from api.demo_requests import router as demo_requests_router
 from api.community import router as community_router
 from api.marketing_subscriptions import router as marketing_subscriptions_router
+from middleware.request_id import RequestIdMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -139,6 +140,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(RequestIdMiddleware)
 
 app.include_router(auth_router,      prefix="/v1/auth",      tags=["auth"])
 app.include_router(events_router,    prefix="/v1/events",    tags=["events"])
