@@ -15,6 +15,7 @@
 # Optional:
 #   SKIP_SEARCH=1          skip semantic search check
 #   SKIP_DEEP_HEALTH=1     skip /health/deep (not recommended)
+#   SKIP_EXAMPLE=1         skip minimal-python example (curl-only smoke)
 
 set -euo pipefail
 
@@ -78,3 +79,8 @@ else
 fi
 
 echo "✓ All smoke checks passed ($BASE)"
+
+if [ "${SKIP_EXAMPLE:-}" != "1" ]; then
+  echo ""
+  bash "$ROOT/scripts/smoke-example.sh" "$BASE"
+fi

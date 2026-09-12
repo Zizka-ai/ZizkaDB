@@ -28,6 +28,11 @@ Voice agents: **`pip install zizkadb-livekit`** — see [livekit-agent/](livekit
 
 ```bash
 bash scripts/setup-local.sh
+bash scripts/smoke-test.sh              # health + curl + minimal-python example
+# or:
+bash scripts/smoke-example.sh           # example only
 export ZIZKADB_HOST=http://localhost:8000
 python examples/minimal-python/agent.py
 ```
+
+Dashboard: http://localhost:3001/dashboard/activity?agent=my-agent — see [minimal-python/README.md](minimal-python/README.md).

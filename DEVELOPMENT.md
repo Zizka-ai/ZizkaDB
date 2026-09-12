@@ -37,9 +37,11 @@ Dev API key: `zizkadb_dev_local` (accepted when `ENV=development`).
 Verify the stack:
 
 ```bash
-bash scripts/smoke-test.sh
-bash scripts/smoke-example.sh   # minimal Python agent: log → why()
+bash scripts/smoke-test.sh      # health, curl checks, then minimal-python example
+bash scripts/smoke-example.sh   # example only (log → why())
 ```
+
+Use `SKIP_EXAMPLE=1` on `smoke-test.sh` for curl-only checks (e.g. staging without Python).
 
 ### First SDK call (Python)
 

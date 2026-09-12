@@ -88,8 +88,8 @@ Local dev uses `DEV_API_KEY=zizkadb_dev_local` (see `infra/.env`). The Python SD
 ### Verify your environment
 
 ```bash
-bash scripts/smoke-test.sh
-bash scripts/smoke-example.sh   # optional: minimal Python log → why()
+bash scripts/smoke-test.sh      # includes minimal-python example (SKIP_EXAMPLE=1 for curl-only)
+bash scripts/smoke-example.sh   # example only: log → why()
 python scripts/demo-why.py
 bash scripts/check-doc-drift.sh
 ```

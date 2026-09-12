@@ -127,6 +127,27 @@ def test_causal_chain_model_and_print(capsys):
     assert "└── llm_response" in captured.out
 
 
+def test_smoke_scripts_wire_minimal_python_example():
+    """Repo smoke scripts exist and smoke-test delegates to smoke-example."""
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    smoke_test = os.path.join(root, "scripts", "smoke-test.sh")
+    smoke_example = os.path.join(root, "scripts", "smoke-example.sh")
+    agent_py = os.path.join(root, "examples", "minimal-python", "agent.py")
+
+    assert os.path.isfile(smoke_test)
+    assert os.path.isfile(smoke_example)
+    assert os.path.isfile(agent_py)
+
+    with open(smoke_test, encoding="utf-8") as f:
+        body = f.read()
+    assert "smoke-example.sh" in body
+    assert "SKIP_EXAMPLE" in body
+
+    with open(smoke_example, encoding="utf-8") as f:
+        example_body = f.read()
+    assert "minimal-python/agent.py" in example_body
+
+
 def test_safe_print_handles_encoding_error(capsys, monkeypatch):
     """Test that _safe_print handles UnicodeEncodeError gracefully by falling back."""
     import builtins
