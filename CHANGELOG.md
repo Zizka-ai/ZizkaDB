@@ -20,8 +20,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - TypeScript SDK 0.2.8; API `/health` and OpenAPI version aligned with Python SDK release line; `check-doc-drift.sh` enforces version sync
 - API responses include `X-Request-ID`; request start/end logged for operator tracing
 
+### Added
+
+- `scripts/smoke-test.sh` runs `scripts/smoke-example.sh` by default (`SKIP_EXAMPLE=1` to skip)
+
 ### Documentation
 
+- [examples/minimal-python/README.md](examples/minimal-python/README.md): expected `why()` output and dashboard Activity view
 - Expanded [DEVELOPMENT.md](DEVELOPMENT.md) with first SDK call and `scripts/smoke-example.sh`
 - Added [dashboard/README.md](dashboard/README.md); CONTRIBUTING cross-links and clarifies dashboard ports 3000 vs 3001
 - README self-host first with REPO_SPLIT link; dashboard KB middleware matcher and vitest-in-CI accuracy (§4, §13, §15)
