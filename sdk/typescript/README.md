@@ -36,6 +36,13 @@ const chain = await db.why(result.eventId)
 chain.print()
 ```
 
+## Python vs TypeScript
+
+| Feature | Python SDK | TypeScript SDK |
+|---------|------------|----------------|
+| `token_usage` on `log()` | `token_usage={...}` kwarg merges into event `data` | **Not supported** — pass token counts inside `data` manually, or use the Python SDK |
+| `db.token_usage()` analytics | Yes | Yes (`tokenUsage()`) |
+
 ## Multi-agent apps (one key, many agent names)
 
 If your app logs to **different agent ids** per user (e.g. `conv-alice`, `conv-bob`), create a **tenant-wide key** in **Settings → Tenant-wide API key**. Per-agent keys only work for that one agent name.
