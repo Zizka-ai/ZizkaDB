@@ -338,6 +338,124 @@ describe('error mapping', () => {
 })
 
 // ─────────────────────────────────────────
+// contextFor()
+// ─────────────────────────────────────────
+
+describe('contextFor()', () => {
+  it('POSTs /v1/memory/context and returns the context string', async () => {
+    mockFetch(200, {
+      context: 'Recent: user asked about billing.\nRelevant: prior refund on file.',
+      event_count: 3,
+      estimated_tokens: 42,
+      sources: [],
+    })
+
+    const db = new ZizkaDB({ apiKey: 'zizkadb_live_test' })
+    const context = await db.contextFor({
+      agent: 'support-bot',
+      task: 'user asking about their invoice',
+      maxTokens: 1500,
+      sessionId: 'sess-abc',
+    })
+
+    expect(context).toContain('billing')
+
+    const [url, opts] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit]
+    expect(url).toContain('/v1/memory/context')
+    expect(opts.method).toBe('POST')
+
+    const body = JSON.parse(opts.body as string)
+    expect(body.agent).toBe('support-bot')
+    expect(body.task).toBe('user asking about their invoice')
+    expect(body.max_tokens).toBe(1500)
+    expect(body.session_id).toBe('sess-abc')
+  })
+
+  it('defaults maxTokens to 2000 and sessionId to null', async () => {
+    mockFetch(200, { context: 'ok', event_count: 0, estimated_tokens: 0, sources: [] })
+
+    const db = new ZizkaDB({ apiKey: 'zizkadb_live_test' })
+    await db.contextFor({ agent: 'my-bot', task: 'hello' })
+
+    const [, opts] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(opts.body as string)
+    expect(body.max_tokens).toBe(2000)
+    expect(body.session_id).toBeNull()
+  })
+})
+
+// ─────────────────────────────────────────
+// memoryDiff()
+// ─────────────────────────────────────────
+
+describe('memoryDiff()', () => {
+  it('GETs /v1/memory/diff/:sessionId and maps the response', async () => {
+    mockFetch(200, {
+      session_id: 'sess-abc',
+      agent: 'support-bot',
+      event_count: 4,
+      event_types: { user_message: 2, tool_call: 2 },
+      causal_depth: 3,
+      has_errors: false,
+      duration_seconds: 12.5,
+      new_event_types: ['tool_call'],
+      summary: 'Session completed with 4 events.',
+    })
+
+    const db = new ZizkaDB({ apiKey: 'zizkadb_live_test' })
+    const diff = await db.memoryDiff('sess-abc')
+
+    expect(diff.sessionId).toBe('sess-abc')
+    expect(diff.agent).toBe('support-bot')
+    expect(diff.eventCount).toBe(4)
+    expect(diff.eventTypes).toEqual({ user_message: 2, tool_call: 2 })
+    expect(diff.causalDepth).toBe(3)
+    expect(diff.hasErrors).toBe(false)
+    expect(diff.durationSeconds).toBe(12.5)
+    expect(diff.newEventTypes).toEqual(['tool_call'])
+    expect(diff.summary).toContain('4 events')
+
+    const [url] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string]
+    expect(url).toContain('/v1/memory/diff/sess-abc')
+  })
+})
+
+// ─────────────────────────────────────────
+// agents()
+// ─────────────────────────────────────────
+
+describe('agents()', () => {
+  it('GETs /v1/agents and maps agent metadata', async () => {
+    mockFetch(200, [
+      {
+        agent: 'support-bot',
+        first_seen: '2026-06-01T00:00:00Z',
+        last_seen: '2026-06-02T12:00:00Z',
+        event_count: 42,
+      },
+      {
+        agent: 'sales-bot',
+        first_seen: '2026-06-01T06:00:00Z',
+        last_seen: '2026-06-01T18:00:00Z',
+        event_count: 7,
+      },
+    ])
+
+    const db = new ZizkaDB({ apiKey: 'zizkadb_live_test' })
+    const agents = await db.agents()
+
+    expect(agents).toHaveLength(2)
+    expect(agents[0].agent).toBe('support-bot')
+    expect(agents[0].eventCount).toBe(42)
+    expect(agents[0].firstSeen).toBeInstanceOf(Date)
+    expect(agents[0].lastSeen).toBeInstanceOf(Date)
+
+    const [url] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string]
+    expect(url).toContain('/v1/agents')
+  })
+})
+
+// ─────────────────────────────────────────
 // baseline()
 // ─────────────────────────────────────────
 
