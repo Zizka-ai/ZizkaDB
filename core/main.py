@@ -39,22 +39,39 @@ def warn_if_production_cors_wildcard(cors_allowed_origins: list[str]) -> None:
         )
 
 
+_DEFAULT_DEV_KEYS = frozenset({"zizkadb_dev_local", "agdb_dev_local"})
+_DEFAULT_JWT_SECRETS = frozenset({"", "dev-secret-change-in-production"})
+
+
+def validate_production_startup(
+    env: str,
+    dev_key: str,
+    jwt_secret: str,
+) -> None:
+    """Refuse production boot with known-insecure defaults."""
+    if env != "production":
+        return
+    if not dev_key or dev_key in _DEFAULT_DEV_KEYS:
+        raise RuntimeError(
+            "Refusing to start with ENV=production and a dev/default DEV_API_KEY. "
+            "Unset DEV_API_KEY or set a unique secret in infra/.env."
+        )
+    if jwt_secret in _DEFAULT_JWT_SECRETS:
+        raise RuntimeError(
+            "Refusing to start with ENV=production and default JWT_SECRET. "
+            "Set a strong JWT_SECRET in infra/.env."
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     env = os.getenv("ENV", "development")
     if env == "production":
-        dev_key = os.getenv("DEV_API_KEY", "")
-        if not dev_key or dev_key in ("zizkadb_dev_local", "agdb_dev_local"):
-            raise RuntimeError(
-                "Refusing to start with ENV=production and a dev/default DEV_API_KEY. "
-                "Unset DEV_API_KEY or set a unique secret in infra/.env."
-            )
-        jwt_secret = os.getenv("JWT_SECRET", "")
-        if jwt_secret in ("", "dev-secret-change-in-production"):
-            raise RuntimeError(
-                "Refusing to start with ENV=production and default JWT_SECRET. "
-                "Set a strong JWT_SECRET in infra/.env."
-            )
+        validate_production_startup(
+            env,
+            os.getenv("DEV_API_KEY", ""),
+            os.getenv("JWT_SECRET", ""),
+        )
         from services.entitlements import limits_enforced
 
         if not limits_enforced():
