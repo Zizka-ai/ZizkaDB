@@ -10,6 +10,7 @@ import os
 from api.deps import get_tenant, assert_agent_allowed
 from db.connection import get_pool
 from services.event_write import write_event
+from services.why_analysis import analyze_why_chain
 
 router = APIRouter()
 
@@ -171,10 +172,26 @@ async def why(
 
     await assert_agent_allowed(tenant, anchor["agent_id"])
 
+    ordered = sorted(rows, key=lambda r: r["depth"], reverse=True)
+    root = ordered[0]
+    root_parent = root["parent_event_id"]
+    chain_agents = {r["agent_id"] for r in rows}
+    completeness = analyze_why_chain(
+        anchor_event_type=anchor["event_type"],
+        anchor_parent_id=str(anchor["parent_event_id"]) if anchor["parent_event_id"] else None,
+        chain_length=len(rows),
+        depth_limit=depth,
+        root_event_type=root["event_type"],
+        root_has_parent=root_parent is not None,
+        scoped_agent=scoped_agent,
+        chain_agents=chain_agents,
+    )
+
     return {
         "event_id": event_id,
         "chain_length": len(rows),
         "chain": [_format_event(r) for r in rows],
+        **completeness,
     }
 
 

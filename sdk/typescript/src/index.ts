@@ -35,9 +35,11 @@ import type {
   SearchOptions,
 } from './types'
 import { ZizkaDBError, AuthError, NotFoundError, AgentScopeError, RateLimitError } from './types'
+import { LineageContext, resolveLogLineage, recordLogResult } from './context'
 import packageJson from '../package.json'
 
 export * from './types'
+export { LineageContext } from './context'
 
 const CLOUD_HOST = 'https://db.zizka.ai'
 const TELEMETRY_URL = 'https://db.zizka.ai/v1/telemetry'
@@ -231,26 +233,42 @@ export class ZizkaDB {
   // LOG
   // ─────────────────────────────────────────
 
+  track(agent: string, sessionId?: string): LineageContext {
+    return new LineageContext(this, agent, sessionId)
+  }
+
   async log(options: LogOptions): Promise<LogResult> {
+    const explicitParent = options.parentId != null
+    const { parentId, sessionId } = resolveLogLineage(
+      options.agent,
+      options.event,
+      options.parentId ?? null,
+      options.sessionId ?? null,
+      explicitParent,
+    )
     const res = await this.post('/v1/events', {
       agent: options.agent,
       event: options.event,
       data: options.data,
-      parent_id: options.parentId ?? null,
-      session_id: options.sessionId ?? null,
+      parent_id: parentId,
+      session_id: sessionId,
       metadata: options.metadata ?? null,
     }) as {
       event_id: string
       timestamp: string
       sequence_no: number
       checksum: string
+      index_status?: string
+      indexed?: boolean
     }
     const result = {
       eventId: res.event_id,
       timestamp: new Date(res.timestamp),
       sequenceNo: res.sequence_no,
       checksum: res.checksum,
+      indexStatus: res.index_status ?? (res.indexed ? 'indexed' : 'failed'),
     }
+    recordLogResult(options.agent, result.eventId)
     emitLogHint(this.baseUrl, result.eventId)
     return result
   }
@@ -284,17 +302,36 @@ export class ZizkaDB {
       event_id: string
       chain_length: number
       chain: Record<string, unknown>[]
+      chain_complete?: boolean
+      orphan?: boolean
+      depth_truncated?: boolean
+      scoped_agent_limited?: boolean
     }
     const chain = res.chain.map(parseEvent)
+    const chainComplete = res.chain_complete ?? true
+    const orphan = res.orphan ?? false
+    const depthTruncated = res.depth_truncated ?? false
+    const scopedAgentLimited = res.scoped_agent_limited ?? false
 
     return {
       eventId: res.event_id,
       chainLength: res.chain_length,
       chain,
+      chainComplete,
+      orphan,
+      depthTruncated,
+      scopedAgentLimited,
       print() {
         if (chain.length === 0) {
           console.log('(empty chain)')
           return
+        }
+        if (orphan || depthTruncated || scopedAgentLimited || !chainComplete) {
+          const parts: string[] = []
+          if (orphan) parts.push('orphan event (missing parent_id)')
+          if (depthTruncated) parts.push('depth limit reached')
+          if (scopedAgentLimited) parts.push('agent-scoped key limits chain')
+          console.warn(`⚠ Incomplete chain: ${parts.join('; ')}`)
         }
         chain.forEach((event: AgentEvent, i: number) => {
           const indent = '    '.repeat(i)

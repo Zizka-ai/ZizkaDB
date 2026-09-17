@@ -59,8 +59,21 @@ function DataPanel({ event }: { event: AgentEvent }) {
 }
 
 function WhyPanel({ chain }: { chain: WhyChain }) {
+  const incomplete =
+    chain.orphan || chain.depth_truncated || chain.scoped_agent_limited || chain.chain_complete === false
+
   return (
     <div>
+      {incomplete && (
+        <div
+          className="mb-3 px-3 py-2 rounded text-xs"
+          style={{ background: colors.warningBg ?? '#fef3c7', color: colors.warning ?? '#92400e' }}
+        >
+          {chain.orphan && 'Orphan event — missing parent_id. '}
+          {chain.depth_truncated && 'Depth limit reached — chain may continue above. '}
+          {chain.scoped_agent_limited && 'Agent-scoped key — cross-agent links hidden. '}
+        </div>
+      )}
       <div className="flex items-center gap-2 mb-4">
         <GitBranch size={13} style={{ color: colors.success }} />
         <span className="text-xs font-medium" style={{ color: colors.text }}>
