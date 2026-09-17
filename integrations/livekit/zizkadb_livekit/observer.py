@@ -32,7 +32,9 @@ broadly rather than to transcript turns alone.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+from pathlib import Path
 from typing import Any, Callable
 
 from zizkadb import ZizkaDB
@@ -173,6 +175,11 @@ class ZizkaDBLiveKitObserver:
         self._loop: asyncio.AbstractEventLoop | None = None
         self._pool_connections = pool_connections
         self._owns_db_session = False
+        self._stats = {"written": 0, "dropped": 0, "spilled": 0, "failed": 0, "queued": 0}
+        self._spill_path = Path.home() / ".zizkadb" / "spill" / f"{session_id}.jsonl"
+        self._live_capture_missed = False
+        self._attach_called = False
+        self._stats_logged = False
 
     async def __aenter__(self) -> "ZizkaDBLiveKitObserver":
         return self
@@ -273,6 +280,7 @@ class ZizkaDBLiveKitObserver:
 
     def attach(self, session: Any, job_ctx: Any | None = None) -> None:
         """Subscribe to the session's event stream. Never raises."""
+        self._attach_called = True
         if self._realtime_attached:
             return
 
@@ -396,16 +404,11 @@ class ZizkaDBLiveKitObserver:
             try:
                 queue.put_nowait(item)
             except asyncio.QueueFull:
-                # Prefer recent events over a stalled backlog.
-                try:
-                    queue.get_nowait()
-                    queue.task_done()
-                except Exception:
-                    pass
-                try:
-                    queue.put_nowait(item)
-                except Exception as exc:  # pragma: no cover - defensive
-                    self._warn("dropped event, queue full", exc)
+                if self._spill_to_disk(item):
+                    self._stats["spilled"] += 1
+                else:
+                    self._stats["dropped"] += 1
+                    self._warn("dropped event, queue full and spill failed", None)
         except Exception as exc:
             self._warn(f"could not queue {event}", exc)
 
@@ -451,10 +454,51 @@ class ZizkaDBLiveKitObserver:
                 queue.task_done()
                 raise
             except Exception as exc:
+                self._stats["failed"] += 1
                 self._warn(f"failed to log {item['event']}", exc)
+            else:
+                self._stats["written"] += 1
             queue.task_done()
 
-    async def flush(self, timeout: float | None = None) -> None:
+    def _spill_to_disk(self, item: dict[str, Any]) -> bool:
+        try:
+            self._spill_path.parent.mkdir(parents=True, exist_ok=True)
+            with self._spill_path.open("a", encoding="utf-8") as f:
+                f.write(json.dumps(item, default=str) + "\n")
+            return True
+        except Exception as exc:
+            self._warn("spill write failed", exc)
+            return False
+
+    async def _drain_spill(self) -> None:
+        if not self._spill_path.exists():
+            return
+        lines = self._spill_path.read_text(encoding="utf-8").splitlines()
+        for line in lines:
+            if not line.strip():
+                continue
+            try:
+                item = json.loads(line)
+                await self._log(
+                    event=item["event"],
+                    data=item["data"],
+                    parent_id=_CHAIN,
+                    metadata=item.get("metadata"),
+                )
+                self._stats["written"] += 1
+            except Exception as exc:
+                self._stats["failed"] += 1
+                self._warn("spill replay failed", exc)
+        try:
+            self._spill_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    def flush_stats(self) -> dict[str, int | bool]:
+        """Return write/drop/spill counters — check after flush()."""
+        return {**self._stats, "live_capture_missed": self._live_capture_missed}
+
+    async def flush(self, timeout: float | None = None) -> dict[str, int | bool]:
         """Wait for queued events to be written. Never raises.
 
         Bounded by ``timeout`` (default: the observer's ``flush_timeout``) so a
@@ -462,7 +506,8 @@ class ZizkaDBLiveKitObserver:
         """
         queue = self._queue
         if queue is None:
-            return
+            await self._drain_spill()
+            return self.flush_stats()
         try:
             await asyncio.wait_for(
                 queue.join(),
@@ -474,6 +519,19 @@ class ZizkaDBLiveKitObserver:
             raise
         except Exception as exc:  # pragma: no cover - defensive
             self._warn("flush failed", exc)
+        await self._drain_spill()
+        return self.flush_stats()
+
+    async def _log_livekit_session_stats(self) -> None:
+        try:
+            await self._log(
+                event="livekit_session_stats",
+                data=dict(self._stats),
+                parent_id=_CHAIN,
+                metadata={"source": "livekit"},
+            )
+        except Exception as exc:
+            self._warn("failed to log session stats", exc)
 
     async def aclose(self, timeout: float | None = None) -> None:
         """Flush pending events and stop the writer. Idempotent; never raises."""
@@ -482,6 +540,17 @@ class ZizkaDBLiveKitObserver:
         self._closed = True
         try:
             await self.flush(timeout=timeout)
+            if (
+                not self._stats_logged
+                and (self._stats["written"] or self._stats["spilled"] or self._stats["dropped"])
+            ):
+                if not self._attach_called:
+                    self._live_capture_missed = True
+                    log.warning(
+                        "zizkadb: attach() was not called before session end — live events may be missing"
+                    )
+                await self._log_livekit_session_stats()
+                self._stats_logged = True
             task = self._writer_task
             self._writer_task = None
             if task is not None and not task.done():

@@ -143,6 +143,26 @@ services:
 
     restart: unless-stopped
 
+  embed-worker:
+    build:
+      context: ../core
+      dockerfile: Dockerfile
+    container_name: zizkadb_embed_worker
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-zizkadb}:${POSTGRES_PASSWORD:-zizkadb}@postgres:5432/${POSTGRES_DB:-zizkadb}
+      REDIS_URL: redis://redis:6379
+      QDRANT_URL: http://qdrant:6333
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ENV: ${ENV:-development}
+      EMBED_WORKER_POLL_SEC: ${EMBED_WORKER_POLL_SEC:-2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    command: python workers/embed_worker.py
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   qdrant_data:

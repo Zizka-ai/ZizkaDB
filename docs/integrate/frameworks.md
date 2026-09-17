@@ -8,11 +8,11 @@ Only list **SUPPORTED** when an adapter or official example exists in this repos
 | **TypeScript / Node** | Supported | `zizkadb-sdk` **0.2.7** (npm) — [CONNECT.md](../../CONNECT.md#typescript-sdk) |
 | **REST / any HTTP client** | Supported | `POST /v1/events` — [wiki/REST-API](../../wiki/REST-API.md) |
 | **LangChain (Python)** | Supported | `zizkadb-langchain` **0.1.3** — [examples/langchain-agent](../../examples/langchain-agent/) |
-| **CrewAI (Python)** | Supported | `zizkadb-crewai` **0.1.3** — [examples/crewai-agent](../../examples/crewai-agent/) |
+| **CrewAI (Python)** | Supported | `zizkadb-crewai` **0.1.3** + auto `ZizkaDBCrewAIListener` — [examples/crewai-agent](../../examples/crewai-agent/) |
 | **LiveKit Agents (voice)** | Supported | `zizkadb-livekit` **0.2.0** — [docs/integrations/livekit.md](../integrations/livekit.md) · [examples/livekit-agent](../../examples/livekit-agent/) |
 | **MCP (Cursor, Claude Desktop)** | Supported | `zizkadb-mcp` **0.1.7** · [mcp/README.md](../../mcp/README.md) |
 | **OpenAI / Anthropic SDKs** | Example pattern | Manual `log()` around API calls · [examples/openai-agent](../../examples/openai-agent/) |
-| **LangGraph** | Generic only | No official adapter — call `db.log()` inside graph nodes · [any-agent.md](any-agent.md) |
+| **LangGraph** | Supported | `zizkadb-langgraph` **0.1.0** — [integrations/langgraph](../../integrations/langgraph/) |
 | **LlamaIndex** | Generic only | Log at retrieval/tool boundaries via SDK or REST |
 | **AutoGen** | Generic only | Log agent messages and tool calls via SDK or REST |
 | **OpenAI Agents SDK** | Generic only | Wrap tool/run lifecycle with `log()` + `parent_id` |

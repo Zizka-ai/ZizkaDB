@@ -166,6 +166,7 @@ export interface AgentEvent {
   parent_id: string | null
   session_id: string | null
   sequence_no: number
+  index_status?: 'pending' | 'indexed' | 'failed' | 'skipped'
 }
 
 export interface AgentStats {

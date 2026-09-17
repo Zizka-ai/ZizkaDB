@@ -29,6 +29,13 @@ from urllib.parse import quote, urlencode
 import httpx
 from mcp.server.fastmcp import FastMCP
 
+from zizkadb_mcp.session_state import (
+    get_last_event_id,
+    get_session_id,
+    record_event,
+    reset_chain,
+)
+
 mcp = FastMCP("ZizkaDB")
 
 try:
@@ -178,11 +185,21 @@ async def log_event(
         event_id, timestamp, sequence_no, checksum
     """
     body: dict = {"agent": agent, "event": event, "data": data}
-    if session_id:
-        body["session_id"] = session_id
-    if parent_id:
-        body["parent_id"] = parent_id
-    return await _api("POST", "/events", body)
+    body["session_id"] = session_id or get_session_id()
+    body["parent_id"] = parent_id or get_last_event_id() or None
+    if body["parent_id"] is None:
+        body.pop("parent_id")
+    result = await _api("POST", "/events", body)
+    if isinstance(result, dict) and result.get("event_id"):
+        record_event(result["event_id"])
+    return result
+
+
+@mcp.tool()
+async def reset_log_chain() -> dict:
+    """Start a fresh causal chain (new session_id, clear parent_id)."""
+    reset_chain()
+    return {"ok": True, "session_id": get_session_id()}
 
 
 @mcp.tool()

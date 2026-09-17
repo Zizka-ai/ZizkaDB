@@ -56,6 +56,8 @@ async def test_write_event_success(
     mock_pool,
     mock_qdrant,
 ):
+    monkeypatch.setattr("services.event_write.embeddings_enabled", lambda: True)
+    monkeypatch.setenv("EMBED_SYNC", "true")
     monkeypatch.setattr(
         "services.event_write.event_to_text",
         lambda event, data: "hello world",
@@ -76,9 +78,35 @@ async def test_write_event_success(
     assert result["event_id"] == "12345678-1234-1234-1234-123456789abc"
     assert result["sequence_no"] == 7
     assert result["indexed"] is True
+    assert result["index_status"] == "indexed"
 
     assert mock_pool.execute.await_count >= 3
     mock_qdrant.upsert.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_write_event_pending_when_async_embed(
+    monkeypatch,
+    mock_pool,
+    mock_qdrant,
+):
+    monkeypatch.setattr("services.event_write.embeddings_enabled", lambda: True)
+    monkeypatch.delenv("EMBED_SYNC", raising=False)
+    monkeypatch.setattr(
+        "services.event_write.event_to_text",
+        lambda event, data: "hello world",
+    )
+
+    result = await write_event(
+        tenant_id="tenant1",
+        agent="agent1",
+        event="message",
+        data={"text": "hello"},
+    )
+
+    assert result["indexed"] is False
+    assert result["index_status"] == "pending"
+    mock_qdrant.upsert.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -114,6 +142,8 @@ async def test_embedding_failure_does_not_fail_request(
     mock_pool,
     mock_qdrant,
 ):
+    monkeypatch.setattr("services.event_write.embeddings_enabled", lambda: True)
+    monkeypatch.setenv("EMBED_SYNC", "true")
     monkeypatch.setattr(
         "services.event_write.event_to_text",
         lambda event, data: "hello",
@@ -136,6 +166,7 @@ async def test_embedding_failure_does_not_fail_request(
 
     assert result["event_id"] == "12345678-1234-1234-1234-123456789abc"
     assert result["indexed"] is False
+    assert result["index_status"] == "failed"
     mock_qdrant.upsert.assert_not_called()
 
 
