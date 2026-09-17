@@ -9,6 +9,7 @@ import os
 from db.connection import init_db, close_db, get_pool, check_postgres, check_redis, check_qdrant
 from api.auth import _ensure_dev_tenant
 from api.events import router as events_router
+from api.sessions import router as sessions_router
 from api.agents import router as agents_router
 from api.auth import router as auth_router
 from api.a2a import router as a2a_router
@@ -162,6 +163,7 @@ app.add_middleware(RequestIdMiddleware)
 
 app.include_router(auth_router,      prefix="/v1/auth",      tags=["auth"])
 app.include_router(events_router,    prefix="/v1/events",    tags=["events"])
+app.include_router(sessions_router,  prefix="/v1/sessions",  tags=["sessions"])
 app.include_router(agents_router,    prefix="/v1/agents",    tags=["agents"])
 app.include_router(a2a_router,       prefix="/v1/a2a",       tags=["a2a"])
 app.include_router(search_router,    prefix="/v1/search",    tags=["search"])

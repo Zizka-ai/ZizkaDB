@@ -197,6 +197,21 @@ export interface AgentSession {
   types: string[]
 }
 
+export interface TenantSession {
+  session_id: string
+  event_count: number
+  agent_count: number
+  event_types: number
+  started_at: string
+  ended_at: string
+  agents: string[]
+}
+
+export interface SessionTimeline {
+  session_id: string
+  events: AgentEvent[]
+}
+
 export async function getAgentStats(token: string, agentId: string): Promise<AgentStats> {
   return apiFetch(`/v1/agents/${encodeURIComponent(agentId)}/stats`, token)
 }
@@ -214,6 +229,32 @@ export async function getEvents(
 
 export async function getWhyChain(token: string, eventId: string): Promise<WhyChain> {
   return apiFetch(`/v1/events/${eventId}/why`, token)
+}
+
+export async function getTenantSessions(
+  token: string,
+  agent?: string,
+): Promise<TenantSession[]> {
+  const qs = agent ? `?agent=${encodeURIComponent(agent)}` : ''
+  return apiFetch(`/v1/sessions${qs}`, token)
+}
+
+export async function getSessionTimeline(
+  token: string,
+  sessionId: string,
+): Promise<SessionTimeline> {
+  return apiFetch(`/v1/sessions/${encodeURIComponent(sessionId)}/events`, token)
+}
+
+export async function getSessionWhyChain(
+  token: string,
+  sessionId: string,
+  eventId: string,
+): Promise<WhyChain> {
+  return apiFetch(
+    `/v1/sessions/${encodeURIComponent(sessionId)}/why/${encodeURIComponent(eventId)}`,
+    token,
+  )
 }
 
 // The backend's search response shape isn't fully pinned down (some call

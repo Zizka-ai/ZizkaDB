@@ -7,6 +7,7 @@ import { CreateApiKeyCard } from '@/components/dashboard/CreateApiKeyCard'
 import { EmptyState, ErrorState, PageHeader, Skeleton } from '@/components/ui'
 import { EventsSegment } from '@/components/dashboard/EventsSegment'
 import { SessionsSegment } from '@/components/dashboard/SessionsSegment'
+import { SessionTimelineSegment } from '@/components/dashboard/SessionTimelineSegment'
 import { TimeTravelSegment } from '@/components/dashboard/TimeTravelSegment'
 import { useAgents } from '@/hooks/useAgents'
 import { useEdition } from '@/hooks/useEdition'
@@ -15,10 +16,11 @@ import { useAgentEvents } from '@/hooks/useAgentEvents'
 import { useAgentStats } from '@/hooks/useAgentStats'
 import { colors, radii } from '@/lib/design-tokens'
 
-type Segment = 'events' | 'sessions' | 'timetravel'
+type Segment = 'events' | 'sessions' | 'timeline' | 'timetravel'
 
 const SEGMENTS: { id: Segment; label: string }[] = [
   { id: 'events', label: 'Events' },
+  { id: 'timeline', label: 'Session timeline' },
   { id: 'sessions', label: 'Sessions' },
   { id: 'timetravel', label: 'Time Travel' },
 ]
@@ -162,6 +164,7 @@ function ActivityContent() {
       )}
 
       {segment === 'events' && <EventsSegment events={events} stats={stats} />}
+      {segment === 'timeline' && <SessionTimelineSegment />}
       {segment === 'sessions' && <SessionsSegment agentId={agentId} />}
       {segment === 'timetravel' && <TimeTravelSegment agentId={agentId} />}
     </>
