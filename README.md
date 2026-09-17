@@ -6,6 +6,8 @@
 
 Self-hosted audit trail for AI agents — one command or one dashboard click from any step back to root cause.
 
+**This repository is the open-source self-host stack** (API, tenant dashboard, SDKs, MCP). Operator admin console and VPC deploy live in private [zizkadb-cloud](https://github.com/Zizka-ai/zizkadb-cloud) — see [docs/REPO_SPLIT.md](docs/REPO_SPLIT.md).
+
 [![CI](https://github.com/Zizka-ai/ZizkaDB/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Zizka-ai/ZizkaDB/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/release-v0.2.8-f97316)](https://github.com/Zizka-ai/ZizkaDB/releases)
