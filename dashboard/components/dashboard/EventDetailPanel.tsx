@@ -67,7 +67,7 @@ function WhyPanel({ chain }: { chain: WhyChain }) {
       {incomplete && (
         <div
           className="mb-3 px-3 py-2 rounded text-xs"
-          style={{ background: colors.warningBg ?? '#fef3c7', color: colors.warning ?? '#92400e' }}
+          style={{ background: colors.warningBg, color: colors.warning }}
         >
           {chain.orphan && 'Orphan event — missing parent_id. '}
           {chain.depth_truncated && 'Depth limit reached — chain may continue above. '}
