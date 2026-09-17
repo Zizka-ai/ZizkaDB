@@ -53,6 +53,9 @@ function DataPanel({ event }: { event: AgentEvent }) {
         />
         <MetaRow label="session_id" value={event.session_id ?? '—'} />
         <MetaRow label="parent_id" value={event.parent_id ?? '—'} />
+        {event.index_status && (
+          <MetaRow label="index_status" value={event.index_status} />
+        )}
       </div>
     </div>
   )
@@ -67,7 +70,7 @@ function WhyPanel({ chain }: { chain: WhyChain }) {
       {incomplete && (
         <div
           className="mb-3 px-3 py-2 rounded text-xs"
-          style={{ background: colors.warningBg ?? '#fef3c7', color: colors.warning ?? '#92400e' }}
+          style={{ background: colors.warningBg, color: colors.warning }}
         >
           {chain.orphan && 'Orphan event — missing parent_id. '}
           {chain.depth_truncated && 'Depth limit reached — chain may continue above. '}
