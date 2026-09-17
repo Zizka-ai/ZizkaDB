@@ -101,7 +101,7 @@ async def query_events(
     rows = await pool.fetch(
         f"""
         SELECT event_id, agent_id, timestamp, event_type,
-               data, parent_event_id, session_id, sequence_no, metadata
+               data, parent_event_id, session_id, sequence_no, metadata, index_status
         FROM events
         WHERE {where}
         ORDER BY timestamp DESC
@@ -264,7 +264,7 @@ def _format_event(row) -> dict:
     if isinstance(data, str):
         data = json.loads(data)
 
-    return {
+    out = {
         "event_id": str(row["event_id"]),
         "agent": row["agent_id"],
         "timestamp": row["timestamp"].isoformat(),
@@ -275,6 +275,9 @@ def _format_event(row) -> dict:
         "sequence_no": row["sequence_no"],
         **_format_metadata(row),
     }
+    if "index_status" in row.keys():
+        out["index_status"] = row["index_status"]
+    return out
 
 
 def _format_metadata(row) -> dict:

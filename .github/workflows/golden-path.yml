@@ -1,0 +1,37 @@
+name: Golden path
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: golden-path-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ZIZKADB_TELEMETRY: "false"
+
+jobs:
+  golden-path:
+    name: golden-path
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Start stack
+        run: |
+          cp infra/.env.example infra/.env 2>/dev/null || true
+          docker compose -f infra/docker-compose.yml up -d postgres redis api
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8000/health && break
+            sleep 3
+          done
+
+      - name: Run golden path
+        run: bash scripts/run-golden-path.sh

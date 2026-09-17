@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import os
 
 from db.connection import get_pool, get_qdrant
 from qdrant_client.models import PointStruct
@@ -58,13 +59,16 @@ async def write_event(
     content = json.dumps({"event": event, "data": data}, sort_keys=True)
     checksum = hashlib.sha256(content.encode()).hexdigest()
 
+    embed_on = embeddings_enabled()
+    initial_status = "pending" if embed_on else "skipped"
+
     row = await pool.fetchrow(
         """
         INSERT INTO events (
             tenant_id, agent_id, event_type, data,
-            parent_event_id, session_id, checksum, metadata
+            parent_event_id, session_id, checksum, metadata, index_status
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING event_id, timestamp, sequence_no
         """,
         tenant_id,
@@ -75,41 +79,48 @@ async def write_event(
         session_id,
         checksum,
         json.dumps(metadata) if metadata else None,
+        initial_status,
     )
 
     event_id = str(row["event_id"])
 
     indexed = False
-    try:
-        if not embeddings_enabled():
-            raise RuntimeError("embeddings disabled for this deployment")
-        text = event_to_text(event, data)
-        embedding = await generate_embedding(text, tenant_id)
-        if embedding:
+    index_status = initial_status
+    if embed_on and os.getenv("EMBED_SYNC", "false").lower() in ("1", "true", "yes"):
+        try:
+            text = event_to_text(event, data)
+            embedding = await generate_embedding(text, tenant_id)
+            if embedding:
+                await pool.execute(
+                    "UPDATE events SET embedding = $1::vector, index_status = 'indexed' WHERE event_id = $2",
+                    _pgvector_literal(embedding),
+                    row["event_id"],
+                )
+                qdrant = get_qdrant()
+                await qdrant.upsert(
+                    collection_name="agent_events",
+                    points=[
+                        PointStruct(
+                            id=event_id,
+                            vector=embedding,
+                            payload={
+                                "tenant_id": tenant_id,
+                                "agent_id": agent,
+                                "event_type": event,
+                                "timestamp": row["timestamp"].isoformat(),
+                            },
+                        )
+                    ],
+                )
+                indexed = True
+                index_status = "indexed"
+        except Exception as e:
+            logger.warning("Embedding/index skipped for event %s: %s", event_id, e)
             await pool.execute(
-                "UPDATE events SET embedding = $1::vector WHERE event_id = $2",
-                _pgvector_literal(embedding),
+                "UPDATE events SET index_status = 'failed' WHERE event_id = $1",
                 row["event_id"],
             )
-            qdrant = get_qdrant()
-            await qdrant.upsert(
-                collection_name="agent_events",
-                points=[
-                    PointStruct(
-                        id=event_id,
-                        vector=embedding,
-                        payload={
-                            "tenant_id": tenant_id,
-                            "agent_id": agent,
-                            "event_type": event,
-                            "timestamp": row["timestamp"].isoformat(),
-                        },
-                    )
-                ],
-            )
-            indexed = True
-    except Exception as e:
-        logger.warning("Embedding/index skipped for event %s: %s", event_id, e)
+            index_status = "failed"
 
     try:
         await pool.execute(
@@ -130,4 +141,5 @@ async def write_event(
         "sequence_no": row["sequence_no"],
         "checksum": checksum,
         "indexed": indexed,
+        "index_status": index_status,
     }

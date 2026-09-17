@@ -117,6 +117,70 @@ def cmd_token_usage(args: argparse.Namespace) -> None:
     asyncio.run(run())
 
 
+def cmd_doctor(args: argparse.Namespace) -> None:
+    import sys
+    import httpx
+
+    host = (args.host or os.getenv("ZIZKADB_HOST", DEFAULT_HOST)).rstrip("/")
+    failures = 0
+
+    def ok(msg: str) -> None:
+        print(f"  ✓ {msg}")
+
+    def fail(msg: str) -> None:
+        nonlocal failures
+        failures += 1
+        print(f"  ✗ {msg}", file=sys.stderr)
+
+    print(f"ZizkaDB doctor — {host}\n")
+
+    if sys.version_info < (3, 10):
+        fail(f"Python {sys.version_info.major}.{sys.version_info.minor} — need >= 3.10")
+    else:
+        ok(f"Python {sys.version_info.major}.{sys.version_info.minor}")
+
+    try:
+        r = httpx.get(f"{host}/health/deep", timeout=10)
+        if r.is_success:
+            ok("API /health/deep reachable")
+            checks = r.json().get("checks", {})
+            for name, check in checks.items():
+                if check.get("ok"):
+                    ok(f"  {name}")
+                else:
+                    fail(f"  {name}: {check}")
+        else:
+            fail(f"API health failed: {r.status_code}")
+    except Exception as e:
+        fail(f"API unreachable: {e}")
+
+    try:
+        async def probe() -> None:
+            async with ZizkaDB(host=host) as db:
+                result = await db.log(
+                    agent=args.agent,
+                    event="doctor_ping",
+                    data={"source": "zizkadb doctor"},
+                )
+                ok(f"Write test event {result.event_id[:8]}…")
+
+        asyncio.run(probe())
+    except Exception as e:
+        fail(f"Write test failed: {e}")
+
+    try:
+        import zizkadb_mcp  # noqa: F401
+
+        ok("MCP package importable")
+    except Exception as e:
+        fail(f"MCP import: {e}")
+
+    if failures:
+        print(f"\n{failures} check(s) failed", file=sys.stderr)
+        raise SystemExit(1)
+    print("\nAll checks passed")
+
+
 def cmd_token_opt(args: argparse.Namespace) -> None:
     async def run() -> None:
         async with _client_from_env() as db:
@@ -185,6 +249,11 @@ def main(argv: list[str] | None = None) -> None:
     to_p.add_argument("--to", default="")
     to_p.add_argument("--granularity", choices=("day", "week"), default="")
     to_p.set_defaults(func=cmd_token_opt)
+
+    doctor_p = sub.add_parser("doctor", help="Verify local stack and SDK connectivity")
+    doctor_p.add_argument("--host", default=None, help=f"API URL (default: {DEFAULT_HOST})")
+    doctor_p.add_argument("--agent", default="doctor-agent", help="Agent id for write test")
+    doctor_p.set_defaults(func=cmd_doctor)
 
     args = parser.parse_args(argv)
     args.func(args)

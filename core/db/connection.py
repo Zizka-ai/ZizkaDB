@@ -206,6 +206,14 @@ async def init_db():
     """)
 
     await _pg_pool.execute("""
+        ALTER TABLE events
+        ADD COLUMN IF NOT EXISTS index_status VARCHAR(16) NOT NULL DEFAULT 'skipped';
+        CREATE INDEX IF NOT EXISTS idx_events_index_status
+        ON events (index_status)
+        WHERE index_status IN ('pending', 'failed');
+    """)
+
+    await _pg_pool.execute("""
         ALTER TABLE tenants
         ADD COLUMN IF NOT EXISTS embedding_provider VARCHAR(32)
         NOT NULL DEFAULT 'openai';
