@@ -46,6 +46,7 @@ Fifteen-day self-host / OSS hardening pass. User-visible highlights:
 - [DEVELOPMENT.md](DEVELOPMENT.md) operator section: `/health` liveness vs `/health/deep` readiness, `X-Request-ID` tracing
 - [docs/ai/DEPENDENCY_AUDIT.md](docs/ai/DEPENDENCY_AUDIT.md): Day 11 `pip-audit` / `npm audit` snapshot (critical Next.js CVEs deferred to major upgrade)
 - CHANGELOG sprint summary (Days 1–11); PR template aligned with CI jobs; release skill uses `smoke-test.sh` instead of removed `test-e2e-workflow.sh`
+- README OSS scope one-liner + [REPO_SPLIT](docs/REPO_SPLIT.md); robots/sitemap comments no longer reference `/admin` in OSS tree
 
 ### Integrations
 

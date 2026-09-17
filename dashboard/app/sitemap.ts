@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 const SITE_URL = process.env.DASHBOARD_URL || 'https://db.zizka.ai'
 
-// Public marketing/docs pages only -- /dashboard and /admin are excluded from
-// robots.ts and have no SEO value, and /login + /signup are auth flows, not
+// Public marketing/docs pages only — /dashboard is excluded in robots.ts (no SEO
+// value). /login + /signup are auth flows, not
 // content worth ranking. Keep this list in sync with dashboard/app/*/page.tsx
 // as new public pages are added.
 const ROUTES: { path: string; changeFrequency: MetadataRoute.Sitemap[number]['changeFrequency']; priority: number }[] = [
