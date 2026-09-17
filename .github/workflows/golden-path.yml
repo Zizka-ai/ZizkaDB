@@ -27,7 +27,7 @@ jobs:
       - name: Start stack
         run: |
           cp infra/.env.example infra/.env 2>/dev/null || true
-          docker compose -f infra/docker-compose.yml up -d postgres redis api
+          docker compose -f infra/docker-compose.yml up -d postgres redis qdrant api
           for i in $(seq 1 60); do
             curl -sf http://localhost:8000/health && break
             sleep 3
