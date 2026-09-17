@@ -6,6 +6,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### OSS improvement sprint (Days 1–11, Sep 2026)
+
+Fifteen-day self-host / OSS hardening pass. User-visible highlights:
+
+- **CI & quality:** dashboard vitest in CI; expanded core route and SDK tests; `check-doc-drift.sh` keeps API/SDK versions aligned
+- **Ops:** `X-Request-ID` on every response; `/health` vs `/health/deep` operator guidance; production startup refuses default `JWT_SECRET` / `DEV_API_KEY`; Redis-backed rate limits with fail-open in-memory fallback; CORS wildcard warning in production
+- **Onboarding:** [DEVELOPMENT.md](DEVELOPMENT.md), [dashboard/README.md](dashboard/README.md), `smoke-test.sh` (curl + minimal-python example), [examples/minimal-python/README.md](examples/minimal-python/README.md) dashboard expectations
+- **Docs & scope:** README self-host first + [REPO_SPLIT](docs/REPO_SPLIT.md); enterprise tier removed from OSS tree; [dependency audit snapshot](docs/ai/DEPENDENCY_AUDIT.md)
+- **SDK parity:** TypeScript 0.2.8 aligned with API; vitest for `contextFor()`, `memoryDiff()`, `agents()`; `token_usage` on `log()` documented as Python-only
+
 ### Removed
 
 - Enterprise marketing (`/enterprise`), enterprise pricing tier, and enterprise-specific docs — OSS repo is self-host only; commercial VPC lives in the private cloud repo ([docs/REPO_SPLIT.md](docs/REPO_SPLIT.md))
@@ -35,6 +45,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - README self-host first with REPO_SPLIT link; dashboard KB middleware matcher and vitest-in-CI accuracy (§4, §13, §15)
 - [DEVELOPMENT.md](DEVELOPMENT.md) operator section: `/health` liveness vs `/health/deep` readiness, `X-Request-ID` tracing
 - [docs/ai/DEPENDENCY_AUDIT.md](docs/ai/DEPENDENCY_AUDIT.md): Day 11 `pip-audit` / `npm audit` snapshot (critical Next.js CVEs deferred to major upgrade)
+- CHANGELOG sprint summary (Days 1–11); PR template aligned with CI jobs; release skill uses `smoke-test.sh` instead of removed `test-e2e-workflow.sh`
 
 ### Integrations
 

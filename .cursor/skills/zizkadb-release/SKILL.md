@@ -21,7 +21,7 @@ Keep SDK versions aligned when possible.
 - [ ] Bump version numbers
 - [ ] Run verify-release.sh
 - [ ] Run integration tests with stack up
-- [ ] Run test-e2e-workflow.sh
+- [ ] Run smoke-test.sh (full stack; `SKIP_EXAMPLE=1` for curl-only)
 - [ ] Update CHANGELOG if maintained
 - [ ] Publish packages
 ```
@@ -37,7 +37,8 @@ Checks: Python syntax, editable installs, SDK unit, `zizkadb init` all templates
 ```bash
 bash scripts/setup-local.sh
 pytest core/tests/ -m integration -v
-bash scripts/test-e2e-workflow.sh
+bash scripts/smoke-test.sh
+# curl-only against staging: SKIP_EXAMPLE=1 bash scripts/smoke-test.sh https://your-api.example
 ```
 
 ## Publish
