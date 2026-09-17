@@ -24,6 +24,8 @@ Usage:
     state = await db.at(agent="my-bot", timestamp=datetime(2026, 5, 1))
 """
 
+from __future__ import annotations
+
 import os
 import sys
 import httpx

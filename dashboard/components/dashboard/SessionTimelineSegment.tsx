@@ -11,13 +11,13 @@ import {
   type TenantSession,
   type WhyChain,
 } from '@/lib/api'
-import { useAuth } from '@/hooks/useAuth'
+import { getToken } from '@/lib/auth'
 import { colors, radii } from '@/lib/design-tokens'
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import { EventDot } from './EventList'
 
 export function SessionTimelineSegment() {
-  const { token } = useAuth()
+  const token = getToken()
   const [sessions, setSessions] = useState<TenantSession[]>([])
   const [selected, setSelected] = useState<TenantSession | null>(null)
   const [events, setEvents] = useState<AgentEvent[]>([])
