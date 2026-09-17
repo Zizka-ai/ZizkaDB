@@ -144,9 +144,12 @@ def cmd_doctor(args: argparse.Namespace) -> None:
         if r.is_success:
             ok("API /health/deep reachable")
             checks = r.json().get("checks", {})
+            required = {"postgres", "redis"}
             for name, check in checks.items():
                 if check.get("ok"):
                     ok(f"  {name}")
+                elif args.minimal and name not in required:
+                    ok(f"  {name} (optional in --minimal mode)")
                 else:
                     fail(f"  {name}: {check}")
         else:
@@ -168,12 +171,13 @@ def cmd_doctor(args: argparse.Namespace) -> None:
     except Exception as e:
         fail(f"Write test failed: {e}")
 
-    try:
-        import zizkadb_mcp  # noqa: F401
+    if not args.minimal:
+        try:
+            import zizkadb_mcp  # noqa: F401
 
-        ok("MCP package importable")
-    except Exception as e:
-        fail(f"MCP import: {e}")
+            ok("MCP package importable")
+        except Exception as e:
+            fail(f"MCP import: {e}")
 
     if failures:
         print(f"\n{failures} check(s) failed", file=sys.stderr)
@@ -253,6 +257,11 @@ def main(argv: list[str] | None = None) -> None:
     doctor_p = sub.add_parser("doctor", help="Verify local stack and SDK connectivity")
     doctor_p.add_argument("--host", default=None, help=f"API URL (default: {DEFAULT_HOST})")
     doctor_p.add_argument("--agent", default="doctor-agent", help="Agent id for write test")
+    doctor_p.add_argument(
+        "--minimal",
+        action="store_true",
+        help="Golden-path/CI mode: require postgres+redis and write test only",
+    )
     doctor_p.set_defaults(func=cmd_doctor)
 
     args = parser.parse_args(argv)
