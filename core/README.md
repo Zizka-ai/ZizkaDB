@@ -9,7 +9,7 @@ The FastAPI backend. Handles all event ingestion, causal chain queries, semantic
 - **Qdrant** (vector semantic search — collection `agent_events`, 1536-dim cosine)
 - **Redis 7** (embedding cache, 24 h TTL)
 
-## Routers (13 total, all at `/v1/`)
+## Routers (14 total, all at `/v1/`)
 
 Authoritative list: `main.py` (`app.include_router`). There is **no** `admin.py` or `stats.py` router in this OSS tree.
 
@@ -17,6 +17,7 @@ Authoritative list: `main.py` (`app.include_router`). There is **no** `admin.py`
 |---|---|---|
 | `api/auth.py` | `/v1/auth` | OTP login, JWT tokens, API key management |
 | `api/events.py` | `/v1/events` | Log events, query events, time-travel (`db.at()`) |
+| `api/sessions.py` | `/v1/sessions` | Tenant-wide session timeline and cross-agent `why()` |
 | `api/agents.py` | `/v1/agents` | Agent stats, sessions, causal lineage (`db.why()`), baseline, API keys |
 | `api/a2a.py` | `/v1/a2a` | Agent-to-agent messages (scoped API keys) |
 | `api/search.py` | `/v1/search` | Semantic search (`db.search()`) |
