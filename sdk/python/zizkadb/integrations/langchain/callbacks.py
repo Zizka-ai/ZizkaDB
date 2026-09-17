@@ -157,6 +157,58 @@ class ZizkaDBCallbackHandler(AsyncCallbackHandler):
         self.last_event_id = result.event_id
         self._run_parents.pop(run_id, None)
 
+    # ── Retriever / RAG ───────────────────────────────────────────────────
+
+    async def on_retriever_start(
+        self,
+        serialized: dict[str, Any],
+        query: str,
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        result = await self._log(
+            event="retrieval",
+            data={
+                "query": query[:2000],
+                "retriever": serialized.get("name", "retriever"),
+            },
+            run_id=run_id,
+            parent_run_id=parent_run_id,
+        )
+        self._run_parents[run_id] = result.event_id
+        self.last_event_id = result.event_id
+
+    async def on_retriever_end(
+        self,
+        documents: list[Any],
+        *,
+        run_id: UUID,
+        parent_run_id: UUID | None = None,
+        **kwargs: Any,
+    ) -> None:
+        doc_ids = []
+        scores: list[float] = []
+        for i, doc in enumerate(documents[:20]):
+            meta = getattr(doc, "metadata", None) or {}
+            doc_ids.append(str(meta.get("id") or meta.get("chunk_id") or i))
+            score = meta.get("score")
+            if isinstance(score, (int, float)):
+                scores.append(float(score))
+        result = await self._log(
+            event="retrieval",
+            data={
+                "chunk_count": len(documents),
+                "doc_ids": doc_ids,
+                "scores": scores[:20],
+            },
+            run_id=run_id,
+            parent_run_id=parent_run_id,
+        )
+        self.last_event_id = result.event_id
+        self._run_parents.pop(run_id, None)
+
     # ── Tool ──────────────────────────────────────────────────────────────
 
     async def on_tool_start(

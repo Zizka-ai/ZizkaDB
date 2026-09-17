@@ -14,7 +14,7 @@ from zizkadb.client import ZizkaDB
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 
-TEMPLATES = ("basic", "openai", "langchain", "crewai", "mcp-cursor")
+TEMPLATES = ("basic", "openai", "langchain", "crewai", "mcp-cursor", "langgraph", "rag", "livekit")
 DEFAULT_HOST = "http://localhost:8000"
 
 

@@ -1,0 +1,2 @@
+zizkadb-sdk>=0.2.8
+zizkadb-langgraph>=0.1.0
