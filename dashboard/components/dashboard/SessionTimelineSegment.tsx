@@ -11,13 +11,12 @@ import {
   type TenantSession,
   type WhyChain,
 } from '@/lib/api'
-import { useAuth } from '@/hooks/useAuth'
+import { getToken } from '@/lib/auth'
 import { colors, radii } from '@/lib/design-tokens'
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui'
 import { EventDot } from './EventList'
 
 export function SessionTimelineSegment() {
-  const { token } = useAuth()
   const [sessions, setSessions] = useState<TenantSession[]>([])
   const [selected, setSelected] = useState<TenantSession | null>(null)
   const [events, setEvents] = useState<AgentEvent[]>([])
@@ -27,34 +26,34 @@ export function SessionTimelineSegment() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    const token = getToken()
     if (!token) return
     setLoading(true)
     getTenantSessions(token)
       .then(setSessions)
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load sessions'))
       .finally(() => setLoading(false))
-  }, [token])
+  }, [])
 
-  const openSession = useCallback(
-    async (session: TenantSession) => {
-      if (!token) return
-      setSelected(session)
-      setWhyChain(null)
-      setDetailLoading(true)
-      try {
-        const timeline = await getSessionTimeline(token, session.session_id)
-        setEvents(timeline.events)
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load session timeline')
-      } finally {
-        setDetailLoading(false)
-      }
-    },
-    [token],
-  )
+  const openSession = useCallback(async (session: TenantSession) => {
+    const token = getToken()
+    if (!token) return
+    setSelected(session)
+    setWhyChain(null)
+    setDetailLoading(true)
+    try {
+      const timeline = await getSessionTimeline(token, session.session_id)
+      setEvents(timeline.events)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load session timeline')
+    } finally {
+      setDetailLoading(false)
+    }
+  }, [])
 
   const traceWhy = useCallback(
     async (eventId: string) => {
+      const token = getToken()
       if (!token || !selected) return
       setDetailLoading(true)
       try {
@@ -66,7 +65,7 @@ export function SessionTimelineSegment() {
         setDetailLoading(false)
       }
     },
-    [token, selected],
+    [selected],
   )
 
   if (loading) return <Skeleton rows={5} />
@@ -148,7 +147,7 @@ export function SessionTimelineSegment() {
                 style={{ border: `1px solid ${colors.border}`, borderRadius: radii.lg }}
               >
                 {(whyChain.orphan || whyChain.depth_truncated) && (
-                  <p style={{ color: colors.warning ?? '#92400e' }} className="mb-2">
+                  <p style={{ color: colors.warning }} className="mb-2">
                     Incomplete chain — check logging or use a tenant-wide key.
                   </p>
                 )}

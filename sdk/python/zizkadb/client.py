@@ -28,7 +28,10 @@ import os
 import sys
 import httpx
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .session_scope import SessionScope
 
 from .models import Event, LogResult, CausalChain, AgentState, AgentInfo
 from .exceptions import ZizkaDBError, AuthError, NotFoundError, RateLimitError, AgentScopeError
