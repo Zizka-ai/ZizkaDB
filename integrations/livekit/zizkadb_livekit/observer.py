@@ -179,6 +179,7 @@ class ZizkaDBLiveKitObserver:
         self._spill_path = Path.home() / ".zizkadb" / "spill" / f"{session_id}.jsonl"
         self._live_capture_missed = False
         self._attach_called = False
+        self._stats_logged = False
 
     async def __aenter__(self) -> "ZizkaDBLiveKitObserver":
         return self
@@ -519,10 +520,6 @@ class ZizkaDBLiveKitObserver:
         except Exception as exc:  # pragma: no cover - defensive
             self._warn("flush failed", exc)
         await self._drain_spill()
-        if not self._attach_called:
-            self._live_capture_missed = True
-            log.warning("zizkadb: attach() was not called before session end — live events may be missing")
-        await self._log_livekit_session_stats()
         return self.flush_stats()
 
     async def _log_livekit_session_stats(self) -> None:
@@ -543,6 +540,17 @@ class ZizkaDBLiveKitObserver:
         self._closed = True
         try:
             await self.flush(timeout=timeout)
+            if (
+                not self._stats_logged
+                and (self._stats["written"] or self._stats["spilled"] or self._stats["dropped"])
+            ):
+                if not self._attach_called:
+                    self._live_capture_missed = True
+                    log.warning(
+                        "zizkadb: attach() was not called before session end — live events may be missing"
+                    )
+                await self._log_livekit_session_stats()
+                self._stats_logged = True
             task = self._writer_task
             self._writer_task = None
             if task is not None and not task.done():
