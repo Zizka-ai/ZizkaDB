@@ -27,15 +27,24 @@ jobs:
       - name: Start stack
         run: |
           cp infra/.env.quickstart infra/.env
-          docker compose -f infra/docker-compose.yml up -d postgres redis qdrant api
-          for i in $(seq 1 60); do
+          docker compose -f infra/docker-compose.yml -f infra/docker-compose.golden-path.yml up -d postgres redis qdrant api
+          for i in $(seq 1 40); do
             curl -sf http://localhost:8000/health && break
             sleep 3
           done
-          for i in $(seq 1 60); do
-            curl -sf http://localhost:8000/health/deep | grep -q '"status": "ok"' && break
+          ready=false
+          for i in $(seq 1 40); do
+            if curl -sf http://localhost:8000/health/deep | python3 -c "import sys,json; c=json.load(sys.stdin).get('checks',{}); sys.exit(0 if c.get('postgres',{}).get('ok') and c.get('redis',{}).get('ok') else 1)"; then
+              ready=true
+              break
+            fi
             sleep 3
           done
+          if [ "$ready" != true ]; then
+            curl -sf http://localhost:8000/health/deep || true
+            docker compose -f infra/docker-compose.yml -f infra/docker-compose.golden-path.yml logs api --tail 40
+            exit 1
+          fi
 
       - name: Run golden path
         run: bash scripts/run-golden-path.sh
