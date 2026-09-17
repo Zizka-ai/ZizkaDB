@@ -68,6 +68,10 @@ def wrap_node(
             output_summary={"keys": list(merged.keys())[:20]},
             phase="done",
         )
+        # Propagate the done-phase event id back to the caller's state dict.
+        # log_node updates `merged` (a copy), so without this the next node reads
+        # a stale zizkadb_last_event_id and forks the causal chain.
+        state[STATE_LAST_EVENT_KEY] = merged[STATE_LAST_EVENT_KEY]
         return out if isinstance(out, dict) else state
 
     wrapped.__name__ = getattr(fn, "__name__", node_name)

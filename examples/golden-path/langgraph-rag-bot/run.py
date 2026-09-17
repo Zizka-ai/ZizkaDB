@@ -44,12 +44,13 @@ async def main() -> int:
             retrieval = wrap_node(mw, "retrieve", retrieve)
             state = {**state, **await retrieval(state)}
 
-            await db.log(
+            retrieval = await db.log(
                 agent=AGENT,
                 event="retrieval",
                 data={"query": state["user_message"], "doc_ids": ["doc-1"], "chunk_count": 1},
                 session_id=ctx.session_id,
             )
+            state["zizkadb_last_event_id"] = retrieval.event_id
 
             gen = wrap_node(mw, "generate", generate)
             out = await gen(state)
