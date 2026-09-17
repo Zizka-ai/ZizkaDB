@@ -200,6 +200,12 @@ async def init_db():
     """)
 
     await _pg_pool.execute("""
+        CREATE INDEX IF NOT EXISTS idx_events_tenant_session_time
+        ON events (tenant_id, session_id, timestamp)
+        WHERE session_id IS NOT NULL;
+    """)
+
+    await _pg_pool.execute("""
         ALTER TABLE tenants
         ADD COLUMN IF NOT EXISTS embedding_provider VARCHAR(32)
         NOT NULL DEFAULT 'openai';

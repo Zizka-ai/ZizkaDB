@@ -196,6 +196,12 @@ class ZizkaDB:
         """Auto-wire parent_id for logs inside this context."""
         return LineageContext(self, agent=agent, session_id=session_id)
 
+    def session(self, session_id: str) -> "SessionScope":
+        """Session-scoped helper for multi-agent timelines and cross-agent why()."""
+        from .session_scope import SessionScope
+
+        return SessionScope(self, session_id)
+
     async def log_fork(
         self,
         agent: str,
