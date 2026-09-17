@@ -50,12 +50,17 @@ export interface LogResult {
   timestamp: Date
   sequenceNo: number
   checksum: string
+  indexStatus?: string
 }
 
 export interface CausalChain {
   eventId: string
   chainLength: number
   chain: AgentEvent[]
+  chainComplete?: boolean
+  orphan?: boolean
+  depthTruncated?: boolean
+  scopedAgentLimited?: boolean
   print(): void
 }
 

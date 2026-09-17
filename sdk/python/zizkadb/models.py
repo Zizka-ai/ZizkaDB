@@ -55,15 +55,26 @@ class LogResult:
     timestamp: datetime
     sequence_no: int
     checksum: str
+    index_status: str = "skipped"
 
     @classmethod
     def from_dict(cls, d: dict) -> "LogResult":
         """Create a LogResult instance from a dictionary payload."""
+        indexed = d.get("indexed")
+        if "index_status" in d:
+            index_status = d["index_status"]
+        elif indexed is True:
+            index_status = "indexed"
+        elif indexed is False:
+            index_status = "failed"
+        else:
+            index_status = "skipped"
         return cls(
             event_id=d["event_id"],
             timestamp=datetime.fromisoformat(d["timestamp"]),
             sequence_no=d["sequence_no"],
             checksum=d["checksum"],
+            index_status=index_status,
         )
 
 
@@ -74,12 +85,27 @@ class CausalChain:
     event_id: str
     chain_length: int
     chain: list[Event]
+    chain_complete: bool = True
+    orphan: bool = False
+    depth_truncated: bool = False
+    scoped_agent_limited: bool = False
 
     def print(self) -> None:
         """Pretty-print the causal chain as a tree."""
         if not self.chain:
             _safe_print("(empty chain)")
             return
+
+        if self.orphan or self.depth_truncated or self.scoped_agent_limited or not self.chain_complete:
+            warnings = []
+            if self.orphan:
+                warnings.append("orphan event (missing parent_id)")
+            if self.depth_truncated:
+                warnings.append("depth limit reached — chain may continue above")
+            if self.scoped_agent_limited:
+                warnings.append("agent-scoped key — cross-agent links hidden")
+            if warnings:
+                _safe_print("⚠ Incomplete chain: " + "; ".join(warnings))
 
         for i, event in enumerate(self.chain):
             indent = "    " * i

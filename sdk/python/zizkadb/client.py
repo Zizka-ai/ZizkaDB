@@ -33,6 +33,7 @@ from typing import Any
 from .models import Event, LogResult, CausalChain, AgentState, AgentInfo
 from .exceptions import ZizkaDBError, AuthError, NotFoundError, RateLimitError, AgentScopeError
 from .telemetry import ping_on_install as _telemetry_ping
+from .context import LineageContext, resolve_log_lineage, record_log_result
 
 CLOUD_HOST = "https://db.zizka.ai"
 DEFAULT_DEV_API_KEY = "zizkadb_dev_local"
@@ -164,6 +165,14 @@ class ZizkaDB:
         Returns:
             LogResult with event_id, timestamp, sequence_no, checksum
         """
+        explicit_parent = parent_id is not None
+        parent_id, session_id = resolve_log_lineage(
+            agent=agent,
+            event=event,
+            parent_id=parent_id,
+            session_id=session_id,
+            explicit_parent=explicit_parent,
+        )
         payload_data = dict(data)
         if token_usage is not None:
             payload_data["token_usage"] = token_usage
@@ -179,8 +188,40 @@ class ZizkaDB:
             },
         )
         result = LogResult.from_dict(response)
+        record_log_result(agent, result)
         _emit_log_hint(self._base_url, result.event_id)
         return result
+
+    def track(self, agent: str, session_id: str | None = None) -> LineageContext:
+        """Auto-wire parent_id for logs inside this context."""
+        return LineageContext(self, agent=agent, session_id=session_id)
+
+    async def log_fork(
+        self,
+        agent: str,
+        events: list[tuple[str, dict[str, Any]]],
+        *,
+        session_id: str | None = None,
+    ) -> list[LogResult]:
+        """Log parallel branches from the same parent (e.g. parallel tool calls)."""
+        from .context import get_lineage_state
+
+        state = get_lineage_state()
+        fork_parent = state.last_event_id if state and state.agent == agent else None
+        results: list[LogResult] = []
+        for event_type, data in events:
+            results.append(
+                await self.log(
+                    agent=agent,
+                    event=event_type,
+                    data=data,
+                    parent_id=fork_parent,
+                    session_id=session_id or (state.session_id if state else None),
+                )
+            )
+        if state is not None and state.agent == agent and results:
+            state.last_event_id = results[-1].event_id
+        return results
 
     # ─────────────────────────────────────────
     # QUERY — fetch events
@@ -251,6 +292,10 @@ class ZizkaDB:
             event_id=response["event_id"],
             chain_length=response["chain_length"],
             chain=[Event.from_dict(e) for e in response["chain"]],
+            chain_complete=response.get("chain_complete", True),
+            orphan=response.get("orphan", False),
+            depth_truncated=response.get("depth_truncated", False),
+            scoped_agent_limited=response.get("scoped_agent_limited", False),
         )
 
     # ─────────────────────────────────────────

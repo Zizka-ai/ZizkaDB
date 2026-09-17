@@ -178,6 +178,10 @@ export interface AgentStats {
 }
 
 export interface WhyChain {
+  chain_complete?: boolean
+  orphan?: boolean
+  depth_truncated?: boolean
+  scoped_agent_limited?: boolean
   event_id: string
   chain_length: number
   chain: AgentEvent[]
