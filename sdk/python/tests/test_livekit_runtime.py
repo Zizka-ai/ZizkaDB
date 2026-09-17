@@ -70,7 +70,8 @@ class TestBackgroundQueue:
         observer = ZizkaDBLiveKitObserver(db, agent="voice", session_id="s1")
         observer.enqueue(event="user_message", data={"content": "hi"})
         await observer.aclose()
-        assert db.log.call_count == 1
+        events = [c.kwargs["event"] for c in db.log.call_args_list]
+        assert events == ["user_message", "livekit_session_stats"]
 
 
 class TestFailureIsolation:
@@ -407,7 +408,8 @@ class TestLifecycle:
         observer.enqueue(event="user_message", data={"content": "hi"})
         await observer.aclose()
         await observer.aclose()
-        assert db.log.call_count == 1
+        events = [c.kwargs["event"] for c in db.log.call_args_list]
+        assert events == ["user_message", "livekit_session_stats"]
 
     @pytest.mark.asyncio
     async def test_enqueue_after_close_is_dropped(self):
@@ -423,7 +425,8 @@ class TestLifecycle:
         db = _make_db()
         async with ZizkaDBLiveKitObserver(db, agent="voice", session_id="s1") as observer:
             observer.enqueue(event="user_message", data={"content": "hi"})
-        assert db.log.call_count == 1
+        events = [c.kwargs["event"] for c in db.log.call_args_list]
+        assert events == ["user_message", "livekit_session_stats"]
         assert observer._writer_task is None
 
     def test_observer_survives_a_new_event_loop(self):
@@ -478,7 +481,9 @@ class TestConnectionPooling:
             await observer.aclose()
             assert db._client is None, "closed client left assigned; next call breaks"
 
-        assert db.log.await_count == 2
+        logged = [c.kwargs["event"] for c in db.log.call_args_list]
+        assert logged.count("user_message") == 2
+        assert logged.count("livekit_session_stats") == 2
 
     @pytest.mark.asyncio
     async def test_caller_managed_client_is_left_alone(self):

@@ -53,6 +53,9 @@ function DataPanel({ event }: { event: AgentEvent }) {
         />
         <MetaRow label="session_id" value={event.session_id ?? '—'} />
         <MetaRow label="parent_id" value={event.parent_id ?? '—'} />
+        {event.index_status && (
+          <MetaRow label="index_status" value={event.index_status} />
+        )}
       </div>
     </div>
   )

@@ -101,7 +101,7 @@ class TestLogEvent:
         assert result["event_id"] == "evt-1"
 
     @pytest.mark.asyncio
-    async def test_omits_empty_session_and_parent(self):
+    async def test_auto_session_and_parent_when_empty(self):
         captured = {}
 
         async def capture(method, path, body=None):
@@ -109,11 +109,21 @@ class TestLogEvent:
             return {"event_id": "x", "timestamp": "t", "sequence_no": 1}
 
         with patch("zizkadb_mcp.server._api", new=capture):
+            from zizkadb_mcp import session_state
             from zizkadb_mcp.server import log_event
+
+            session_state.reset_chain()
             await log_event(agent="bot", event="e", data={})
 
-        assert "session_id" not in captured["body"]
+        assert captured["body"]["session_id"]
         assert "parent_id" not in captured["body"]
+
+        with patch("zizkadb_mcp.server._api", new=capture):
+            from zizkadb_mcp.server import log_event
+
+            await log_event(agent="bot", event="e2", data={})
+
+        assert captured["body"]["parent_id"] == "x"
 
     @pytest.mark.asyncio
     async def test_includes_session_id_when_provided(self):
