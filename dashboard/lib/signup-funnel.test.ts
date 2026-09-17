@@ -53,7 +53,17 @@ describe('signup-funnel helpers', () => {
     expect(resolveSignupStartPlan(null)).toBeNull()
     expect(resolveSignupStartPlan('pro')).toBe('pro')
     expect(sessionStorage.getItem(SIGNUP_PLAN_KEY)).toBe('pro')
-    expect(resolveSignupStartPlan('enterprise')).toBe('pro')
+  })
+
+  it('resolveSignupStartPlan ignores removed enterprise plan in URL', () => {
+    sessionStorage.clear()
+    expect(resolveSignupStartPlan('enterprise')).toBeNull()
+    expect(sessionStorage.getItem(SIGNUP_PLAN_KEY)).toBeNull()
+  })
+
+  it('resolveSignupStartPlan falls back to stored plan when URL plan is invalid', () => {
+    sessionStorage.setItem(SIGNUP_PLAN_KEY, 'team')
+    expect(resolveSignupStartPlan('enterprise')).toBe('team')
   })
 
   it('clearSignupSession removes plan and both consent keys', () => {
