@@ -32,6 +32,10 @@ jobs:
             curl -sf http://localhost:8000/health && break
             sleep 3
           done
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8000/health/deep | grep -q '"status": "ok"' && break
+            sleep 3
+          done
 
       - name: Run golden path
         run: bash scripts/run-golden-path.sh

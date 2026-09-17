@@ -34,8 +34,21 @@ curl -sf "$ZIZKADB_HOST/health" >/dev/null || {
   exit 1
 }
 
-echo "→ Installing SDK + langgraph integration..."
-pip install -q -e "$ROOT/sdk/python" -e "$ROOT/integrations/langgraph"
+echo "→ Waiting for postgres, redis, and qdrant (/health/deep)..."
+for i in $(seq 1 60); do
+  if curl -sf "$ZIZKADB_HOST/health/deep" | python3 -c "import sys, json; d=json.load(sys.stdin); sys.exit(0 if d.get('status') == 'ok' else 1)"; then
+    break
+  fi
+  sleep 3
+done
+curl -sf "$ZIZKADB_HOST/health/deep" | python3 -c "import sys, json; d=json.load(sys.stdin); sys.exit(0 if d.get('status') == 'ok' else 1)" || {
+  echo "ERROR: stack not healthy — /health/deep did not report ok." >&2
+  curl -sf "$ZIZKADB_HOST/health/deep" || true
+  exit 1
+}
+
+echo "→ Installing SDK + langgraph + MCP (doctor checks all three)..."
+pip install -q -e "$ROOT/sdk/python" -e "$ROOT/integrations/langgraph" -e "$ROOT/mcp"
 
 echo "→ Running golden path..."
 python "$ROOT/examples/golden-path/langgraph-rag-bot/run.py"
