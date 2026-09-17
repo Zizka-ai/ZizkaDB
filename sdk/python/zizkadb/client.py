@@ -30,7 +30,10 @@ import os
 import sys
 import httpx
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .session_scope import SessionScope
 
 from .models import Event, LogResult, CausalChain, AgentState, AgentInfo
 from .exceptions import ZizkaDBError, AuthError, NotFoundError, RateLimitError, AgentScopeError
@@ -198,7 +201,7 @@ class ZizkaDB:
         """Auto-wire parent_id for logs inside this context."""
         return LineageContext(self, agent=agent, session_id=session_id)
 
-    def session(self, session_id: str) -> "SessionScope":
+    def session(self, session_id: str) -> SessionScope:
         """Session-scoped helper for multi-agent timelines and cross-agent why()."""
         from .session_scope import SessionScope
 
